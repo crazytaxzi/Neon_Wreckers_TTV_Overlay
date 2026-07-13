@@ -38,11 +38,11 @@ static   /api and WebSocket
 
 `packages/browser-client` contains same-origin API request and error-envelope handling shared by web, admin, and overlay.
 
-`packages/client-theme` contains the existing shared player/admin stylesheet. This removes cross-application source imports while preserving the current visual system.
+`packages/ui` contains the shared React components, semantic icons, theme tokens, responsive framework, motion, and accessibility behavior used by all browser surfaces. `packages/client-theme` is a compatibility stylesheet entry that forwards older imports to UI.
 
 ## Durable state and concurrency
 
-PostgreSQL is the only durable runtime datastore. The Prisma schema is authoritative, and `infrastructure/database/migrations` contains deployable SQL history. Redis is transient queue infrastructure, not a second source of truth.
+PostgreSQL is the only durable runtime datastore. The Prisma schema is authoritative, and `infrastructure/database/prisma/migrations` contains deployable SQL history. Redis is transient queue infrastructure, not a second source of truth.
 
 Database uniqueness protects Twitch identity, sessions, inventory stacks, content versions, and loyalty idempotency. PostgreSQL transaction advisory locks serialize operations that span multiple records:
 
@@ -76,4 +76,4 @@ Runtime environment configuration is parsed once in `apps/api/src/env.ts`. Canon
 
 ## Extension rules
 
-New mechanics belong in `packages/game-engine` with deterministic tests. New external providers belong in `packages/integrations`. New persistent behavior requires a Prisma schema change and migration. New endpoints belong in a focused route module and call a domain service instead of another route. New visual keys must be added to `assets/manifest.json` before content references them.
+New mechanics belong in `packages/game-engine` with deterministic tests. New external providers belong in `packages/integrations`. New persistent behavior requires a Prisma schema change and migration. New endpoints belong in a focused route module and call a domain service instead of another route. New visual keys must be added to `assets/manifest.json` before content references them. New reusable interface behavior belongs in `packages/ui`; app-local CSS is reserved for surface-specific composition.

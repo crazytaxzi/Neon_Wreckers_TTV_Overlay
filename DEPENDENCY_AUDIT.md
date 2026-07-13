@@ -1,73 +1,43 @@
 # Dependency audit
 
-Audit date: 2026-07-12. All JavaScript package versions are exact and locked by `package-lock.json`.
+Audit date: 2026-07-13. JavaScript versions are exact and locked by `pnpm-lock.yaml`.
 
-## Audit result
+## Phase 2 result
 
-The repository contains 10 active workspaces and 44 direct dependency declarations. `npm audit --omit=dev` reported 0 known vulnerabilities across all severities on 2026-07-12.
+The repository contains 11 active workspaces and 51 direct dependency, development-dependency, and peer-dependency declarations. `node tools/audit-dependencies.mjs` verifies that each source import is owned by the importing workspace, CSS package imports are declared, versions are pinned, root dependencies are documented, and unused declarations are rejected.
 
-`npm outdated` and a per-major registry check found the retained major lines current for Fastify rate limiting, Prisma, Node type declarations, the Vite React plugin, TypeScript, Vite, and Zod. `lucide-react` has a newer 0.x release, but that line does not promise minor-version compatibility and can change rendered icon output, so it was deferred to preserve the artwork and UI. Available next-major migrations include `@fastify/rate-limit` 11, Prisma 7, Node type declarations 26, `@vitejs/plugin-react` 6, `lucide-react` 1, TypeScript 7, Vite 8, and Zod 4; all require a separate compatibility review.
+A registry-backed vulnerability scan was not rerun during this offline UI rebuild. The current source lockfile and backend dependency versions were preserved; Phase 2 adds no new registry package. `lucide-react` already existed in the working source and is now owned by `@neon-wreckers/ui` rather than the player app.
 
 ## Root build dependencies
 
-- `prisma` provides production migration commands and Prisma client generation.
-- `typescript` compiles the integrations, database seed, API, worker, and React type checks.
-- `tsx` runs TypeScript during development and executes TypeScript tests.
+- `prisma` provides migration and Prisma client generation commands.
+- `@prisma/client` is the generated database client runtime.
+- `typescript` compiles packages, infrastructure, services, workers, and browser type checks.
+- `tsx` runs TypeScript development processes and tests.
 - `@types/node`, `@types/react`, and `@types/react-dom` provide compile-time declarations.
+- `@neon-wreckers/game-engine` and `@neon-wreckers/content` support root migration, seed, and verification workflows.
 
-## API
+## API and worker
 
-- `fastify` is the HTTP server.
-- `@fastify/cookie`, `@fastify/cors`, `@fastify/helmet`, `@fastify/rate-limit`, and `@fastify/websocket` provide cookies, origin controls, security headers, rate limiting, and WebSockets.
-- `@prisma/client` is the database client.
-- `bullmq` submits delayed expedition jobs.
-- `zod` validates environment, path, query, header, and body input.
-- `@neon-wreckers/content` provides validated canonical items, wrecks, modules, initial station, balance, and expedition definitions.
-- `@neon-wreckers/game-engine` provides authoritative rules.
-- `@neon-wreckers/integrations` provides Twitch, StreamElements, and Redis configuration adapters.
-
-## Worker
-
-- `bullmq` consumes expedition jobs.
-- `@prisma/client` persists resolved outcomes and notifications.
-- `@neon-wreckers/content` supplies canonical reward item definitions.
-- `@neon-wreckers/game-engine` resolves expeditions.
-- `@neon-wreckers/integrations` supplies shared Redis URL parsing.
+The API owns `fastify`, `@fastify/cookie`, `@fastify/cors`, `@fastify/helmet`, `@fastify/rate-limit`, `@fastify/websocket`, `@prisma/client`, `bullmq`, `zod`, canonical content, deterministic game rules, and provider integrations. The worker owns `bullmq`, `@prisma/client`, canonical content, deterministic game rules, and shared integration configuration. Phase 2 does not change these declarations.
 
 ## Shared packages
 
-- `@neon-wreckers/content` uses `zod` to validate source-controlled JSON before exposing immutable definitions.
-- `@neon-wreckers/game-engine` uses only Node built-ins at runtime. Its content package reference is development-only for deterministic tests.
-- `@neon-wreckers/integrations` uses `undici` for server-side Twitch and StreamElements HTTP requests with explicit timeouts.
-- `@neon-wreckers/browser-client` is dependency-free and centralizes browser request envelopes and errors.
-- `@neon-wreckers/client-theme` contains the unchanged shared player/admin stylesheet and no JavaScript runtime.
+- `@neon-wreckers/content` uses `zod` to validate canonical JSON.
+- `@neon-wreckers/game-engine` uses Node built-ins at runtime and references content only for deterministic tests.
+- `@neon-wreckers/integrations` uses `undici` for bounded provider HTTP requests.
+- `@neon-wreckers/browser-client` is dependency-free and centralizes browser response envelopes.
+- `@neon-wreckers/ui` uses `lucide-react` and declares React and React DOM as exact peer dependencies.
+- `@neon-wreckers/client-theme` depends on UI because its stylesheet forwards legacy imports to the shared package.
 
 ## Browser applications
 
-- `react` and `react-dom` render all three browser applications.
-- `vite` and `@vitejs/plugin-react` build each browser application.
-- `lucide-react` is used only by the player app for its existing iconography.
-- The player, admin, and overlay consume only the shared workspace packages they import.
+The player, admin, and overlay applications declare `react`, `react-dom`, Vite, the Vite React plugin, browser client, and UI package only where imported. Direct icon-library ownership was removed from the player app because semantic icons are now supplied by the UI package.
 
 ## Container dependencies
 
-- `node:22.16.0-bookworm-slim` is the exact build and application runtime base.
-- `nginx:1.27.5-alpine` is the exact gateway base.
-- `postgres:16.10-alpine` is the exact database image.
-- `redis:7.4.5-alpine` is the exact queue/cache image.
-
-These tags are centralized in the root Dockerfile and Compose file. There are no alternate Dockerfiles or Compose definitions.
-
-## Removed dependencies and packages
-
-- Direct `ioredis` dependencies were removed because BullMQ owns the Redis client; connection parsing is shared without creating another client.
-- Direct `pino` was removed because Fastify supplies logger integration.
-- Direct API `undici` was removed because only the integrations package performs provider HTTP requests.
-- `lucide-react` was removed from admin and overlay because neither imports it.
-- The former unused `packages/game-config`, `packages/shared-types`, and `packages/ui` were removed. The active `@neon-wreckers/content` package is a new, consumed boundary with API, worker, seed, and test owners.
-- MinIO and object-storage deployment components were removed because no application code used them.
-- Synthetic Twitch identities and the process-local loyalty provider were removed rather than retained as runtime dependencies.
+The root Dockerfile and Compose file remain the only production pipeline. Their pinned Node, Nginx, PostgreSQL, and Redis images are unchanged by Phase 2.
 
 ## Upgrade policy
 
-Use exact versions. Review upgrades per workspace, update the lockfile with npm, run every automated suite and build, rerun the production vulnerability audit, and record the decision here. Major upgrades require an explicit compatibility pass; security upgrades still require the same release gates.
+Use exact versions and the canonical pnpm lockfile. Add a dependency only to the workspace that imports it. Run dependency ownership checks, the full verification suite, production builds, and a registry-backed vulnerability audit before release. Major upgrades require an explicit compatibility review.
