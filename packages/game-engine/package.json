@@ -15,6 +15,6 @@
     "test": "node --test test/*.test.mjs"
   },
   "devDependencies": {
-    "@neon-wreckers/content": "2.0.0"
+    "@neon-wreckers/content": "workspace:*"
   }
 }

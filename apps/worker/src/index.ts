@@ -32,11 +32,28 @@ const worker = new Worker(
       now: expedition.resolvesAt.toISOString()
     });
 
+    const resolvedStatus =
+
+      resolved.status === 'resolved' || resolved.status === 'failed'
+
+        ? resolved.status
+
+        : (() => {
+
+            throw new Error(
+
+              `Unexpected expedition resolution status: ${resolved.status}`
+
+            );
+
+          })();
+
+
     return prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
       const updated = await transaction.expedition.updateMany({
         where: { id: expedition.id, status: 'active' },
         data: {
-          status: resolved.status,
+          status: resolvedStatus,
           rewards: JSON.parse(JSON.stringify(resolved.rewards)),
           incidentLog: JSON.parse(JSON.stringify(resolved.incidentLog))
         }

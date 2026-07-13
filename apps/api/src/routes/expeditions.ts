@@ -106,10 +106,20 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
       items: itemsBySlug,
       now: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
     });
+    const resolvedStatus =
+      resolved.status === 'resolved' || resolved.status === 'failed'
+        ? resolved.status
+        : (() => {
+            throw new GameRuleError(
+              'EXPEDITION_RESOLUTION_INVALID',
+              `Unexpected expedition resolution status: ${resolved.status}`
+            );
+          })();
+
     const updated = await context.prisma.expedition.updateMany({
       where: { id: expedition.id, status: 'active' },
       data: {
-        status: resolved.status,
+        status: resolvedStatus,
         rewards: JSON.parse(JSON.stringify(resolved.rewards)),
         incidentLog: JSON.parse(JSON.stringify(resolved.incidentLog))
       }

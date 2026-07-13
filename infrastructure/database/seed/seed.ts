@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { discoverWreck } from '@neon-wreckers/game-engine';
 import { initialStation, wreckArchetypes } from '@neon-wreckers/content';
 
@@ -35,7 +36,7 @@ async function main() {
   for (const module of stationSeed.modules) {
     await prisma.stationModule.upsert({
       where: { stationId_slug: { stationId: station.id, slug: module.slug } },
-      update: { name: module.name, visualKey: module.visualKey, effects: module.effects },
+      update: { name: module.name, visualKey: module.visualKey, effects: JSON.parse(JSON.stringify(module.effects)) as Prisma.InputJsonValue },
       create: {
         stationId: station.id,
         slug: module.slug,
@@ -45,7 +46,7 @@ async function main() {
         progress: module.progress,
         integrity: module.integrity,
         visualKey: module.visualKey,
-        effects: module.effects
+        effects: JSON.parse(JSON.stringify(module.effects)) as Prisma.InputJsonValue
       }
     });
   }

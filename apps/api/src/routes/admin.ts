@@ -54,7 +54,7 @@ export async function registerAdminRoutes(app: FastifyInstance, context: ApiCont
           slug: body.slug,
           version: (latest?.version ?? 0) + 1,
           lifecycle: body.lifecycle,
-          contentJson: body.contentJson,
+          contentJson: JSON.parse(JSON.stringify(body.contentJson)) as Prisma.InputJsonValue,
           scheduledAt: body.scheduledAt ? new Date(body.scheduledAt) : null,
           expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
           createdById: user.id
@@ -65,7 +65,7 @@ export async function registerAdminRoutes(app: FastifyInstance, context: ApiCont
           actorId: user.id,
           action: 'config.create',
           target: body.slug,
-          after: body,
+          after: JSON.parse(JSON.stringify(body)) as Prisma.InputJsonValue,
           requestId: request.id
         }
       });

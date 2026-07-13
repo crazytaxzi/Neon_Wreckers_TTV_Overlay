@@ -9,9 +9,9 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@neon-wreckers/content": "2.0.0",
-    "@neon-wreckers/game-engine": "2.0.0",
-    "@neon-wreckers/integrations": "2.0.0",
+    "@neon-wreckers/content": "workspace:*",
+    "@neon-wreckers/game-engine": "workspace:*",
+    "@neon-wreckers/integrations": "workspace:*",
     "@prisma/client": "6.19.3",
     "bullmq": "5.80.2"
   }
