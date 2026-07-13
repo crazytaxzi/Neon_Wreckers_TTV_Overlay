@@ -1,0 +1,40 @@
+{
+  "name": "neon-wreckers-station-zero",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=22.16.0",
+    "npm": ">=10.9.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "clean": "node tools/clean.mjs",
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "npm run clean && npm run build -w @neon-wreckers/integrations && tsc -p infrastructure/database/tsconfig.json && npm run build -w @neon-wreckers/api && npm run build -w @neon-wreckers/worker && npm run build -w @neon-wreckers/web && npm run build -w @neon-wreckers/admin && npm run build -w @neon-wreckers/overlay",
+    "test": "npm run clean && npm run test:engine && npm run test:api && npm run test:content && npm run test:dependencies && npm run test:repository",
+    "test:engine": "node --test packages/game-engine/test/*.test.mjs",
+    "test:content": "node tools/validate-content.mjs",
+    "test:repository": "node --test tools/test/*.test.mjs",
+    "verify": "npm run test && npm run build",
+    "db:migrate": "prisma migrate deploy --schema infrastructure/database/prisma/schema.prisma",
+    "db:seed": "tsx infrastructure/database/seed/seed.ts",
+    "db:seed:production": "node infrastructure/database/dist/seed/seed.js",
+    "test:api": "tsx --test tools/test/*.test.ts",
+    "test:dependencies": "node tools/audit-dependencies.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "tsx": "4.23.0",
+    "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "prisma": "6.19.3"
+  }
+}

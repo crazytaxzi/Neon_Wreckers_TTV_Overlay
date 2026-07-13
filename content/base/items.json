@@ -1,0 +1,97 @@
+[
+  {
+    "slug": "scrap",
+    "name": "Hull Scrap",
+    "rarity": "common",
+    "visualKey": "item-hull-scrap",
+    "stackLimit": 9999,
+    "lifecycle": "active",
+    "tags": [
+      "resource",
+      "construction"
+    ]
+  },
+  {
+    "slug": "electronics",
+    "name": "Electronics",
+    "rarity": "uncommon",
+    "visualKey": "item-electronics",
+    "stackLimit": 999,
+    "lifecycle": "active",
+    "tags": [
+      "resource",
+      "upgrade"
+    ]
+  },
+  {
+    "slug": "fuel",
+    "name": "Fuel Cells",
+    "rarity": "uncommon",
+    "visualKey": "item-fuel-cells",
+    "stackLimit": 999,
+    "lifecycle": "active",
+    "tags": [
+      "resource",
+      "expedition"
+    ]
+  },
+  {
+    "slug": "alloys",
+    "name": "Refined Alloys",
+    "rarity": "uncommon",
+    "visualKey": "item-alloys",
+    "stackLimit": 999,
+    "lifecycle": "active",
+    "tags": [
+      "resource",
+      "construction"
+    ]
+  },
+  {
+    "slug": "unknown-relic",
+    "name": "Unknown Relic",
+    "rarity": "rare",
+    "visualKey": "item-unknown-relic",
+    "stackLimit": 99,
+    "lifecycle": "active",
+    "tags": [
+      "artifact",
+      "museum"
+    ]
+  },
+  {
+    "slug": "research-data",
+    "name": "Research Data",
+    "rarity": "rare",
+    "visualKey": "item-research-data",
+    "stackLimit": 999,
+    "lifecycle": "active",
+    "tags": [
+      "research",
+      "expedition"
+    ]
+  },
+  {
+    "slug": "rubber-rat-mascot",
+    "name": "Rubber Rat Mascot",
+    "rarity": "epic",
+    "visualKey": "item-rubber-rat",
+    "stackLimit": 1,
+    "lifecycle": "active",
+    "tags": [
+      "artifact",
+      "absurd-salvage"
+    ]
+  },
+  {
+    "slug": "credits",
+    "name": "Credits",
+    "rarity": "common",
+    "visualKey": "item-credit-chip",
+    "stackLimit": 2147483647,
+    "lifecycle": "active",
+    "tags": [
+      "currency"
+    ]
+  }
+]

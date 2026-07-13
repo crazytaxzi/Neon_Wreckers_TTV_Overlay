@@ -1,0 +1,26 @@
+[
+  {
+    "slug": "neon-frontier",
+    "name": "Neon Frontier",
+    "startsAt": "2026-07-01T00:00:00.000Z",
+    "endsAt": "2026-09-30T23:59:59.000Z",
+    "gracePeriodDays": 7,
+    "theme": "station-zero-default",
+    "lifecycle": "active",
+    "conversion": {
+      "eventTickets": "credits:5"
+    }
+  },
+  {
+    "slug": "frost-wrecks",
+    "name": "Frost Wrecks",
+    "startsAt": "2026-12-01T00:00:00.000Z",
+    "endsAt": "2027-01-15T23:59:59.000Z",
+    "gracePeriodDays": 10,
+    "theme": "frost-wrecks",
+    "lifecycle": "scheduled",
+    "conversion": {
+      "frostCores": "researchData:1"
+    }
+  }
+]

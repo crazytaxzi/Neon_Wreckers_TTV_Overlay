@@ -1,0 +1,95 @@
+[
+  {
+    "slug": "reactor-instability",
+    "name": "Reactor Instability",
+    "trigger": "condition",
+    "durationMinutes": 45,
+    "cooldownMinutes": 240,
+    "conditions": [
+      {
+        "type": "stationResourceBelow",
+        "params": {
+          "resource": "power",
+          "value": 55
+        }
+      }
+    ],
+    "actions": [
+      {
+        "type": "damageModule",
+        "params": {
+          "module": "power-core",
+          "amount": 8
+        }
+      },
+      {
+        "type": "notify",
+        "params": {
+          "severity": "danger",
+          "title": "Reactor Instability"
+        }
+      }
+    ],
+    "lifecycle": "active"
+  },
+  {
+    "slug": "black-market-visit",
+    "name": "Black-Market Visit",
+    "trigger": "manual",
+    "durationMinutes": 30,
+    "cooldownMinutes": 180,
+    "conditions": [
+      {
+        "type": "moduleUnlocked",
+        "params": {
+          "module": "marketplace"
+        }
+      }
+    ],
+    "actions": [
+      {
+        "type": "changeTheme",
+        "params": {
+          "accent": "orange"
+        }
+      },
+      {
+        "type": "spawnWreck",
+        "params": {
+          "risk": "high"
+        }
+      }
+    ],
+    "lifecycle": "active"
+  },
+  {
+    "slug": "ghost-ship",
+    "name": "Ghost Ship",
+    "trigger": "scheduled",
+    "durationMinutes": 60,
+    "cooldownMinutes": 720,
+    "conditions": [
+      {
+        "type": "dateRange",
+        "params": {
+          "month": 10
+        }
+      }
+    ],
+    "actions": [
+      {
+        "type": "spawnWreck",
+        "params": {
+          "archetype": "research-skiff"
+        }
+      },
+      {
+        "type": "addHistory",
+        "params": {
+          "category": "event"
+        }
+      }
+    ],
+    "lifecycle": "active"
+  }
+]

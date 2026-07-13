@@ -1,0 +1,87 @@
+[
+  {
+    "slug": "helios-courier",
+    "name": "Helios-Class Courier",
+    "risk": "moderate",
+    "visualKey": "wreck-helios-courier",
+    "description": "Drifting with a fractured cargo spine. Signs of intact avionics and one suspiciously warm compartment.",
+    "lootTable": "starter-salvage",
+    "lifecycle": "active",
+    "integrityRange": [
+      55,
+      75
+    ],
+    "lootBudgetRange": [
+      38,
+      58
+    ]
+  },
+  {
+    "slug": "orpheus-barge",
+    "name": "Orpheus Mining Barge",
+    "risk": "low",
+    "visualKey": "wreck-orpheus-barge",
+    "description": "A slag-bitten ore hauler with cracked ore pods and polite levels of danger. Suspicious, frankly.",
+    "lootTable": "starter-salvage",
+    "lifecycle": "active",
+    "integrityRange": [
+      68,
+      92
+    ],
+    "lootBudgetRange": [
+      30,
+      46
+    ]
+  },
+  {
+    "slug": "ashfall-cutter",
+    "name": "Ashfall Patrol Cutter",
+    "risk": "high",
+    "visualKey": "wreck-ashfall-cutter",
+    "description": "Old security vessel, still arguing with itself through broken threat sensors.",
+    "lootTable": "combat-salvage",
+    "lifecycle": "active",
+    "integrityRange": [
+      42,
+      64
+    ],
+    "lootBudgetRange": [
+      58,
+      84
+    ]
+  },
+  {
+    "slug": "morrowline-freighter",
+    "name": "Morrowline Freighter",
+    "risk": "moderate",
+    "visualKey": "wreck-morrowline-freighter",
+    "description": "Commercial freighter with sealed cargo racks and a paperwork smell nobody requested.",
+    "lootTable": "cargo-salvage",
+    "lifecycle": "active",
+    "integrityRange": [
+      50,
+      78
+    ],
+    "lootBudgetRange": [
+      44,
+      68
+    ]
+  },
+  {
+    "slug": "research-skiff",
+    "name": "Unmarked Research Skiff",
+    "risk": "extreme",
+    "visualKey": "wreck-research-skiff",
+    "description": "A tiny black-lab skiff broadcasting nursery rhymes on a military band.",
+    "lootTable": "research-salvage",
+    "lifecycle": "active",
+    "integrityRange": [
+      35,
+      58
+    ],
+    "lootBudgetRange": [
+      85,
+      120
+    ]
+  }
+]
