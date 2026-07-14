@@ -1,45 +1,42 @@
 # Test report
 
-Verification date: 2026-07-12.
+Verification date: 2026-07-13.
 
-## Automated result
+## Completed checks
 
-`npm test` passed 27 Node subtests with no failures, plus the content and dependency command gates.
+The rebuilt Phase 2 source passed every dependency-free verification gate available in the offline build environment.
 
-- Game engine: 5 deterministic tests covering salvage, construction completion, inventory merging, cooldown enforcement, and expedition timing/resolution.
-- API, service, and configuration: 7 tests covering production environment validation, signed cookie handling, point-action compensation boundaries, and runtime balance parity.
-- Content: validated 8 items, 5 wrecks, 9 modules, 1 initial station, 3 events, 2 seasons, 2 themes, and 23 asset keys, including cross-file references, wreck ranges, balance constraints, and absence of unused manifest entries.
-- Dependency audit: validated 10 workspaces and 44 direct dependency declarations.
-- Repository, database, route, content-ownership, operational-script, and deployment safeguards: 15 tests covering the single deployment pipeline, gateway routes and WebSockets, secret/build debris, environment documentation, schema/migration parity, active indexes, route inventory, concurrency safeguards, and absence of synthetic authentication, mock loyalty, and provider-token retention.
+- Dependency ownership: 11 workspaces and 51 direct dependency, development-dependency, and peer-dependency declarations passed `node tools/audit-dependencies.mjs`.
+- Canonical content: 8 items, 5 wrecks, 9 modules, 1 initial station, 3 events, 2 seasons, 2 themes, and 23 asset records passed validation.
+- Repository, route, and database invariants: 15 Node subtests passed with no failures.
+- TypeScript syntax: all 42 `.ts` and `.tsx` implementation files parsed with zero compiler syntax diagnostics.
+- Browser semantic checks: `@neon-wreckers/ui`, web, admin, and overlay passed strict `tsc --noEmit` checks using temporary local declaration scaffolding for the locked React, React DOM, Lucide, and Vite packages. The scaffolding was removed before packaging.
+- Shell scripts: all files under `scripts/*.sh` passed `bash -n`.
+- YAML: `pnpm-lock.yaml` parsed with 12 importers and `compose.yaml` parsed with the expected PostgreSQL, Redis, setup, API, worker, and gateway services.
+- Frontend static checks: no explicit `any`, emoji interface graphics, or app-local hexadecimal palette literals were found in the product UI source.
 
-The 27 Node subtests are 5 engine tests, 7 TypeScript API/service/configuration tests, and 15 repository/database/route tests. Content and dependency validators run as separate command gates inside the same top-level workflow and report their own totals.
+## Current-source preservation
 
-## Build result
+The following protected paths were compared byte for byte with the supplied working source and remain unchanged:
 
-`npm run build` completed successfully for:
+- `apps/api`
+- `apps/worker`
+- `packages/game-engine`
+- `packages/content`
+- `packages/integrations`
+- `packages/browser-client`
+- `infrastructure`
+- `content/base`
+- `assets/manifest.json`
+- root `Dockerfile` and `compose.yaml`
+- all three Vite configuration files
 
-- `@neon-wreckers/integrations`
-- the compiled database seed
-- `@neon-wreckers/api`
-- `@neon-wreckers/worker`
-- `@neon-wreckers/web`
-- `@neon-wreckers/admin`
-- `@neon-wreckers/overlay`
+This confirms that Phase 2 changed the browser interface layer, workspace wiring, UI-focused documentation, and associated repository checks without modifying backend behavior, persistence, gameplay, balance, content, deployment topology, or development proxy behavior.
 
-Build begins with repository cleanup, so success does not depend on committed `dist` directories or TypeScript build-info files.
+## Checks not executed in this environment
 
-## Additional checks
+A full `pnpm install --frozen-lockfile`, `pnpm run verify`, and production Vite build could not be executed because Corepack attempted to fetch the pinned pnpm release and the environment could not resolve the npm registry. The environment also had no installed workspace dependency tree. No successful full-build claim is made for this rebuilt archive.
 
-- Clean-room `npm ci --no-audit --no-fund` after deleting `node_modules`: passed.
-- `bash -n scripts/*.sh`: passed.
-- YAML parse of `compose.yaml`: passed with the six expected services.
-- `npm audit --omit=dev`: 0 known vulnerabilities at all severities.
-- Search for unfinished markers, generated output, recovery copies, extra lockfiles, committed environment files, obsolete schema models, synthetic auth, mock loyalty, and retained provider tokens: passed through repository tests and final source scan.
+The unchanged backend and game-engine tests were not rerun through the root pnpm workflow for the same dependency limitation. Their source, canonical content, and lockfile entries remain identical to the supplied working repository, while the dependency-free route, database, repository, and content gates were rerun successfully.
 
-## Environment limitations
-
-Docker was unavailable in the cleanup environment. Docker Compose configuration, image builds, container startup, health checks, and live gateway routing were therefore not executed locally. `scripts/verify.sh` performs the Compose and image checks when run on a Docker-capable host.
-
-Prisma native schema-engine validation could not download its platform engine because the environment could not resolve `binaries.prisma.sh`. TypeScript builds succeeded, and custom tests verified the committed schema against the SQL migration, including active models, enums, and indexes. A clean Docker build will run `prisma generate` and remains a target-host release gate.
-
-Live Twitch OAuth, StreamElements transactions, public certificate issuance, and OBS browser-source rendering were not executed because they require external credentials, DNS, and services. These limitations are recorded rather than presented as simulated success.
+Docker Compose configuration, image construction, live service startup, Twitch OAuth, StreamElements transactions, TLS issuance, WebSocket behavior through the deployed gateway, and OBS rendering remain target-host verification gates. Run `bash scripts/verify.sh` in a networked environment with Docker before production release.

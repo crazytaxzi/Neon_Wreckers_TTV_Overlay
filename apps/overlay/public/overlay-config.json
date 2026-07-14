@@ -18,17 +18,6 @@
   "glass": true,
   "breakingNews": true,
   "previewBackground": false,
-  "theme": {
-    "positive": "#a7ff3f",
-    "info": "#8ea1c9",
-    "viewer": "#24e4ff",
-    "warning": "#ffc84b",
-    "critical": "#ff435f",
-    "panel": "rgba(8,12,22,.92)",
-    "panelAlt": "rgba(18,23,39,.88)",
-    "text": "#f5f7ff",
-    "muted": "#9eaac4"
-  },
   "visibility": {
     "tickerHoldSeconds": 9,
     "statusHoldSeconds": 16,

@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/29947279/README.md)
 # Neon Wreckers: Station Zero
 
 > A server-authoritative, mobile-first stream game built for Twitch interaction, live overlays, persistent station progression, salvage operations, expeditions, and streamer-controlled events.
@@ -7,11 +6,11 @@
 ![Node.js](https://img.shields.io/badge/Node.js-22.16%2B-339933?logo=nodedotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript&logoColor=white)
 ![Docker](https://img.shields.io/badge/deployment-Docker%20Compose-2496ed?logo=docker&logoColor=white)
-![Status](https://img.shields.io/badge/status-Sprint%201%20stabilized-16a34a)
+![Status](https://img.shields.io/badge/status-Phase%202%20UI%20foundation-16a34a)
 
 Neon Wreckers combines a player-facing web game, streamer administration tools, an OBS browser overlay, a Fastify API, and an asynchronous worker into one production deployment. Game state is authoritative on the server. Browser clients display state and request actions, but do not calculate rewards, choose loot, alter cooldowns, or mutate persistent data directly.
 
-Version 2.0 Sprint 1 is the stabilized canonical codebase. It preserves the existing interface, artwork, mechanics, costs, rewards, cooldowns, and balance while replacing prototype-era deployment paths and recovery patches with one deterministic production pipeline.
+Version 2.0 uses the stabilized Sprint 1 repository as its canonical base. Phase 2 adds a shared production sci-fi interface system across the player, admin, and overlay surfaces without changing APIs, persistence, mechanics, costs, rewards, cooldowns, balance, or production topology.
 
 ## Contents
 
@@ -40,8 +39,8 @@ Version 2.0 Sprint 1 is the stabilized canonical codebase. It preserves the exis
 - Wreck scanning and salvage deployment
 - Construction material contributions
 - Expedition launching, resolution, and reward claiming
-- Station history, notifications, quarters, and marketplace views
-- Mobile-first browser interface
+- Station history, server-persisted notifications, quarters layout, and marketplace views
+- Responsive command interface backed by the shared UI component and theme system
 
 ### Streamer administration
 
@@ -50,6 +49,7 @@ Version 2.0 Sprint 1 is the stabilized canonical codebase. It preserves the exis
 - Wreck spawning through the same authoritative salvage service used by normal gameplay
 - Versioned configuration records and audit logging
 - StreamElements loyalty health and transaction review support
+- Live UI Library covering reusable components and interaction states
 
 ### OBS overlay
 
@@ -57,7 +57,7 @@ Version 2.0 Sprint 1 is the stabilized canonical codebase. It preserves the exis
 - Public station and history feeds
 - Realtime WebSocket updates
 - Source-controlled overlay configuration
-- Configurable panel placement, timing, colors, scanlines, glass, feed state, and breaking-news behavior
+- Central theme defaults with configurable panel placement, timing, optional color overrides, scanlines, glass, feed state, and breaking-news behavior
 
 ### Backend and operations
 
@@ -115,7 +115,8 @@ The API owns identity, game state, inventory, cooldowns, rewards, construction, 
 │   ├── content/             Validated content loader and typed exports
 │   ├── integrations/        Twitch, StreamElements, and Redis adapters
 │   ├── browser-client/      Shared browser API client
-│   └── client-theme/        Shared player and admin styling
+│   ├── ui/                  Components, themes, icons, motion, and responsive layout
+│   └── client-theme/        Compatibility stylesheet forwarding to UI
 ├── content/                 Canonical game content and balance data
 ├── assets/                  Canonical visual-key manifest
 ├── infrastructure/
@@ -135,12 +136,12 @@ Each major directory contains its own README describing purpose, dependencies, a
 ### Development
 
 - Node.js 22.16 or newer
-- npm 10.9 or newer
+- pnpm 10.32 or newer
 - PostgreSQL 16 compatible server
 - Redis 7 compatible server
 - A Twitch development application for real OAuth sign-in
 
-npm is the only supported package manager. `package-lock.json` is canonical.
+pnpm is the only supported package manager. `pnpm-lock.yaml` is canonical.
 
 ### Production
 
@@ -155,7 +156,8 @@ npm is the only supported package manager. `package-lock.json` is canonical.
 Install the locked workspace dependencies:
 
 ```bash
-npm ci
+corepack enable
+pnpm install --frozen-lockfile
 ```
 
 Create local configuration:
@@ -170,23 +172,23 @@ Provide reachable local PostgreSQL and Redis services, then update `DATABASE_URL
 Apply the database migration and seed:
 
 ```bash
-npm run db:migrate
-npm run db:seed
+pnpm run db:migrate
+pnpm run db:seed
 ```
 
 Run the backend processes:
 
 ```bash
-npm run dev -w @neon-wreckers/api
-npm run dev -w @neon-wreckers/worker
+pnpm --filter @neon-wreckers/api run dev
+pnpm --filter @neon-wreckers/worker run dev
 ```
 
 Run any browser client in a separate terminal:
 
 ```bash
-npm run dev -w @neon-wreckers/web
-npm run dev -w @neon-wreckers/admin
-npm run dev -w @neon-wreckers/overlay
+pnpm --filter @neon-wreckers/web run dev
+pnpm --filter @neon-wreckers/admin run dev
+pnpm --filter @neon-wreckers/overlay run dev
 ```
 
 The Vite clients use same-origin `/api` requests and proxy them to `http://127.0.0.1:8787` during development. Synthetic users and mock authentication are not supported.
@@ -267,19 +269,20 @@ Never commit `.env`, provider tokens, database dumps, backup archives, certifica
 
 | Command | Purpose |
 | --- | --- |
-| `npm ci` | Install exact locked dependencies |
-| `npm run dev` | Start available workspace development processes |
-| `npm run clean` | Remove generated output |
-| `npm run build` | Build all seven application and package targets |
-| `npm run test` | Run all automated source checks |
-| `npm run verify` | Run tests followed by all builds |
-| `npm run test:engine` | Test deterministic gameplay rules |
-| `npm run test:api` | Test API and service behavior |
-| `npm run test:content` | Validate content and cross-file references |
-| `npm run test:dependencies` | Audit workspace dependency ownership |
-| `npm run test:repository` | Enforce repository and deployment invariants |
-| `npm run db:migrate` | Apply production Prisma migrations |
-| `npm run db:seed` | Run the TypeScript development seed |
+| `corepack enable` | Enable the package-manager shim supplied with Node |
+| `pnpm install --frozen-lockfile` | Install exact locked dependencies |
+| `pnpm run dev` | Start available workspace development processes |
+| `pnpm run clean` | Remove generated output |
+| `pnpm run build` | Build the database, shared packages, services, and three browser clients |
+| `pnpm run test` | Run all automated source checks |
+| `pnpm run verify` | Run tests followed by all builds |
+| `pnpm run test:engine` | Test deterministic gameplay rules |
+| `pnpm run test:api` | Test API and service behavior |
+| `pnpm run test:content` | Validate content and cross-file references |
+| `pnpm run test:dependencies` | Audit workspace dependency ownership |
+| `pnpm run test:repository` | Enforce repository and deployment invariants |
+| `pnpm run db:migrate` | Apply production Prisma migrations |
+| `pnpm run db:seed` | Run the TypeScript development seed |
 | `bash scripts/verify.sh` | Run the complete release verification gate |
 
 ## Testing and verification
@@ -287,7 +290,7 @@ Never commit `.env`, provider tokens, database dumps, backup archives, certifica
 Run the source-level gate:
 
 ```bash
-npm run verify
+pnpm run verify
 ```
 
 Run the complete release gate:
@@ -350,11 +353,14 @@ Use `--restore-env` only when the archived environment must replace the current 
 | [Overlay Guide](docs/OVERLAY_GUIDE.md) | OBS setup, overlay configuration, data flow, and troubleshooting |
 | [API Reference](docs/API_REFERENCE.md) | Route inventory and API response conventions |
 | [Database Domain Model](docs/DATABASE_DOMAIN_MODEL.md) | Persistent entities and relationships |
-| [Visual Guide](docs/FRONTEND_VISUAL_GUIDE.md) | Existing frontend visual structure and asset conventions |
+| [UI Design System](docs/UI_DESIGN_SYSTEM.md) | Reusable components, typography, icons, responsive layout, motion, and accessibility |
+| [Theme Token Guide](docs/THEME_TOKEN_GUIDE.md) | Central theme configuration, CSS variables, seasonal themes, and overlay defaults |
+| [Visual Guide](docs/FRONTEND_VISUAL_GUIDE.md) | Product visual language and screen-composition rules |
+| [Phase 2 UI Report](docs/PHASE_2_UI_REPORT.md) | Rebuilt Phase 2 scope, protected source areas, and deliverables |
 | [Dependency Audit](docs/DEPENDENCY_AUDIT.md) | Purpose and status of retained dependencies |
 | [Test Report](docs/TEST_REPORT.md) | Automated verification results |
 | [Deployment Verification](docs/DEPLOYMENT_VERIFICATION.md) | Release deployment evidence and environment-dependent gates |
-| [Change Summary](docs/CHANGE_SUMMARY.md) | Version 2.0 Sprint 1 stabilization changes |
+| [Change Summary](docs/CHANGE_SUMMARY.md) | Sprint 1 stabilization and rebuilt Phase 2 interface changes |
 | [Changelog](CHANGELOG.md) | Version history |
 
 ## Security
@@ -380,7 +386,8 @@ For security-sensitive reports, use a private channel rather than a public issue
 - Add persistent behavior through the Prisma schema and a named SQL migration.
 - Keep route modules thin and call domain services rather than other HTTP routes.
 - Use exact dependency versions and add each package only to the workspace that imports it.
-- Add every referenced visual key to `assets/manifest.json`.
+- Add every referenced content visual key to `assets/manifest.json`.
+- Build browser screens with `@neon-wreckers/ui`; add reusable primitives, semantic icons, and seasonal values there instead of creating app-local visual systems.
 - Do not add alternate Compose files, recovery installers, source-mounted production containers, mock authentication, synthetic loyalty providers, or committed build output.
 - Run the complete verification gate before merging changes.
 

@@ -2,91 +2,93 @@
 
 ## Requirements
 
-Use Node.js 22.16 or newer and npm 10.9 or newer. npm is the only package manager for this repository.
+Use Node.js 22.16 or newer and pnpm 10.32 or newer. `pnpm-lock.yaml` is canonical; do not add npm or Yarn lockfiles.
 
 ```bash
-npm ci
-npm run test
-npm run build
+corepack enable
+pnpm install --frozen-lockfile
+pnpm run test
+pnpm run build
 ```
-
-`package-lock.json` is canonical. Do not add pnpm or Yarn metadata.
 
 ## Development services
 
-Production always uses `compose.yaml`. During source development, applications may run directly against disposable PostgreSQL and Redis instances using a local `.env`. This is a development workflow, not another deployment method.
+Production always uses `compose.yaml`. During source development, applications may run directly against disposable PostgreSQL and Redis instances through a local `.env`.
 
 ```bash
-npm run dev -w @neon-wreckers/api
-npm run dev -w @neon-wreckers/worker
-npm run dev -w @neon-wreckers/web
-npm run dev -w @neon-wreckers/admin
-npm run dev -w @neon-wreckers/overlay
+pnpm --filter @neon-wreckers/api run dev
+pnpm --filter @neon-wreckers/worker run dev
+pnpm --filter @neon-wreckers/web run dev
+pnpm --filter @neon-wreckers/admin run dev
+pnpm --filter @neon-wreckers/overlay run dev
 ```
 
-Every Vite client uses same-origin `/api` requests. Its checked-in development proxy forwards that path to `http://127.0.0.1:8787`, so no client-specific API URL variable exists. Local sign-in uses a real Twitch development application and callback; synthetic identities are not supported.
+Every Vite client uses same-origin `/api` requests. Its checked-in proxy forwards that path to `http://127.0.0.1:8787`; no client-specific API URL variable exists. Local sign-in uses a real Twitch development application and callback.
 
 ## Repository boundaries
 
-- `apps/` owns deployable processes and browser applications.
-- `packages/game-engine/` owns deterministic mechanics and accepts content through explicit inputs.
+- `apps/` owns deployable processes and browser composition.
+- `packages/game-engine/` owns deterministic mechanics and accepts canonical content as explicit inputs.
 - `packages/content/` owns source-controlled JSON loading, validation, and typed exports.
-- `packages/integrations/` owns external provider HTTP and Redis connection parsing.
+- `packages/integrations/` owns provider HTTP behavior and Redis URL parsing.
 - `packages/browser-client/` owns browser API envelopes and error handling.
-- `packages/client-theme/` owns the unchanged shared player/admin stylesheet.
+- `packages/ui/` owns reusable components, icons, themes, tokens, responsive behavior, motion, and accessibility.
+- `packages/client-theme/` is a compatibility stylesheet entry and must not become a second theme system.
 - `content/` and `assets/manifest.json` are the canonical data and visual-key sources.
 - `infrastructure/` owns schema, migrations, and gateway configuration.
 
-An application may depend on a package. Packages must not import application source. Browser applications must not become authoritative for costs, rewards, probability, cooldowns, inventory mutation, or station mutation.
+Applications may depend on packages. Packages must not import application source. Browser applications must not become authoritative for costs, rewards, probability, cooldowns, inventory mutation, or station mutation.
+
+## UI development
+
+Compose new screens from `@neon-wreckers/ui`. Reusable visual behavior belongs in the shared package and must be demonstrated in `ComponentShowcase`. App-local CSS is limited to layouts and diagrams that are genuinely specific to that surface.
+
+Do not introduce another component framework, direct icon imports, emoji graphics, independent palette literals, or fixed-canvas page structure. Use `ThemeDefinition` and `--nw-*` variables for all visual values. Verify keyboard operation, focus, empty states, reduced motion, high contrast, 1366×768, tablet, and mobile layouts.
+
+See `docs/UI_DESIGN_SYSTEM.md` and `docs/THEME_TOKEN_GUIDE.md`.
 
 ## Database changes
 
 1. Edit `infrastructure/database/prisma/schema.prisma`.
-2. Create a named SQL migration under `infrastructure/database/migrations`.
+2. Create a named SQL migration under `infrastructure/database/prisma/migrations`.
 3. Keep schema and migration enums, models, relations, defaults, and indexes aligned.
 4. Verify the migration against an empty database and an upgraded database.
 5. Keep seed behavior idempotent and safe for existing production data.
 6. Run all quality gates.
 
-Never replace migration history with a comment, use `db push` for production, or depend on generated client files committed to the repository.
-
-State-changing operations that can race must serialize at the database boundary. Existing examples use PostgreSQL advisory transaction locks, conditional updates, and status transitions. A read followed by an unconditional write is not sufficient for inventory, wreck, expedition, or content-version mutations.
+Never replace migration history with a comment, use `db push` for production, or commit generated client files. State changes that can race must serialize at the database boundary using the existing locking and conditional-transition patterns.
 
 ## API changes
 
-Routes are grouped by domain in `apps/api/src/routes`. Shared behavior belongs in `apps/api/src/services` or `apps/api/src/lib`. A route must not call another route through HTTP or `app.inject`; both routes should call the same service.
+Routes are grouped by domain in `apps/api/src/routes`. Shared behavior belongs in services or libraries. A route must not call another route through HTTP; both routes should call the same service.
 
-Successful API responses use `{ data, requestId }`, except health-style endpoints. Errors use `{ error: { code, message }, requestId }`. Logs include the same request ID. Input from environment, path, query, headers, and body must be validated before use.
-
-Authentication uses signed OAuth state and session cookies backed by hashed database session tokens. Do not retain Twitch access or refresh tokens unless a reviewed feature requires them and includes a documented storage and rotation design.
+Successful API responses use `{ data, requestId }`, except health endpoints. Errors use `{ error: { code, message }, requestId }`. Validate environment, path, query, header, and body input before use. Preserve signed OAuth state and session cookies backed by hashed session tokens.
 
 ## Game rules and content
 
-Sprint 1 preserves effective mechanics and balance. Rule changes belong in `packages/game-engine/src/core.mjs` and require deterministic tests. Runtime tuning already represented in content must be read from the canonical content file rather than duplicated in route code.
+Rule changes belong in `packages/game-engine/src/core.mjs` and require deterministic tests. Runtime tuning represented in content must be read from canonical content rather than duplicated in application code.
 
-For content changes, edit `content/base`, update `assets/manifest.json` for each visual key, and keep the schemas in `packages/content/src/index.mjs` aligned, then run:
+For content changes, edit `content/base`, update `assets/manifest.json` for each visual key, keep `packages/content/src/index.mjs` aligned, and run:
 
 ```bash
-npm run test:content
+pnpm run test:content
 ```
-
-Validation enforces JSON structure, unique slugs, cross-file references, used visual keys, initial-station references, wreck ranges, lifecycle values, season windows, and positive balance values.
 
 ## Dependency changes
 
-Use exact versions. Add a package only to the workspace that imports it. Run `npm install --save-exact` or `npm install --save-dev --save-exact`, inspect the lockfile, run the full verification suite, run `npm audit --omit=dev`, and update `docs/DEPENDENCY_AUDIT.md` with the package purpose.
+Use exact versions. Add a package only to the workspace that imports it. Use `pnpm add --save-exact` or `pnpm add --save-dev --save-exact`, inspect the lockfile, run the full verification suite and a registry-backed vulnerability audit, then update `docs/DEPENDENCY_AUDIT.md`.
 
 ## Quality gates
 
 ```bash
-npm run test:engine
-npm run test:api
-npm run test:content
-npm run test:dependencies
-npm run test:repository
-npm run build
+pnpm run test:engine
+pnpm run test:api
+pnpm run test:content
+pnpm run test:dependencies
+pnpm run test:repository
+pnpm run build
 bash -n scripts/*.sh
 bash scripts/verify.sh
 ```
 
-Repository tests protect the single deployment pipeline and reject recovery copies, generated build artifacts, committed secrets, extra lockfiles, unfinished markers, undocumented variables, unsafe route drift, schema/migration drift, and removed mock or token-retention code.
+Repository tests protect the single deployment pipeline and reject recovery copies, generated output, committed secrets, extra lockfiles, unfinished markers, undocumented variables, route drift, schema/migration drift, dependency ownership errors, and removed mock or token-retention code.

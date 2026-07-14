@@ -24,7 +24,9 @@ test('repository exposes exactly one deployment pipeline', () => {
   assert.deepEqual(files.filter(file => path.basename(file) === 'Dockerfile'), ['Dockerfile']);
   assert.deepEqual(files.filter(file => /^compose(?:\..+)?\.ya?ml$/.test(path.basename(file))), ['compose.yaml']);
   assert.deepEqual(files.filter(file => /nginx.*\.conf(?:\.template)?$/.test(path.basename(file))), ['infrastructure/gateway/nginx.conf.template']);
-  assert.deepEqual(files.filter(file => /(?:pnpm-lock|yarn\.lock|pnpm-workspace)/.test(file)), []);
+  assert.deepEqual(files.filter(file => /(?:package-lock\.json|yarn\.lock)$/.test(file)), []);
+  assert.ok(files.includes('pnpm-lock.yaml'));
+  assert.ok(files.includes('pnpm-workspace.yaml'));
 });
 
 test('repository contains no recovery copies, generated builds, or committed secrets', () => {
@@ -59,13 +61,12 @@ test('compose contains only the supported production services', () => {
 });
 
 
-test('workspace lock contains only active packages and no retired dependencies', () => {
-  const lock = JSON.parse(read('package-lock.json'));
-  const workspaceEntries = Object.entries(lock.packages)
-    .filter(([key, value]) => key && !key.startsWith('node_modules/') && value?.name)
-    .map(([, value]) => value.name)
+test('workspace lock contains every active package and no retired dependencies', () => {
+  const workspaceManifests = files
+    .filter(file => /^(?:apps|packages)\/[^/]+\/package\.json$/.test(file))
+    .map(file => JSON.parse(read(file)).name)
     .sort();
-  assert.deepEqual(workspaceEntries, [
+  assert.deepEqual(workspaceManifests, [
     '@neon-wreckers/admin',
     '@neon-wreckers/api',
     '@neon-wreckers/browser-client',
@@ -74,13 +75,17 @@ test('workspace lock contains only active packages and no retired dependencies',
     '@neon-wreckers/game-engine',
     '@neon-wreckers/integrations',
     '@neon-wreckers/overlay',
+    '@neon-wreckers/ui',
     '@neon-wreckers/web',
     '@neon-wreckers/worker'
   ]);
 
-  const serialized = JSON.stringify(lock);
-  for (const retired of ['@neon-wreckers/game-config', '@neon-wreckers/shared-types', '@neon-wreckers/ui', 'minio']) {
-    assert.ok(!serialized.includes(retired), `Retired dependency remains in package-lock.json: ${retired}`);
+  const lock = read('pnpm-lock.yaml');
+  for (const importer of ['apps/admin', 'apps/api', 'apps/overlay', 'apps/web', 'apps/worker', 'packages/browser-client', 'packages/client-theme', 'packages/content', 'packages/game-engine', 'packages/integrations', 'packages/ui']) {
+    assert.match(lock, new RegExp(`^  ${importer.replaceAll('/', '\\/')}:`, 'm'), `Missing lockfile importer: ${importer}`);
+  }
+  for (const retired of ['@neon-wreckers/game-config', '@neon-wreckers/shared-types', 'minio']) {
+    assert.ok(!lock.includes(retired), `Retired dependency remains in pnpm-lock.yaml: ${retired}`);
   }
 });
 
@@ -89,7 +94,8 @@ test('required operational documentation and scripts are present', () => {
     'README.md', 'CHANGELOG.md',
     'docs/ARCHITECTURE.md', 'docs/DEPLOYMENT.md', 'docs/DEVELOPER_GUIDE.md',
     'docs/ADMIN_GUIDE.md', 'docs/OVERLAY_GUIDE.md', 'docs/DEPENDENCY_AUDIT.md',
-    'docs/TEST_REPORT.md', 'docs/DEPLOYMENT_VERIFICATION.md', 'docs/CHANGE_SUMMARY.md',
+    'docs/UI_DESIGN_SYSTEM.md', 'docs/THEME_TOKEN_GUIDE.md', 'docs/FRONTEND_VISUAL_GUIDE.md',
+    'docs/PHASE_2_UI_REPORT.md', 'docs/TEST_REPORT.md', 'docs/DEPLOYMENT_VERIFICATION.md', 'docs/CHANGE_SUMMARY.md',
     'apps/README.md', 'packages/README.md', 'content/README.md',
     'infrastructure/README.md', 'scripts/README.md', 'assets/README.md',
     'scripts/install.sh', 'scripts/update.sh', 'scripts/backup.sh', 'scripts/restore.sh', 'scripts/verify.sh'

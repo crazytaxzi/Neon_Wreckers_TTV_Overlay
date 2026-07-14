@@ -11,6 +11,10 @@ import { deploySalvage, scanForWreck } from '../services/salvage.js';
 
 const actionSchema = z.enum(['safety_override', 'rush_scan']);
 
+type DeploySalvageResult = Awaited<ReturnType<typeof deploySalvage>>;
+type ScanForWreckResult = Awaited<ReturnType<typeof scanForWreck>>;
+type PointActionResult = DeploySalvageResult | ScanForWreckResult;
+
 export async function registerPointRoutes(app: FastifyInstance, context: ApiContext) {
   app.post('/api/v1/points/actions/:actionSlug', async request => {
     const user = await requireUser(context.prisma, request);
@@ -61,9 +65,13 @@ export async function registerPointRoutes(app: FastifyInstance, context: ApiCont
           refundReason: `Refund ${actionSlug}`,
           idempotencyKey
         },
-        () => actionSlug === 'safety_override'
-          ? deploySalvage(context, user, 'override')
-          : scanForWreck(context, user)
+        async (): Promise<PointActionResult> => {
+            if (actionSlug === 'safety_override') {
+              return deploySalvage(context, user, 'override');
+            }
+
+            return scanForWreck(context, user);
+          }
       );
     } catch (error) {
       await context.prisma.loyaltyTransaction.update({

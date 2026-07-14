@@ -1,32 +1,33 @@
 # Documentation
 
-## Purpose
+This folder is the canonical architecture, development, visual-system, deployment, administration, and release-evidence reference for Neon Wreckers 2.0.
 
-This folder is the canonical operating and architecture reference for Neon Wreckers 2.0. It contains the guides required to develop, deploy, administer, extend, verify, back up, and restore the game.
+## Core architecture and development
 
-## Architecture
-
-Documentation is organized by responsibility rather than deployment variant. `ARCHITECTURE.md` describes system boundaries, `DEVELOPER_GUIDE.md` covers local work, `DEPLOYMENT.md` owns production operations, and the release evidence files record this sprint's audit and verification results.
-
-## Dependencies
-
-The guides describe the root `compose.yaml`, root `Dockerfile`, source-controlled content and assets, operational scripts, and current application/package boundaries. Documentation must not describe removed services, routes, variables, or alternate deployment paths.
-
-## Extension points
-
-Update the owning guide in the same change as code, schema, content, environment, or operational behavior. Add a new document only when no existing guide has clear ownership; link it from this index and the root README.
-
-## Index
-
-- `ARCHITECTURE.md`: runtime boundaries and data flow.
-- `DATABASE_DOMAIN_MODEL.md`: active persistence model.
+- `ARCHITECTURE.md`: runtime boundaries, data flow, authority, and extension rules.
+- `DATABASE_DOMAIN_MODEL.md`: active persistence model and migration ownership.
 - `API_REFERENCE.md`: supported HTTP and WebSocket surfaces.
-- `DEVELOPER_GUIDE.md`: local setup, structure, and contribution gates.
-- `DEPLOYMENT.md`: installation, update, backup, restore, and environment reference.
-- `ADMIN_GUIDE.md`: control-center operations.
-- `OVERLAY_GUIDE.md`: OBS overlay setup and extension rules.
-- `FRONTEND_VISUAL_GUIDE.md`: retained visual-system ownership.
-- `CHANGE_SUMMARY.md` and the root `CHANGELOG.md`: cleanup history.
-- `DEPENDENCY_AUDIT.md`: dependency ownership and upgrade decisions.
-- `DEPLOYMENT_VERIFICATION.md`: deployment evidence and host-only gates.
-- `TEST_REPORT.md`: executed checks and recorded limitations.
+- `DEVELOPER_GUIDE.md`: local setup, workspace ownership, and contribution gates.
+
+## UI foundation
+
+- `UI_DESIGN_SYSTEM.md`: component library, typography, icons, responsive contract, motion, and accessibility.
+- `THEME_TOKEN_GUIDE.md`: centralized theme shape, generated CSS variables, seasonal themes, and overlay defaults.
+- `FRONTEND_VISUAL_GUIDE.md`: visual language and product-screen rules.
+- `PHASE_2_UI_REPORT.md`: Phase 2 scope, protected source areas, deliverables, and verification boundary.
+
+## Operations
+
+- `DEPLOYMENT.md`: installation, updates, environment configuration, backups, and restores.
+- `ADMIN_GUIDE.md`: Streamer Control Center operation and safe administration.
+- `OVERLAY_GUIDE.md`: OBS setup, configuration, data flow, and troubleshooting.
+- `DEPLOYMENT_VERIFICATION.md`: host-dependent release gates.
+
+## Release evidence
+
+- `TEST_REPORT.md`: checks executed for the current package and recorded environment limitations.
+- `DEPENDENCY_AUDIT.md`: dependency ownership and audit status.
+- `CHANGE_SUMMARY.md`: Sprint 1 stabilization plus the rebuilt Phase 2 interface layer.
+- root `CHANGELOG.md`: version history.
+
+Update the owning guide in the same change as code, schema, content, environment, UI tokens, or operational behavior. Documentation must not describe alternate deployment paths, retired services, or a second visual framework.

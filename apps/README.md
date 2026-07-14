@@ -1,17 +1,21 @@
 # Applications
 
-## Purpose
+## Runtime surfaces
 
-This folder contains the five deployable runtime surfaces: `web`, `admin`, `overlay`, `api`, and `worker`.
+This folder contains five deployable applications:
 
-## Architecture
+- `web`: player-facing React command interface
+- `admin`: Streamer Control Center and live UI component catalog
+- `overlay`: transparent OBS browser source
+- `api`: authoritative Fastify service
+- `worker`: BullMQ expedition resolver
 
-The three React applications are static Vite builds. The API is the authoritative Fastify service. The worker resolves delayed BullMQ jobs. Browser applications communicate through same-origin API routes exposed by the gateway.
+The three browser applications are static Vite builds. They use the current same-origin `/api` contract and the checked-in Vite proxy during development. The API remains authoritative for identity, game state, outcomes, costs, cooldowns, rewards, and persistence.
 
-## Dependencies
+## UI ownership
 
-Each application declares only the packages it imports. Shared game rules and provider adapters come from workspace packages. No app installs dependencies at container startup.
+`web` and `admin` compose screens from `@neon-wreckers/ui`. Their local CSS is limited to surface-specific layouts and diagrams. `overlay` keeps its specialized broadcast layout while consuming central theme defaults. New deployable browser applications must use the shared UI package rather than introducing another visual framework.
 
 ## Extension points
 
-Add HTTP domains as API route and service modules, add delayed work as named worker jobs, and add browser surfaces within the existing applications. New deployable apps require an architecture review because the production topology intentionally remains small.
+Add HTTP domains as focused API route and service modules, delayed work as named worker jobs, and new screens within the existing browser apps. A new deployable application or a change to routing, API contracts, persistence, or production topology requires an architecture review.

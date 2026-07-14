@@ -7,5 +7,8 @@
   ],
   "exports": {
     "./styles.css": "./styles.css"
+  },
+  "dependencies": {
+    "@neon-wreckers/ui": "workspace:*"
   }
 }

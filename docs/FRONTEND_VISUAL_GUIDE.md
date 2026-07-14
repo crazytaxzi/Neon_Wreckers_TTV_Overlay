@@ -1,28 +1,31 @@
-# Frontend component and visual guide
+# Frontend visual guide
 
-Sprint 1 preserves the existing visual identity and layout: dark salvage metal, scratched console panels, neon green accents, electric purple lighting, cyan readouts, cargo labels, hazard states, and a station that visibly reflects persisted state. No visual redesign or artwork replacement is part of this release.
+The browser surfaces use one command-interface language owned by `@neon-wreckers/ui`. The visual target is a station operating system: sharp layered glass, restrained holographic energy, dense but readable telemetry, and strong hierarchy without dashboard-template or rounded mobile-app styling.
 
-## Player surfaces
+## Palette and hierarchy
 
-The mobile-first player application contains ten reachable tabs:
+Neon green is the primary operational color. Electric purple marks advanced or secondary systems. Cyan carries information and focus. Orange and red are reserved for warning and danger. Dark charcoal, gunmetal, black glass, fine borders, inner illumination, and shallow depth form the neutral structure.
 
-- Station: animated station view, shared statistics, active wreck, inventory preview, and station feed.
-- Salvage: scan, cutters, cargo recovery, and safety override controls.
-- Hold: player inventory stacks.
-- Build: station module cards and material contribution.
-- Crew: owned crew roster.
-- Ships: owned ship roster and condition data.
-- Museum: plaques attached to station modules.
-- Market: the existing closed marketplace surface gated by station progression.
-- Quarters: the existing personal-quarters surface.
-- Profile: Twitch identity and player progression.
+All colors, opacity, blur, depth, spacing, radii, typography, and motion values originate in `packages/ui/src/theme.ts`. App-local CSS must use generated `--nw-*` variables.
 
-The app uses same-origin `/api` requests and subscribes to `/api/v1/ws` for station, wreck, and history updates.
+## Surfaces
 
-## Admin and overlay
+Panels use fine borders, subtle gradients, inner glow, limited blur, clipped or sharp geometry, and small corner radii. Giant drop shadows, pill-shaped containers, generic white cards, Bootstrap patterns, and Material-style elevation are not part of the system.
 
-The admin application retains the existing control-center layout and operations. The overlay retains its transparent OBS composition, configurable panels, scanlines, glass treatment, feed timing, and breaking-news behavior.
+## Typography and telemetry
 
-## Accessibility and responsiveness
+Display and section headings use the command font stack. Body content uses the readable UI stack. Identifiers, percentages, timestamps, inventory quantities, and status values use the numeric stack with tabular figures. Hierarchy must survive both a 2560×1440 display and a portrait mobile viewport.
 
-Existing CSS respects reduced-motion and high-contrast preferences. Touch targets remain sized for mobile interaction, the bottom navigation remains thumb-oriented, and layouts collapse for portrait screens. Shared player/admin CSS is owned by `packages/client-theme/styles.css`; application-specific CSS remains with its application.
+## Icons and artwork
+
+Product UI uses the semantic `NWIcon` registry. Emoji and one-off placeholder graphics are not allowed. Content image keys remain governed by `assets/manifest.json`. Phase 2 does not introduce temporary or generated artwork.
+
+## Responsive behavior
+
+Desktop uses a command rail and multi-column work areas. Tablet collapses utility regions and secondary columns. Mobile uses a bottom command bar, stacked content, horizontal-safe data grids, and touch-sized controls. No page may depend on a fixed 1920×1080 canvas.
+
+## Accessibility and motion
+
+Focus indicators, semantic controls, readable contrast, scalable text, reduced motion, contrast preference handling, and keyboard-accessible dialogs are part of the visual contract. Animation should communicate state or continuity, not decorate every pixel simply because the GPU looked bored.
+
+See `docs/UI_DESIGN_SYSTEM.md` and `docs/THEME_TOKEN_GUIDE.md` for implementation rules.

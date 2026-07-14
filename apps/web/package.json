@@ -9,9 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@neon-wreckers/browser-client": "2.0.0",
-    "@neon-wreckers/client-theme": "2.0.0",
-    "lucide-react": "0.511.0",
+    "@neon-wreckers/browser-client": "workspace:*",
+    "@neon-wreckers/ui": "workspace:*",
     "react": "19.2.7",
     "react-dom": "19.2.7"
   },

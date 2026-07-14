@@ -2,16 +2,19 @@
 
 ## Purpose
 
-`game-engine` contains deterministic server rules. `content` validates and exposes the canonical source-controlled game definitions. `integrations` contains external-provider and Redis configuration adapters. `browser-client` contains the typed same-origin API envelope helper used by all browser applications. `client-theme` contains the unchanged shared visual stylesheet consumed by the player and admin clients.
+- `game-engine` contains deterministic server rules.
+- `content` validates and exposes canonical source-controlled game definitions.
+- `integrations` owns Twitch, StreamElements, and Redis adapters.
+- `browser-client` owns same-origin browser request envelopes and errors.
+- `ui` owns the reusable React component library, icons, tokens, themes, responsive behavior, motion, and accessibility rules.
+- `client-theme` is a compatibility stylesheet entry that forwards older imports to the UI package.
 
-## Architecture
+## Boundaries
 
-Packages must remain framework-light and reusable by the API, worker, seed, or tests. The game engine has no database, filesystem, content, or network dependency. The content package owns JSON loading and structural validation. Integrations own external protocol details and timeouts.
+Packages must remain reusable and may not import application source. The game engine has no database, filesystem, content, or network dependency. Content owns JSON loading and structural validation. Integrations own external protocols and timeouts. Browser clients remain non-authoritative for rewards, costs, cooldowns, inventory mutation, and station mutation.
 
-## Dependencies
-
-The game engine uses only Node built-ins. Content uses `zod`. Integrations uses `undici`. Browser client and client theme have no third-party runtime dependencies. Package exports are explicit and versioned with the repository.
+The UI package may consume React, React DOM, and Lucide, but it must not import API routes, game rules, database types, or application state. Application DTOs are composed in the relevant app.
 
 ## Extension points
 
-Add mechanics to the game engine with deterministic tests and inject definitions from content. Add validated source data through the content package. Add provider adapters to integrations behind stable interfaces. Keep browser API envelope handling in browser client rather than duplicating fetch code. Shared player/admin visual tokens belong in client theme; overlay-specific styling remains isolated in the overlay app. Do not create empty packages or packages with no consumers.
+Add deterministic mechanics to the engine with tests. Add source data through content and `assets/manifest.json`. Add external provider adapters to integrations. Keep request-envelope behavior in browser client. Add reusable interface primitives, icons, themes, and examples to UI rather than duplicating them across apps.

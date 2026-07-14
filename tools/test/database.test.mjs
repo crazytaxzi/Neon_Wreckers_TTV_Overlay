@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const schemaPath = 'infrastructure/database/prisma/schema.prisma';
-const migrationPath = 'infrastructure/database/migrations/20260712000000_initial_schema/migration.sql';
-const lockPath = 'infrastructure/database/migrations/migration_lock.toml';
+const migrationPath = 'infrastructure/database/prisma/migrations/20260712000000_initial_schema/migration.sql';
+const lockPath = 'infrastructure/database/prisma/migrations/migration_lock.toml';
 
 const schema = fs.readFileSync(schemaPath, 'utf8');
 const migration = fs.readFileSync(migrationPath, 'utf8');

@@ -1,30 +1,38 @@
 # Deployment verification
 
-Verification date: 2026-07-12.
+Verification date: 2026-07-13.
 
-## Pipeline inventory
+## Pipeline preservation
 
-The release contains exactly one root `Dockerfile`, one root `compose.yaml`, and one gateway template at `infrastructure/gateway/nginx.conf.template`. Compose contains only PostgreSQL, Redis, setup, API, worker, and gateway services.
+Phase 2 retains the working source's single production pipeline without modification:
 
-Repository tests confirm that the gateway serves `/`, `/admin/`, `/overlay/`, and `/api/`, and that `/api/` forwards WebSocket upgrade headers. Compose contains no source mounts, runtime package installation, MinIO service, recovery service, or alternate gateway.
+- one root `Dockerfile`
+- one root `compose.yaml`
+- one gateway template at `infrastructure/gateway/nginx.conf.template`
+- PostgreSQL, Redis, setup, API, worker, and gateway services only
+
+The Dockerfile, Compose file, gateway infrastructure, API, worker, database infrastructure, and Vite proxy files were compared byte for byte with the supplied working source.
 
 ## Static verification completed
 
-- `compose.yaml` parsed successfully as YAML and exposed the six expected services.
-- All operational shell scripts passed `bash -n` syntax validation.
-- Environment variables in `.env.example` are covered by `docs/DEPLOYMENT.md`.
-- The Dockerfile uses one multi-stage application build and one gateway target with exact base image tags.
-- Backup writes checksums; restore verifies checksums and rejects unsafe archive paths.
-- Setup applies migrations and the idempotent seed before API and worker startup.
+- Repository tests confirm that the gateway owns `/`, `/admin/`, `/overlay/`, and `/api/` and retains WebSocket upgrade forwarding.
+- Compose parsed successfully as YAML with the six expected services.
+- All operational scripts passed `bash -n`.
+- Environment variables in `.env.example` remain documented in `docs/DEPLOYMENT.md`.
+- Backup checksum generation, restore checksum verification, unsafe archive-path rejection, migration setup, and idempotent seed safeguards remain present.
+- Repository tests reject duplicate deployment files, source-mounted production services, runtime package installation, recovery services, committed secrets, and generated build output.
 
-## Build verification completed
+## Offline limitation
 
-The integrations package, database seed, API, worker, player web app, admin app, and overlay all built successfully from the locked npm workspace on Node.js 22.16.0.
+The pinned pnpm release and locked package tree were not available locally, and registry DNS was unavailable. A full workspace build, `docker compose config`, image construction, container health checks, and public service startup were therefore not executed for this Phase 2 archive. The prior Sprint 1 package's working status is not presented as a fresh Phase 2 build result.
 
-## Host-dependent verification
+Before deployment, run:
 
-A Docker daemon was not available in the cleanup environment, so `docker compose config`, image construction, container health checks, public TLS issuance, and live service startup could not be executed here. The included `scripts/verify.sh` runs Compose configuration and both image builds automatically when Docker is present. The target host must complete that command before release.
+```bash
+corepack enable
+pnpm install --frozen-lockfile
+pnpm run verify
+bash scripts/verify.sh
+```
 
-Live Twitch OAuth, StreamElements debit/refund behavior, Certbot issuance, and OBS rendering require production credentials and external services. Those checks must be performed on the deployment host without committing or exporting the credentials.
-
-The source pipeline passed every executable static and build check available in the cleanup environment. Container and external-service verification remains an explicit host release gate rather than an inferred success.
+The final command performs Docker-aware checks when Docker is available. Live Twitch OAuth, StreamElements debit and compensation behavior, Certbot issuance, WebSocket delivery through the public gateway, responsive browser review, and OBS transparency must be verified with the target environment and real credentials.

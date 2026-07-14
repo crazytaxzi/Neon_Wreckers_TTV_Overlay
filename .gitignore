@@ -15,3 +15,16 @@ postgres-data/
 redis-data/
 certificates/
 uploads/
+
+# Local production configuration
+.env
+.env.public
+.env.*
+!.env.example
+
+# Deployment backups and temporary repair files
+backups/
+*.backup
+*.pre-*
+*.before-*
+*.npm-backup

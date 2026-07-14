@@ -10,7 +10,7 @@ Content describes data. The server implements allowed behavior. Content cannot e
 
 ## Dependencies
 
-Visual references depend on `assets/manifest.json`. Every manifest key must be referenced by canonical content or an explicitly owned runtime visual. Module prerequisites, initial-station modules, and resource names must resolve. Seasons depend on theme slugs. Validation is performed by `npm run test:content`.
+Visual references depend on `assets/manifest.json`. Every manifest key must be referenced by canonical content or an explicitly owned runtime visual. Module prerequisites, initial-station modules, and resource names must resolve. Seasons depend on theme slugs. Validation is performed by `pnpm run test:content`.
 
 ## Extension points
 

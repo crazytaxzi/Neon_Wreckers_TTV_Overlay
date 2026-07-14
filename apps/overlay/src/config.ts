@@ -1,3 +1,4 @@
+import { defaultTheme } from '@neon-wreckers/ui/theme';
 export type OverlayTheme = {
   positive: string;
   info: string;
@@ -54,15 +55,15 @@ export const defaultConfig: OverlayConfig = {
     keepVisibleInPreview: true
   },
   theme: {
-    positive: '#a7ff3f',
-    info: '#8ea1c9',
-    viewer: '#24e4ff',
-    warning: '#ffc84b',
-    critical: '#ff435f',
-    panel: 'rgba(8,12,22,.92)',
-    panelAlt: 'rgba(18,23,39,.88)',
-    text: '#f5f7ff',
-    muted: '#9eaac4'
+    positive: defaultTheme.colors.green,
+    info: defaultTheme.colors.cyan,
+    viewer: defaultTheme.colors.purple,
+    warning: defaultTheme.colors.orange,
+    critical: defaultTheme.colors.red,
+    panel: defaultTheme.colors.glassStrong,
+    panelAlt: defaultTheme.colors.surfaceRaised,
+    text: defaultTheme.colors.text,
+    muted: defaultTheme.colors.textMuted
   }
 };
 

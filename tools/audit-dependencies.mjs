@@ -4,8 +4,11 @@ import path from 'node:path';
 const root = process.cwd();
 const rootManifest = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const dependencyGuide = fs.readFileSync(path.join(root, 'docs/DEPENDENCY_AUDIT.md'), 'utf8');
-const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs']);
-const importPattern = /(?:\bimport\s+(?:[^'"()]*?\s+from\s+)?|\bexport\s+[^'"()]*?\s+from\s+|\brequire\s*\(|\bimport\s*\()\s*['"]([^'"]+)['"]/g;
+const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.css']);
+const importPatterns = [
+  /(?:\bimport\s+(?:[^'"()]*?\s+from\s+)?|\bexport\s+[^'"()]*?\s+from\s+|\brequire\s*\(|\bimport\s*\()\s*['"]([^'"]+)['"]/g,
+  /@import\s+(?:url\()?['"]([^'"]+)['"]/g
+];
 
 function workspaceDirectories(pattern) {
   if (!pattern.endsWith('/*')) return [pattern];
@@ -41,15 +44,18 @@ for (const directory of workspaces) {
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   const declared = new Set([
     ...Object.keys(manifest.dependencies ?? {}),
-    ...Object.keys(manifest.devDependencies ?? {})
+    ...Object.keys(manifest.devDependencies ?? {}),
+    ...Object.keys(manifest.peerDependencies ?? {})
   ]);
   const used = new Set();
 
   for (const file of walk(path.join(root, directory))) {
     const source = fs.readFileSync(file, 'utf8');
-    for (const match of source.matchAll(importPattern)) {
-      const dependency = packageName(match[1]);
-      if (dependency) used.add(dependency);
+    for (const importPattern of importPatterns) {
+      for (const match of source.matchAll(importPattern)) {
+        const dependency = packageName(match[1]);
+        if (dependency) used.add(dependency);
+      }
     }
   }
 
@@ -63,7 +69,7 @@ for (const directory of workspaces) {
     }
   }
 
-  for (const [dependency, version] of Object.entries({ ...manifest.dependencies, ...manifest.devDependencies })) {
+  for (const [dependency, version] of Object.entries({ ...manifest.dependencies, ...manifest.devDependencies, ...manifest.peerDependencies })) {
     if (/^[~^*]|\s|\|/.test(version)) errors.push(`${manifest.name} does not pin ${dependency} to an exact version.`);
   }
 }

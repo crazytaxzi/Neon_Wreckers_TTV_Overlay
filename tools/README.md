@@ -6,7 +6,7 @@ This folder contains source-quality utilities and automated repository tests. Th
 
 ## Architecture
 
-Tools are deterministic local programs invoked by root npm scripts. They inspect source-controlled files and do not mutate game data. TypeScript tests cover runtime helpers and production safeguards; JavaScript repository tests cover structure and release invariants.
+Tools are deterministic local programs invoked by root pnpm scripts. They inspect source-controlled files and do not mutate game data. TypeScript tests cover runtime helpers and production safeguards; JavaScript repository tests cover structure and release invariants.
 
 ## Dependencies
 

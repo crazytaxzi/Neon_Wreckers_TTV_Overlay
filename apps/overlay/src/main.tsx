@@ -1,6 +1,7 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { requestApi } from '@neon-wreckers/browser-client';
+import { applyTheme, defaultTheme } from '@neon-wreckers/ui/theme';
 import { loadOverlayConfig, type OverlayConfig } from './config.js';
 import './overlay.css';
 
@@ -35,6 +36,8 @@ type Station = {
 };
 
 type Wreck = { id?: string; name?: string; risk?: string; integrity?: number; description?: string };
+
+applyTheme(defaultTheme);
 
 const API = '/api/v1';
 const MAX_HEADLINES = 40;

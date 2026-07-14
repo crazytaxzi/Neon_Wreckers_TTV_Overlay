@@ -1,6 +1,6 @@
 # Database and domain model guide
 
-The authoritative Prisma schema is `infrastructure/database/prisma/schema.prisma`. The executable production baseline is `infrastructure/database/migrations/20260712000000_initial_schema/migration.sql`. Repository tests keep their models, enums, and indexes aligned.
+The authoritative Prisma schema is `infrastructure/database/prisma/schema.prisma`. The executable production baseline is `infrastructure/database/prisma/migrations/20260712000000_initial_schema/migration.sql`. Repository tests keep their models, enums, and indexes aligned.
 
 ## Identity and player ownership
 
@@ -43,8 +43,8 @@ The runtime game baseline is loaded from source-controlled content at process st
 ## Migration and seed commands
 
 ```bash
-npm run db:migrate
-npm run db:seed
+pnpm run db:migrate
+pnpm run db:seed
 ```
 
 Production Compose runs migration and the compiled idempotent seed through the one-shot `setup` service before the API or worker starts.
