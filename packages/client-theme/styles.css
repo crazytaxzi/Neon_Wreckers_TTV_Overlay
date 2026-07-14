@@ -1,2 +1,0 @@
-/* Compatibility entrypoint retained for older clients. New surfaces should import @neon-wreckers/ui directly. */
-@import "@neon-wreckers/ui/styles.css";

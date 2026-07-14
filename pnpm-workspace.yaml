@@ -1,6 +1,0 @@
-packages:
-  - "apps/*"
-  - "packages/*"
-
-linkWorkspacePackages: true
-preferWorkspacePackages: true
