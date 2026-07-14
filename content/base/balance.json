@@ -1,0 +1,42 @@
+{
+  "salvageCooldownSeconds": 20,
+  "cargoCooldownSeconds": 60,
+  "overrideCooldownSeconds": 180,
+  "pointActions": {
+    "safety_override": {
+      "cost": 250
+    },
+    "rush_scan": {
+      "cost": 75
+    }
+  },
+  "construction": {
+    "scrapUnitsPerProgress": 10,
+    "electronicsProgress": 2,
+    "alloysProgress": 3
+  },
+  "expeditions": [
+    {
+      "slug": "glass-belt-run",
+      "name": "Glass Belt Run",
+      "risk": "moderate",
+      "fuelCost": 1,
+      "minCrew": 2,
+      "durationMinutes": [
+        20,
+        35
+      ]
+    },
+    {
+      "slug": "dead-relay-ping",
+      "name": "Dead Relay Ping",
+      "risk": "high",
+      "fuelCost": 2,
+      "minCrew": 3,
+      "durationMinutes": [
+        30,
+        55
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "status": {
+    "top": 28,
+    "left": 28,
+    "width": 430,
+    "scale": 1,
+    "visible": true
+  },
+  "ticker": {
+    "top": 28,
+    "width": 1120,
+    "scale": 1,
+    "rotationSeconds": 7.6,
+    "visible": true
+  },
+  "feedIndicator": true,
+  "scanlines": true,
+  "glass": true,
+  "breakingNews": true,
+  "previewBackground": false,
+  "visibility": {
+    "tickerHoldSeconds": 9,
+    "statusHoldSeconds": 16,
+    "fadeSeconds": 2.2,
+    "keepVisibleInPreview": true
+  }
+}

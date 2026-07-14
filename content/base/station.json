@@ -1,0 +1,38 @@
+{
+  "id": "station_zero",
+  "slug": "station-zero",
+  "name": "Station Zero",
+  "level": 2,
+  "population": 247,
+  "power": 71,
+  "morale": 62,
+  "integrity": 86,
+  "storageCapacity": 3000,
+  "storageUsed": 1035,
+  "resources": {
+    "credits": 42000,
+    "scrap": 940,
+    "alloys": 180,
+    "electronics": 88,
+    "fuel": 320,
+    "researchData": 12,
+    "exoticMaterials": 1
+  },
+  "threatLevel": 2,
+  "activeSeason": null,
+  "alerts": [
+    {
+      "severity": "warning",
+      "title": "Warm Compartment",
+      "body": "The current wreck is warmer than its power signature says it should be."
+    }
+  ],
+  "modules": [
+    { "slug": "command-pod", "level": 2, "state": "active", "progress": 100, "integrity": 93 },
+    { "slug": "cargo-bay", "level": 1, "state": "active", "progress": 100, "integrity": 79 },
+    { "slug": "refinery", "level": 1, "state": "active", "progress": 100, "integrity": 88 },
+    { "slug": "habitat-ring", "level": 1, "state": "building", "progress": 38, "integrity": 100 },
+    { "slug": "medical-bay", "level": 0, "state": "locked", "progress": 0, "integrity": 100 },
+    { "slug": "museum", "level": 0, "state": "building", "progress": 12, "integrity": 100 }
+  ]
+}

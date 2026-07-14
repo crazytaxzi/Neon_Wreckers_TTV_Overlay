@@ -1,0 +1,101 @@
+import {
+  AlertTriangle,
+  Archive,
+  BadgeDollarSign,
+  Bell,
+  Boxes,
+  Box,
+  BrickWall,
+  Radio,
+  Building2,
+  Cable,
+  CircleGauge,
+  ClipboardList,
+  Coins,
+  Construction,
+  Database,
+  FlaskConical,
+  Hammer,
+  HardDrive,
+  Hexagon,
+  Landmark,
+  Megaphone,
+  PackageOpen,
+  Pickaxe,
+  Power,
+  RadioTower,
+  Atom,
+  Rocket,
+  Satellite,
+  ScanLine,
+  Settings,
+  ShieldAlert,
+  ShoppingCart,
+  Sparkles,
+  Telescope,
+  Terminal,
+  Twitch,
+  Users,
+  Warehouse,
+  Waves,
+  Wrench,
+  Zap,
+  type LucideIcon,
+  type LucideProps
+} from 'lucide-react';
+
+export const iconRegistry = {
+  station: Satellite,
+  crew: Users,
+  power: Power,
+  reactor: Atom,
+  storage: Warehouse,
+  wreck: ScanLine,
+  mining: Pickaxe,
+  danger: ShieldAlert,
+  expedition: Rocket,
+  trade: ShoppingCart,
+  construction: Construction,
+  research: FlaskConical,
+  events: Sparkles,
+  broadcast: Radio,
+  twitch: Twitch,
+  streamelements: RadioTower,
+  inventory: Boxes,
+  resources: PackageOpen,
+  credits: Coins,
+  salvage: Hammer,
+  notifications: Bell,
+  settings: Settings,
+  module: Hexagon,
+  population: Building2,
+  integrity: BrickWall,
+  warning: AlertTriangle,
+  archive: Archive,
+  data: Database,
+  terminal: Terminal,
+  cargo: Box,
+  engineering: Wrench,
+  signal: Waves,
+  comms: Megaphone,
+  diagnostics: CircleGauge,
+  objectives: ClipboardList,
+  museum: Landmark,
+  scanner: Telescope,
+  fuel: Zap,
+  network: Cable,
+  storageDrive: HardDrive,
+  market: BadgeDollarSign
+} satisfies Record<string, LucideIcon>;
+
+export type IconName = keyof typeof iconRegistry;
+
+export type NWIconProps = LucideProps & {
+  name: IconName;
+  label?: string;
+};
+
+export function NWIcon({ name, label, ...props }: NWIconProps) {
+  const Icon = iconRegistry[name];
+  return <Icon aria-hidden={label ? undefined : true} aria-label={label} focusable="false" {...props} />;
+}

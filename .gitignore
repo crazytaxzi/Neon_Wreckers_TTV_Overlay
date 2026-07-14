@@ -1,0 +1,30 @@
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+**/dist/
+coverage/
+*.tsbuildinfo
+*.log
+.DS_Store
+backups/
+restore-work/
+restore-work.*
+postgres-data/
+redis-data/
+certificates/
+uploads/
+
+# Local production configuration
+.env
+.env.public
+.env.*
+!.env.example
+
+# Deployment backups and temporary repair files
+backups/
+*.backup
+*.pre-*
+*.before-*
+*.npm-backup

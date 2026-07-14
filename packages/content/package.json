@@ -1,0 +1,17 @@
+{
+  "name": "@neon-wreckers/content",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.mjs",
+  "types": "src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.mjs"
+    }
+  },
+  "dependencies": {
+    "zod": "3.25.76"
+  }
+}

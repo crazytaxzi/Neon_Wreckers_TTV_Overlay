@@ -1,0 +1,30 @@
+{
+  "station-zero-default": {
+    "name": "Station Zero Default",
+    "colors": {
+      "green": "#96ff38",
+      "purple": "#a64dff",
+      "cyan": "#36e6ff",
+      "bg": "#070811"
+    },
+    "decorations": [
+      "hazard-stripes",
+      "repair-welds",
+      "flicker-signage"
+    ]
+  },
+  "frost-wrecks": {
+    "name": "Frost Wrecks",
+    "colors": {
+      "green": "#b8fff1",
+      "purple": "#9d7cff",
+      "cyan": "#7cf7ff",
+      "bg": "#050811"
+    },
+    "decorations": [
+      "ice-rimed-docks",
+      "cold-breath-vents",
+      "blue-warning-strobes"
+    ]
+  }
+}
