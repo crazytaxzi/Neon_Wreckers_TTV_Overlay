@@ -1,7 +1,7 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { requestApi } from '@neon-wreckers/browser-client';
-import { applyTheme, defaultTheme } from '@neon-wreckers/ui/theme';
+import { Badge, Meter, NWIcon, Panel, ThemeProvider, defaultTheme, type Tone } from '@neon-wreckers/ui';
 import { loadOverlayConfig, type OverlayConfig } from './config.js';
 import './overlay.css';
 
@@ -36,8 +36,6 @@ type Station = {
 };
 
 type Wreck = { id?: string; name?: string; risk?: string; integrity?: number; description?: string };
-
-applyTheme(defaultTheme);
 
 const API = '/api/v1';
 const MAX_HEADLINES = 40;
@@ -102,13 +100,12 @@ function fromAlert(alert: StationAlert): Headline {
   };
 }
 
-function Metric({ label, value, tone, suffix = '%' }: { label: string; value: number; tone: Severity; suffix?: string }) {
-  return (
-    <div className="metric">
-      <div className="metric-line"><span>{label}</span><strong>{Math.round(value)}{suffix}</strong></div>
-      <div className="meter"><span className={`meter-fill tone-${tone}`} style={{ width: `${clamp(value)}%` }} /></div>
-    </div>
-  );
+function uiTone(tone: Severity): Tone {
+  return tone === 'positive' ? 'success' : tone === 'viewer' ? 'purple' : tone === 'critical' ? 'danger' : tone;
+}
+
+function TelemetryMeter({ label, value, tone }: { label: string; value: number; tone: Severity }) {
+  return <Meter label={label} value={Math.round(value)} tone={uiTone(tone)} />;
 }
 
 function App() {
@@ -340,21 +337,30 @@ function App() {
   const showStatus = forceVisible || statusAwake;
   return (
     <main className={`broadcast-canvas ${config.previewBackground ? 'preview-background' : ''} ${config.scanlines ? 'with-scanlines' : ''} ${config.glass ? 'with-glass' : ''}`} style={cssVars}>
-      {config.status.visible && <section className={`status-panel ${showStatus ? 'overlay-awake' : 'overlay-idle'}`} aria-label="Station status">
-        <div className="panel-topline"><div><span className="eyebrow">NEON WRECKERS</span><h1>{station?.name || 'STATION ZERO'}</h1></div><div className={`link-light ${connected ? 'online' : ''}`} /></div>
-        <div className="status-meta"><span>LEVEL {station?.level ?? 1}</span><span>CREW {compactNumber(station?.population ?? 0)}</span><span className={`threat tone-${threatTone}`}>THREAT {threatText}</span></div>
-        <div className="metrics">
-          <Metric label="HULL INTEGRITY" value={clamp(station?.integrity, 100)} tone={clamp(station?.integrity, 100) < 35 ? 'critical' : clamp(station?.integrity, 100) < 65 ? 'warning' : 'positive'} />
-          <Metric label="REACTOR POWER" value={clamp(station?.power, 100)} tone={clamp(station?.power, 100) < 30 ? 'critical' : clamp(station?.power, 100) < 60 ? 'warning' : 'viewer'} />
-          <Metric label="CREW MORALE" value={clamp(station?.morale, 100)} tone={clamp(station?.morale, 100) < 35 ? 'warning' : 'positive'} />
-          <Metric label="CARGO STORAGE" value={storagePercent} tone={storagePercent > 88 ? 'warning' : 'info'} />
+      {config.status.visible && <Panel depth="medium" tone="success" className={`telemetry-panel station-panel ${showStatus ? 'overlay-awake' : 'overlay-idle'}`} aria-label="Station telemetry">
+        <header className="telemetry-header"><div className="telemetry-ident"><span className="telemetry-icon"><NWIcon name="station" size={22} /></span><div><span className="nw-eyebrow">ORBITAL COMMAND</span><h1>{station?.name || 'STATION ZERO'}</h1></div></div><Badge tone={connected ? 'success' : 'warning'} icon="network">{connected ? 'LIVE LINK' : 'LINK LOST'}</Badge></header>
+        <div className="telemetry-meta"><span>ZERO-01</span><span>LEVEL {station?.level ?? 1}</span><span>CREW {compactNumber(station?.population ?? 0)}</span><Badge tone={uiTone(threatTone)}>THREAT {threatText}</Badge></div>
+        <div className="telemetry-grid station-grid" aria-hidden="true" />
+        <div className="telemetry-meters">
+          <TelemetryMeter label="HULL INTEGRITY" value={clamp(station?.integrity, 100)} tone={clamp(station?.integrity, 100) < 35 ? 'critical' : clamp(station?.integrity, 100) < 65 ? 'warning' : 'positive'} />
+          <TelemetryMeter label="REACTOR POWER" value={clamp(station?.power, 100)} tone={clamp(station?.power, 100) < 30 ? 'critical' : clamp(station?.power, 100) < 60 ? 'warning' : 'viewer'} />
+          <TelemetryMeter label="CREW MORALE" value={clamp(station?.morale, 100)} tone={clamp(station?.morale, 100) < 35 ? 'warning' : 'positive'} />
+          <TelemetryMeter label="CARGO STORAGE" value={storagePercent} tone={storagePercent > 88 ? 'warning' : 'info'} />
         </div>
-        <div className="resource-strip"><div><span>SCRAP</span><strong>{compactNumber(scrap)}</strong></div><div><span>CREDITS</span><strong>{compactNumber(credits)}</strong></div><div><span>ACTIVE WRECK</span><strong>{wreck?.name || 'NONE'}</strong></div></div>
-      </section>}
+        <footer className="resource-strip"><div><span>SCRAP</span><strong className="nw-numeric">{compactNumber(scrap)}</strong></div><div><span>CREDITS</span><strong className="nw-numeric">{compactNumber(credits)}</strong></div><div><span>GRID</span><strong>{connected ? 'SYNCED' : 'OFFLINE'}</strong></div></footer>
+      </Panel>}
 
-      {config.ticker.visible && <section className={`headline-rail severity-${current.severity} ${breaking ? 'breaking' : ''} ${showTicker ? 'overlay-awake' : 'overlay-idle'}`} aria-live="polite">
+      {config.status.visible && <Panel depth="medium" tone={uiTone(classify(String(wreck?.risk ?? '')))} className={`telemetry-panel wreck-telemetry ${showStatus ? 'overlay-awake' : 'overlay-idle'}`} aria-label="Active wreck telemetry">
+        <header className="telemetry-header"><div className="telemetry-ident"><span className="telemetry-icon wreck-icon"><NWIcon name="wreck" size={22} /></span><div><span className="nw-eyebrow">SALVAGE TARGET</span><h2>{wreck?.name || 'SCANNING FIELD'}</h2></div></div><Badge tone={uiTone(classify(String(wreck?.risk ?? '')))}>{wreck?.risk || 'UNKNOWN'}</Badge></header>
+        <div className="wreck-schematic" aria-hidden="true"><div className="scan-grid" /><span className="scan-ring scan-ring-outer" /><span className="scan-ring scan-ring-inner" /><NWIcon name="wreck" size={48} /></div>
+        <p>{wreck?.description || 'Awaiting server telemetry from the local debris field.'}</p>
+        <TelemetryMeter label="REMAINING HULL" value={clamp(wreck?.integrity)} tone={clamp(wreck?.integrity) <= 25 ? 'critical' : clamp(wreck?.integrity) <= 50 ? 'warning' : 'positive'} />
+        <footer className="wreck-footer"><span>OBJECT ID</span><strong className="nw-numeric">{wreck?.id ? wreck.id.slice(0, 12).toUpperCase() : 'NO CONTACT'}</strong></footer>
+      </Panel>}
+
+      {config.ticker.visible && <section className={`dispatch-rail nw-tone--${uiTone(current.severity)} ${breaking ? 'breaking' : ''} ${showTicker ? 'overlay-awake' : 'overlay-idle'}`} aria-live="polite">
         {breaking && <div className="breaking-ribbon">BREAKING</div>}
-        <div className="rail-cap left-cap"><span className="rail-pulse" /><span>{current.label}</span></div>
+        <div className="rail-cap left-cap"><NWIcon name={breaking ? 'warning' : 'broadcast'} size={18} /><div><span className="nw-eyebrow">ACTIVITY DISPATCH</span><strong>{current.label}</strong></div></div>
         <div className="headline-window" key={`${current.id}-${transitionKey}`}><div className="headline-title">{current.title}</div><div className="headline-body">{current.body}</div></div>
         <div className="rail-cap right-cap"><span>{utc} UTC</span><span className="counter">{String(activeIndex + 1).padStart(2, '0')}/{String(Math.max(headlines.length, 1)).padStart(2, '0')}</span></div>
       </section>}
@@ -364,4 +370,4 @@ function App() {
   );
 }
 
-createRoot(document.getElementById('root')!).render(<App />);
+createRoot(document.getElementById('root')!).render(<ThemeProvider theme={defaultTheme}><App /></ThemeProvider>);
