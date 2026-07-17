@@ -35,3 +35,29 @@ export class RealtimeHub {
     }
   }
 }
+
+export class PlayerRealtimeHub {
+  private readonly sockets = new Map<string, Set<SocketLike>>();
+
+  add(playerId: string, socket: SocketLike) {
+    const group = this.sockets.get(playerId) ?? new Set<SocketLike>();
+    group.add(socket);
+    this.sockets.set(playerId, group);
+  }
+
+  remove(playerId: string, socket: SocketLike) {
+    const group = this.sockets.get(playerId);
+    group?.delete(socket);
+    if (!group?.size) this.sockets.delete(playerId);
+  }
+
+  broadcast(playerId: string, payload: unknown) {
+    const group = this.sockets.get(playerId);
+    if (!group) return;
+    const message = JSON.stringify(payload);
+    for (const socket of group) {
+      if (socket.readyState !== socket.OPEN) this.remove(playerId, socket);
+      else try { socket.send(message); } catch { this.remove(playerId, socket); }
+    }
+  }
+}

@@ -2,9 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const root = process.cwd();
-const ignored = new Set(['.git', 'node_modules', 'backups']);
+const ignored = new Set(['.git', '.pnpm-store', 'node_modules', 'backups']);
 
 function walk(directory = root) {
   const files = [];
@@ -32,7 +33,8 @@ test('repository exposes exactly one deployment pipeline', () => {
 test('repository contains no recovery copies, generated builds, or committed secrets', () => {
   const forbiddenPaths = files.filter(file => /(^|\/)(?:dist|coverage)(\/|$)|\.tsbuildinfo$|(^|\/)(?:[^/]*-backup-[^/]*|backup-\d[^/]*|recovery[^/]*|certbot-www|ip-gateway)(\/|$)|\.env\.backup/i.test(file));
   assert.deepEqual(forbiddenPaths, []);
-  assert.deepEqual(files.filter(file => path.basename(file).startsWith('.env') && file !== '.env.example'), []);
+  const trackedEnvironmentFiles = execFileSync('git', ['-c', `safe.directory=${root}`, 'ls-files'], { cwd: root, encoding: 'utf8' }).trim().split('\n').filter(file => path.basename(file).startsWith('.env') && file !== '.env.example');
+  assert.deepEqual(trackedEnvironmentFiles, []);
   const unfinishedMarkers = new RegExp(`\\b(?:${['TO', 'DO'].join('')}|${['FIX', 'ME'].join('')})\\b`);
   const textFiles = files.filter(file => !/package-lock\.json$/.test(file));
   for (const file of textFiles) {
@@ -122,9 +124,11 @@ test('production safeguards remain wired into state-changing paths', () => {
   const auth = read('apps/api/src/services/auth.ts');
 
   assert.match(salvage, /acquireTransactionLock\(transaction, WRECK_LOCK_KEY\)/);
-  assert.match(construction, /quantity: \{ gte: amount \}/);
+  assert.match(construction, /quantity: \{ gte: accepted \}/);
+  assert.match(construction, /if \(remaining === 0\) continue;/, 'completed construction requirements must not deduct more inventory');
   assert.match(expeditions, /status: \{ in: \['resolved', 'failed'\] \}/);
   assert.match(worker, /where: \{ id: expedition\.id, status: 'active' \}/);
+  assert.match(worker, /status: 'active', resolvesAt: \{ lte: now \}/, 'worker must reconcile overdue expeditions when delayed jobs are lost');
   assert.doesNotMatch(worker, /season-tick/);
   assert.match(auth, /signed: true/);
 });
@@ -163,10 +167,12 @@ test('operational scripts retain deterministic install and recovery safeguards',
   assert.match(update, /--post-hook/);
 });
 
-test('synthetic identities, mock loyalty, and provider token retention are absent', () => {
+test('synthetic identities and mock loyalty are absent while renewable credentials are encrypted', () => {
   const source = files
     .filter(file => /^(?:apps|packages)\/.+\.(?:ts|tsx|js|mjs)$/.test(file))
     .map(read)
     .join('\n');
-  assert.doesNotMatch(source, /auth\/dev|MockLoyaltyProvider|accessTokenEnc|refreshTokenEnc/);
+  assert.doesNotMatch(source, /auth\/dev|MockLoyaltyProvider/);
+  assert.match(read('apps/api/src/services/twitch-credentials.ts'), /createCipheriv\('aes-256-gcm'/);
+  assert.match(read('infrastructure/database/prisma/schema.prisma'), /accessTokenEncrypted/);
 });

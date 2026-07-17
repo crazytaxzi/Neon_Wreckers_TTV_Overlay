@@ -19,7 +19,9 @@ const environmentSchema = z.object({
   TWITCH_CLIENT_ID: z.string().default(''),
   TWITCH_CLIENT_SECRET: z.string().default(''),
   TWITCH_REDIRECT_URI: optionalUrl,
-  TWITCH_REQUIRED_SCOPES: z.string().default('user:read:email'),
+  TWITCH_REQUIRED_SCOPES: z.string().default('user:read:email user:read:chat moderator:read:followers channel:read:subscriptions bits:read'),
+  TWITCH_EVENTSUB_SECRET: z.string().min(10).default('development-eventsub-secret'),
+  CREDENTIAL_ENCRYPTION_KEY: z.string().min(32).default('development-credential-key-32-bytes'),
   STREAMER_TWITCH_ID: z.string().default(''),
   STREAMELEMENTS_PROVIDER: z.enum(['disabled', 'streamelements']).default('disabled'),
   STREAMELEMENTS_CHANNEL_ID: z.string().default(''),
@@ -45,6 +47,12 @@ const environmentSchema = z.object({
     }
     if (values.COOKIE_SECURE !== 'true') {
       context.addIssue({ code: z.ZodIssueCode.custom, message: 'COOKIE_SECURE must be true in production.' });
+    }
+    if (values.TWITCH_EVENTSUB_SECRET === 'development-eventsub-secret') {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: 'TWITCH_EVENTSUB_SECRET must be replaced in production.' });
+    }
+    if (values.CREDENTIAL_ENCRYPTION_KEY === 'development-credential-key-32-bytes') {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: 'CREDENTIAL_ENCRYPTION_KEY must be replaced in production.' });
     }
   }
 

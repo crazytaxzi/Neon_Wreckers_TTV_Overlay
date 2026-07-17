@@ -110,6 +110,7 @@ export function salvageWreck(args: {
   player: { id: string; career?: string };
   items: Readonly<Record<string, ItemDefinition>>;
   careerBonus?: number;
+  rareDiscoveryBonus?: number;
   seed?: string;
   mode?: SalvageMode;
   now?: string;

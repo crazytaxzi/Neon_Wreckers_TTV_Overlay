@@ -13,10 +13,12 @@ const expectedRoutes = [
   'GET /api/v1/history',
   'GET /api/v1/integrations/streamelements/balance',
   'GET /api/v1/integrations/streamelements/health',
+  'GET /api/v1/integrations/twitch/health',
   'GET /api/v1/inventory',
   'GET /api/v1/marketplace/listings',
   'GET /api/v1/me',
   'GET /api/v1/notifications',
+  'GET /api/v1/player/ws',
   'GET /api/v1/quarters',
   'GET /api/v1/ships',
   'GET /api/v1/station',
@@ -27,14 +29,32 @@ const expectedRoutes = [
   'GET /ready',
   'POST /api/v1/admin/actions/spawn-wreck',
   'POST /api/v1/admin/config',
+  'POST /api/v1/admin/events/:slug/trigger',
   'POST /api/v1/auth/logout',
   'POST /api/v1/construction/contribute',
+  'POST /api/v1/construction/start',
+  'POST /api/v1/ships/purchase',
+  'POST /api/v1/crew/:id/train',
+  'POST /api/v1/crew/recruit',
   'POST /api/v1/expeditions/:id/claim',
   'POST /api/v1/expeditions/:id/resolve-now',
   'POST /api/v1/expeditions/launch',
+  'POST /api/v1/integrations/twitch/eventsub',
+  'POST /api/v1/integrations/twitch/subscribe',
+  'POST /api/v1/marketplace/buy',
+  'POST /api/v1/marketplace/sell',
+  'POST /api/v1/museum/donate',
+  'POST /api/v1/notifications/:id/read',
+  'POST /api/v1/notifications/read-all',
+  'POST /api/v1/player/career',
   'POST /api/v1/points/actions/:actionSlug',
+  'POST /api/v1/quarters',
   'POST /api/v1/salvage/deploy',
-  'POST /api/v1/salvage/scan'
+  'POST /api/v1/salvage/scan',
+  'POST /api/v1/station/refine',
+  'POST /api/v1/ships/:id/refuel',
+  'POST /api/v1/ships/:id/repair',
+  'POST /api/v1/ships/:id/upgrade'
 ].sort();
 
 function routeSourceFiles() {
@@ -46,7 +66,7 @@ function routeSourceFiles() {
 
 test('public API route inventory remains complete and duplicate-free', () => {
   const routes = [];
-  const pattern = /app\.(get|post|put|patch|delete)\('([^']+)'/g;
+  const pattern = /\w+\.(get|post|put|patch|delete)\('([^']+)'/g;
   for (const file of routeSourceFiles()) {
     const source = fs.readFileSync(file, 'utf8');
     for (const match of source.matchAll(pattern)) routes.push(`${match[1].toUpperCase()} ${match[2]}`);

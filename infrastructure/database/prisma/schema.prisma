@@ -78,6 +78,18 @@ model User {
   loyaltyTx       LoyaltyTransaction[]
   auditLogs       AuditLog[]
   contentVersions ContentVersion[]
+  twitchCredential TwitchCredential?
+}
+
+model TwitchCredential {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessTokenEncrypted String
+  refreshTokenEncrypted String
+  scopes               String[] @default([])
+  expiresAt            DateTime
+  updatedAt            DateTime @updatedAt
 }
 
 model Player {
@@ -90,6 +102,8 @@ model Player {
   reputation        Int              @default(0)
   career            Career           @default(salvager)
   title             String           @default("Cutter Pilot")
+  careerChosenAt    DateTime?
+  careerChangedAt   DateTime?
   inventoryCapacity Int              @default(80)
   bannedUntil       DateTime?
   createdAt         DateTime         @default(now())
@@ -100,6 +114,12 @@ model Player {
   expeditions       Expedition[]
   history           HistoryEntry[]
   notifications     Notification[]
+  quarters          QuartersLayout?
+  exhibits          MuseumExhibit[]
+  marketTransactions MarketTransaction[]
+  cooldowns         ActionCooldown[]
+  auctionSales      AuctionListing[] @relation("AuctionSeller")
+  auctionPurchases  AuctionListing[] @relation("AuctionBuyer")
 }
 
 model Session {
@@ -159,6 +179,7 @@ model StationModule {
   visualKey String
   effects   Json        @default("{}")
   plaques   Plaque[]
+  projects  ConstructionProject[]
   updatedAt DateTime    @updatedAt
 
   @@unique([stationId, slug])
@@ -234,6 +255,7 @@ model Ship {
   upgrades      String[] @default([])
   visualKey     String
   createdAt     DateTime @default(now())
+  expeditions   Expedition[]
 
   @@index([playerId, createdAt])
 }
@@ -257,6 +279,9 @@ model Expedition {
   playerId    String
   player      Player           @relation(fields: [playerId], references: [id], onDelete: Cascade)
   definition  String
+  shipId      String?
+  ship        Ship?            @relation(fields: [shipId], references: [id], onDelete: SetNull)
+  crewIds     String[]          @default([])
   name        String
   status      ExpeditionStatus
   risk        WreckRisk
@@ -269,6 +294,126 @@ model Expedition {
 
   @@index([playerId, createdAt])
   @@index([status, resolvesAt])
+  @@index([shipId, status])
+}
+
+model ConstructionProject {
+  id           String        @id @default(cuid())
+  moduleId     String
+  module       StationModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  targetLevel  Int
+  kind         String
+  status       String        @default("active")
+  requirements Json
+  contributed  Json          @default("{}")
+  createdAt    DateTime      @default(now())
+  completedAt  DateTime?
+
+  @@index([moduleId, status])
+}
+
+model ActionCooldown {
+  id        String   @id @default(cuid())
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  actionKey String
+  expiresAt DateTime
+  updatedAt DateTime @updatedAt
+
+  @@unique([playerId, actionKey])
+  @@index([expiresAt])
+}
+
+model ActionReceipt {
+  id             String   @id @default(cuid())
+  idempotencyKey String   @unique
+  playerId       String?
+  action         String
+  responseJson   Json     @default("{}")
+  createdAt      DateTime @default(now())
+
+  @@index([playerId, createdAt])
+}
+
+model MarketTransaction {
+  id          String   @id @default(cuid())
+  playerId    String
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  direction   String
+  itemSlug    String
+  quantity    Int
+  credits     Int
+  createdAt   DateTime @default(now())
+
+  @@index([playerId, createdAt])
+}
+
+model AuctionListing {
+  id           String   @id @default(cuid())
+  sellerId     String
+  seller       Player   @relation("AuctionSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+  buyerId      String?
+  buyer        Player?  @relation("AuctionBuyer", fields: [buyerId], references: [id], onDelete: SetNull)
+  itemSlug     String
+  itemName     String
+  quantity     Int
+  priceCredits Int
+  status       String   @default("active")
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  soldAt       DateTime?
+
+  @@index([status, expiresAt, createdAt])
+  @@index([sellerId, status])
+}
+
+model QuartersLayout {
+  id        String   @id @default(cuid())
+  playerId  String   @unique
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  theme     String
+  objects   Json     @default("[]")
+  updatedAt DateTime @updatedAt
+}
+
+model MuseumExhibit {
+  id          String   @id @default(cuid())
+  playerId    String
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  itemSlug    String
+  name        String
+  donatedAt   DateTime @default(now())
+
+  @@unique([playerId, itemSlug])
+  @@index([donatedAt])
+}
+
+model ExternalEvent {
+  id          String   @id @default(cuid())
+  provider    String
+  externalId  String
+  type        String
+  actorId     String?
+  payload     Json
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@unique([provider, externalId])
+  @@index([type, createdAt])
+}
+
+model RuntimeEvent {
+  id          String   @id @default(cuid())
+  slug        String
+  status      String
+  source      String
+  payload     Json     @default("{}")
+  startsAt    DateTime
+  endsAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([slug, status])
+  @@index([startsAt, endsAt])
 }
 
 model HistoryEntry {

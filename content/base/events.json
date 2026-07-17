@@ -18,7 +18,7 @@
       {
         "type": "damageModule",
         "params": {
-          "module": "power-core",
+          "module": "command-pod",
           "amount": 8
         }
       },

@@ -1,7 +1,8 @@
 import type { PrismaClient } from '@prisma/client';
 import type { Queue } from 'bullmq';
 import type { LoyaltyProvider } from '@neon-wreckers/integrations';
-import type { RealtimeHub } from './lib/realtime.js';
+import type { PlayerRealtimeHub, RealtimeHub } from './lib/realtime.js';
+import type { RequestMetrics } from './services/metrics.js';
 
 export type PlayerSummary = {
   id: string;
@@ -34,4 +35,6 @@ export type ApiContext = {
   loyaltyProvider: LoyaltyProvider;
   cooldowns: Map<string, number>;
   realtime: RealtimeHub;
+  playerRealtime: PlayerRealtimeHub;
+  metrics: RequestMetrics;
 };

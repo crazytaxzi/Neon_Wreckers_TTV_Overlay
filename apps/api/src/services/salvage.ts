@@ -1,9 +1,10 @@
-import { discoverWreck, enforceCooldown, salvageWreck } from '@neon-wreckers/game-engine';
-import { itemsBySlug, salvageCooldownSeconds, wreckArchetypes } from '@neon-wreckers/content';
+import { discoverWreck, GameRuleError, salvageWreck } from '@neon-wreckers/game-engine';
+import { careerRules, itemsBySlug, progressionRules, salvageCooldownSeconds, wreckArchetypes } from '@neon-wreckers/content';
 import type { Prisma } from '@prisma/client';
 import type { ApiContext, AuthenticatedUserWithPlayer } from '../types.js';
 import { acquireTransactionLock } from '../lib/database.js';
 import { stationDto } from './station.js';
+import { enforceDurableCooldown, levelForXp } from './actions.js';
 
 const SCAN_COOLDOWN_SECONDS = 15;
 const WRECK_LOCK_KEY = 'station-zero:wreck';
@@ -14,6 +15,8 @@ export async function getOrCreateCurrentWreck(context: ApiContext) {
     orderBy: { createdAt: 'desc' }
   });
   if (current) return current;
+  const latest = await context.prisma.wreck.findFirst({ orderBy: { createdAt: 'desc' } });
+  if (latest) return latest;
 
   const discovered = discoverWreck({ station: await stationDto(context.prisma), playerId: 'system', archetypes: wreckArchetypes });
   return context.prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
@@ -42,12 +45,7 @@ export async function getOrCreateCurrentWreck(context: ApiContext) {
   });
 }
 
-export async function scanForWreck(context: ApiContext, user: AuthenticatedUserWithPlayer) {
-  enforceCooldown({
-    key: `scan:${user.player.id}`,
-    cooldowns: context.cooldowns,
-    seconds: SCAN_COOLDOWN_SECONDS
-  });
+export async function scanForWreck(context: ApiContext, user: AuthenticatedUserWithPlayer, force = false) {
   const discovered = discoverWreck({
     station: await stationDto(context.prisma),
     playerId: user.player.id,
@@ -55,8 +53,12 @@ export async function scanForWreck(context: ApiContext, user: AuthenticatedUserW
   });
 
   const result = await context.prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
+    await enforceDurableCooldown(transaction, user.player.id, 'scan', SCAN_COOLDOWN_SECONDS);
     await acquireTransactionLock(transaction, WRECK_LOCK_KEY);
     const station = await transaction.station.findUniqueOrThrow({ where: { slug: 'station-zero' } });
+    if (!force && await transaction.wreck.findFirst({ where: { stationId: station.id, depleted: false } })) {
+      throw new GameRuleError('WRECK_ACTIVE', 'The current community wreck is still active.');
+    }
     await transaction.wreck.updateMany({
       where: { stationId: station.id, depleted: false },
       data: { depleted: true }
@@ -98,12 +100,8 @@ export async function deploySalvage(
   user: AuthenticatedUserWithPlayer,
   mode: 'cutters' | 'cargo' | 'override'
 ) {
-  enforceCooldown({
-    key: `salvage:${mode}:${user.player.id}`,
-    cooldowns: context.cooldowns,
-    seconds: salvageCooldownSeconds[mode]
-  });
   const result = await context.prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
+    await enforceDurableCooldown(transaction, user.player.id, `salvage:${mode}`, salvageCooldownSeconds[mode]);
     await acquireTransactionLock(transaction, WRECK_LOCK_KEY);
     const station = await transaction.station.findUniqueOrThrow({ where: { slug: 'station-zero' } });
     const wreck = await transaction.wreck.findFirstOrThrow({
@@ -111,13 +109,23 @@ export async function deploySalvage(
       orderBy: { createdAt: 'desc' }
     });
     const player = await transaction.player.findUniqueOrThrow({ where: { id: user.player.id } });
+    const stationState = await stationDto(transaction);
     const outcome = salvageWreck({
       wreck,
       player,
       items: itemsBySlug,
-      careerBonus: player.career === 'salvager' ? 0.04 : 0,
+      careerBonus: Number(careerRules[player.career]?.salvageSuccessBonus ?? 0) + currentStationModuleEffect(stationState, 'command-pod', 'scanBonus'),
+      rareDiscoveryBonus: currentStationModuleEffect(stationState, 'research-lab', 'rareDiscoveryBonus') + Number(careerRules[player.career]?.rareDiscoveryBonus ?? 0),
       mode
     });
+    const inventory = await transaction.inventoryStack.findMany({ where: { playerId: player.id } });
+    const existingSlugs = new Set(inventory.map(stack => stack.itemSlug));
+    const newSlugs = outcome.rewards.filter(stack => !existingSlugs.has(stack.itemSlug)).map(stack => stack.itemSlug);
+    if (inventory.length + new Set(newSlugs).size > player.inventoryCapacity) throw new GameRuleError('INVENTORY_FULL', 'Inventory capacity reached. Clear space before salvaging.');
+    for (const reward of outcome.rewards) {
+      const current = inventory.find(stack => stack.itemSlug === reward.itemSlug)?.quantity ?? 0;
+      if (current + reward.quantity > itemsBySlug[reward.itemSlug].stackLimit) throw new GameRuleError('STACK_LIMIT', `${reward.name} stack limit reached.`);
+    }
     await transaction.wreck.update({
       where: { id: wreck.id },
       data: {
@@ -126,11 +134,13 @@ export async function deploySalvage(
         remainingLootBudget: outcome.wreck.remainingLootBudget
       }
     });
+    const xpGain = outcome.success ? 12 : 3;
     await transaction.player.update({
       where: { id: player.id },
       data: {
         credits: Math.max(0, player.credits + outcome.credits),
-        xp: { increment: outcome.success ? 12 : 3 }
+        xp: { increment: xpGain },
+        level: levelForXp(player.xp + xpGain, progressionRules.levelXp)
       }
     });
     for (const stack of outcome.rewards) {
@@ -176,4 +186,9 @@ export async function deploySalvage(
   });
   if (currentWreck) context.realtime.broadcast({ type: 'wreck.updated', wreck: currentWreck });
   return result;
+}
+
+function currentStationModuleEffect(station: Awaited<ReturnType<typeof stationDto>>, slug: string, effect: string) {
+  const module = station.modules.find(candidate => candidate.slug === slug);
+  return module?.state === 'active' ? Number(module.effects[effect] ?? 0) : 0;
 }

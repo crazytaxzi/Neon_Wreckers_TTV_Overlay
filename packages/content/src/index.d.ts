@@ -9,6 +9,11 @@ export interface ContentItem {
   stackLimit: number;
   lifecycle: 'active';
   tags: string[];
+  valueCredits: number;
+  description: string;
+  uses: string[];
+  recipes: string[];
+  sources: string[];
 }
 
 export interface WreckArchetype {
@@ -33,6 +38,18 @@ export interface ModuleDefinition {
     resources: Record<string, number>;
     baseProgressUnits: number;
   };
+  progression: { levelXp: number[]; careerChangeCredits: number; careerChangeCooldownSeconds: number };
+  careers: Record<string, Record<string, number>>;
+  ships: {
+    crewPerShip: number;
+    purchases: Array<{ slug: string; name: string; credits: number; cargoCapacity: number; fuel: number; visualKey: string }>;
+    refuel: { fuelPerCell: number };
+    repair: { creditsPerCondition: number; alloysPerTwentyCondition: number };
+    upgrades: Array<{ slug: string; name: string; credits: number; alloys?: number; electronics?: number; conditionBonus?: number; cargoBonus?: number; fuelDiscount?: number }>;
+  };
+  crew: { recruitCredits: number; trainCreditsPerLevel: number; maxRoster: number; injuryMinutes: readonly [number, number] };
+  marketplace: { sellMultiplier: number; listings: Array<{ slug: string; name: string; priceCredits: number; itemSlug: string; quantity: number }>; sellPrices: Record<string, number> };
+  quarters: { width: number; height: number; themes: string[]; objects: string[] };
   effects: Record<string, unknown>;
   lifecycle: 'active';
 }
@@ -100,5 +117,19 @@ export const balance: Readonly<{
 }>;
 export const pointActions: typeof balance.pointActions;
 export const constructionProgressRules: typeof balance.construction;
+export const progressionRules: typeof balance.progression;
+export const careerRules: typeof balance.careers;
+export const shipRules: typeof balance.ships;
+export const crewRules: typeof balance.crew;
+export const marketplaceRules: typeof balance.marketplace;
+export const craftingRules: Readonly<Record<string, { name: string; durationSeconds: number; inputs: Record<string, number>; outputs: Record<string, number>; stationModule: string }>>;
+export const quartersRules: typeof balance.quarters;
 export const salvageCooldownSeconds: Readonly<{ cutters: number; cargo: number; override: number }>;
 export const expeditionDefinitions: Readonly<Record<string, ExpeditionDefinition>>;
+export interface EventDefinition { slug: string; name: string; trigger: 'condition' | 'manual' | 'scheduled'; durationMinutes: number; cooldownMinutes: number; conditions: Array<{ type: string; params: Record<string, unknown> }>; actions: Array<{ type: string; params: Record<string, unknown> }>; lifecycle: 'active' }
+export interface SeasonDefinition { slug: string; name: string; startsAt: string; endsAt: string; gracePeriodDays: number; theme: string; lifecycle: 'active' | 'scheduled'; conversion: Record<string, string> }
+export const events: readonly EventDefinition[];
+export const eventsBySlug: Readonly<Record<string, EventDefinition>>;
+export const seasons: readonly SeasonDefinition[];
+export const seasonsBySlug: Readonly<Record<string, SeasonDefinition>>;
+export const themes: Readonly<Record<string, { name: string; colors: Record<string, string>; decorations: string[] }>>;

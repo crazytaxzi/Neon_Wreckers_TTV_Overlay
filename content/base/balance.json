@@ -15,6 +15,77 @@
     "electronicsProgress": 2,
     "alloysProgress": 3
   },
+  "progression": {
+    "levelXp": [0, 100, 300, 650, 1100, 1700, 2500, 3500, 4800, 6400],
+    "careerChangeCredits": 500,
+    "careerChangeCooldownSeconds": 604800
+  },
+  "careers": {
+    "salvager": { "salvageSuccessBonus": 0.04 },
+    "hauler": { "cargoCapacityMultiplier": 1.2 },
+    "engineer": { "repairCostMultiplier": 0.8 },
+    "builder": { "constructionProgressMultiplier": 1.2 },
+    "explorer": { "rareDiscoveryBonus": 0.05 },
+    "trader": { "marketSpreadMultiplier": 0.9 }
+  },
+  "ships": {
+    "crewPerShip": 2,
+    "purchases": [
+      { "slug": "salvage-skiff", "name": "Salvage Skiff", "credits": 1200, "cargoCapacity": 24, "fuel": 4, "visualKey": "ship-salvage-skiff" },
+      { "slug": "cargo-hauler", "name": "Cargo Hauler", "credits": 2200, "cargoCapacity": 40, "fuel": 5, "visualKey": "ship-cargo-hauler" }
+    ],
+    "refuel": { "fuelPerCell": 1 },
+    "repair": { "creditsPerCondition": 8, "alloysPerTwentyCondition": 1 },
+    "upgrades": [
+      { "slug": "reinforced-hull", "name": "Reinforced Hull", "credits": 600, "alloys": 8, "conditionBonus": 10 },
+      { "slug": "expanded-hold", "name": "Expanded Hold", "credits": 500, "alloys": 5, "cargoBonus": 8 },
+      { "slug": "efficient-drive", "name": "Efficient Drive", "credits": 750, "electronics": 8, "fuelDiscount": 1 }
+    ]
+  },
+  "crew": {
+    "recruitCredits": 400,
+    "trainCreditsPerLevel": 250,
+    "maxRoster": 12,
+    "injuryMinutes": [15, 60]
+  },
+  "marketplace": {
+    "sellMultiplier": 0.55,
+    "listings": [
+      { "slug": "fuel-cell-bundle", "name": "Fuel Cell Bundle", "priceCredits": 240, "itemSlug": "fuel", "quantity": 3 },
+      { "slug": "refined-alloy-pack", "name": "Refined Alloy Pack", "priceCredits": 360, "itemSlug": "alloys", "quantity": 5 },
+      { "slug": "electronics-crate", "name": "Electronics Crate", "priceCredits": 300, "itemSlug": "electronics", "quantity": 4 }
+      ,{ "slug": "coolant-canister", "name": "Reactor Coolant Canister", "priceCredits": 190, "itemSlug": "reactor-coolant", "quantity": 2 }
+      ,{ "slug": "sealant-kit", "name": "Sealant Foam Kit", "priceCredits": 110, "itemSlug": "sealant-foam", "quantity": 5 }
+      ,{ "slug": "ration-case", "name": "Ration Case", "priceCredits": 140, "itemSlug": "ration-pack", "quantity": 12 }
+      ,{ "slug": "water-case", "name": "Water Cartridge Case", "priceCredits": 90, "itemSlug": "water-cartridge", "quantity": 10 }
+      ,{ "slug": "polymer-bale", "name": "Industrial Polymer Bale", "priceCredits": 120, "itemSlug": "polymer", "quantity": 6 }
+      ,{ "slug": "medical-crate", "name": "Medical Supply Crate", "priceCredits": 260, "itemSlug": "medical-supplies", "quantity": 4 }
+    ],
+    "sellPrices": { "scrap": 4, "electronics": 35, "fuel": 45, "alloys": 50, "research-data": 140, "unknown-relic": 300 }
+  },
+  "crafting": {
+    "coolant": { "name": "Reactor Coolant", "durationSeconds": 20, "inputs": { "chemical-gel": 2, "ice-crystal": 1 }, "outputs": { "reactor-coolant": 1 }, "stationModule": "refinery" },
+    "sealant": { "name": "Sealant Foam", "durationSeconds": 12, "inputs": { "polymer": 2, "chemical-gel": 1 }, "outputs": { "sealant-foam": 2 }, "stationModule": "refinery" },
+    "hull-plate": { "name": "Hull Plate", "durationSeconds": 25, "inputs": { "scrap": 5, "alloys": 2 }, "outputs": { "hull-plate": 1 }, "stationModule": "refinery" },
+    "water": { "name": "Water Cartridges", "durationSeconds": 10, "inputs": { "ice-crystal": 2 }, "outputs": { "water-cartridge": 3 }, "stationModule": "refinery" },
+    "rations": { "name": "Ration Packs", "durationSeconds": 15, "inputs": { "nutrient-paste": 2, "water-cartridge": 1 }, "outputs": { "ration-pack": 3 }, "stationModule": "habitat-ring" },
+    "medical": { "name": "Medical Supplies", "durationSeconds": 25, "inputs": { "biofiber": 2, "chemical-gel": 1 }, "outputs": { "medical-supplies": 1 }, "stationModule": "medical-bay" },
+    "polymer": { "name": "Industrial Polymer", "durationSeconds": 12, "inputs": { "scrap": 3 }, "outputs": { "polymer": 1 }, "stationModule": "refinery" },
+    "chemical-gel": { "name": "Chemical Gel", "durationSeconds": 20, "inputs": { "polymer": 3, "research-data": 1 }, "outputs": { "chemical-gel": 2 }, "stationModule": "research-lab" },
+    "biofiber": { "name": "Biofiber", "durationSeconds": 18, "inputs": { "algae-culture": 2, "polymer": 1 }, "outputs": { "biofiber": 1 }, "stationModule": "medical-bay" },
+    "nutrient-paste": { "name": "Nutrient Paste", "durationSeconds": 8, "inputs": { "algae-culture": 1 }, "outputs": { "nutrient-paste": 4 }, "stationModule": "habitat-ring" },
+    "copper-coil": { "name": "Copper Coil", "durationSeconds": 20, "inputs": { "scrap": 4, "electronics": 1 }, "outputs": { "copper-coil": 1 }, "stationModule": "refinery" },
+    "plasma-conduit": { "name": "Plasma Conduit", "durationSeconds": 35, "inputs": { "alloys": 3, "electronics": 2 }, "outputs": { "plasma-conduit": 1 }, "stationModule": "research-lab" },
+    "power-core": { "name": "Power Core", "durationSeconds": 45, "inputs": { "electronics": 4, "copper-coil": 3, "plasma-conduit": 1 }, "outputs": { "power-core": 1 }, "stationModule": "research-lab" },
+    "sensor-lens": { "name": "Sensor Lens", "durationSeconds": 25, "inputs": { "electronics": 2, "ice-crystal": 1 }, "outputs": { "sensor-lens": 1 }, "stationModule": "research-lab" },
+    "navigation-chart": { "name": "Navigation Chart", "durationSeconds": 35, "inputs": { "research-data": 3, "sensor-lens": 1 }, "outputs": { "navigation-chart": 1 }, "stationModule": "research-lab" }
+  },
+  "quarters": {
+    "width": 8,
+    "height": 5,
+    "themes": ["station-zero-default", "frost-wrecks"],
+    "objects": ["bed", "relic-shelf", "espresso-rig"]
+  },
   "expeditions": [
     {
       "slug": "glass-belt-run",

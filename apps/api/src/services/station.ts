@@ -13,6 +13,7 @@ type StationModuleRecord = {
   visualKey: string;
   effects: Record<string, unknown>;
   plaques: PlaqueRecord[];
+  projects: Array<{ id: string; kind: string; targetLevel: number; requirements: unknown; contributed: unknown }>;
 };
 type StationAlertRecord = { id: string; severity: string; title: string; body: string; createdAt: Date };
 
@@ -28,17 +29,26 @@ export async function publicMe(prisma: PrismaClient, userId: string) {
   };
 }
 
-export async function stationDto(prisma: Pick<PrismaClient, 'station'>) {
-  const station = await prisma.station.findUniqueOrThrow({
+export async function stationDto(prisma: Pick<PrismaClient, 'station' | 'runtimeEvent'>) {
+  const [station, activeEvents] = await Promise.all([prisma.station.findUniqueOrThrow({
     where: { slug: 'station-zero' },
-    include: { resources: true, modules: { include: { plaques: true } }, alerts: true }
-  });
+    include: { resources: true, modules: { include: { plaques: true, projects: { where: { status: 'active' }, orderBy: { createdAt: 'desc' }, take: 1 } } }, alerts: true }
+  }), prisma.runtimeEvent.findMany({ where: { status: 'active', OR: [{ endsAt: null }, { endsAt: { gt: new Date() } }] }, orderBy: { startsAt: 'desc' } })]);
   return {
     id: station.id,
     slug: station.slug,
     name: station.name,
     level: station.level,
     population: station.population,
+    populationStatus: {
+      capacity: Math.max(100, 100 + (station.modules as StationModuleRecord[]).filter(module => module.slug === 'habitat-ring' && module.state === 'active').reduce((total, module) => total + 150 * Math.max(1, module.level), 0)),
+      trend: station.power < 25 || station.integrity < 35 ? -2 : station.morale >= 70 ? 1 : 0,
+      reasons: [
+        station.power < 25 ? 'Power shortages are driving residents away.' : 'Power supply is supporting occupied decks.',
+        station.integrity < 35 ? 'Hull damage is forcing habitat evacuations.' : 'Hull pressure is safe for residents.',
+        station.morale < 40 ? 'Low morale is reducing retention.' : 'Community morale is stable.'
+      ]
+    },
     power: station.power,
     morale: station.morale,
     integrity: station.integrity,
@@ -58,6 +68,7 @@ export async function stationDto(prisma: Pick<PrismaClient, 'station'>) {
       integrity: module.integrity,
       visualKey: module.visualKey,
       effects: module.effects as Record<string, unknown>,
+      project: module.projects[0] ? { id: module.projects[0].id, kind: module.projects[0].kind, targetLevel: module.projects[0].targetLevel, requirements: module.projects[0].requirements, contributed: module.projects[0].contributed } : null,
       plaques: module.plaques.map(plaque => ({
         id: plaque.id,
         title: plaque.title,
@@ -73,6 +84,6 @@ export async function stationDto(prisma: Pick<PrismaClient, 'station'>) {
       body: alert.body,
       createdAt: alert.createdAt.toISOString()
     })),
-    activeModifiers: []
+    activeModifiers: activeEvents.map(event => ({ slug: event.slug, startsAt: event.startsAt.toISOString(), endsAt: event.endsAt?.toISOString() ?? null, payload: event.payload }))
   };
 }

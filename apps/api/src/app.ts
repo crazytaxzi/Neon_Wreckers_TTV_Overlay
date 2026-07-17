@@ -10,11 +10,13 @@ import { Queue } from 'bullmq';
 import { createLoyaltyProvider, parseRedisConnection } from '@neon-wreckers/integrations';
 import { corsOrigins, env, isProd, trustProxy } from './env.js';
 import { errorResponse } from './lib/errors.js';
-import { RealtimeHub } from './lib/realtime.js';
+import { PlayerRealtimeHub, RealtimeHub } from './lib/realtime.js';
 import { registerAdminRoutes } from './routes/admin.js';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerConstructionRoutes } from './routes/construction.js';
 import { registerExpeditionRoutes } from './routes/expeditions.js';
+import { registerEventSubRoutes } from './routes/eventsub.js';
+import { registerFleetRoutes } from './routes/fleet.js';
 import { registerIntegrationRoutes } from './routes/integrations.js';
 import { registerPlayerRoutes } from './routes/player.js';
 import { registerPointRoutes } from './routes/points.js';
@@ -22,6 +24,7 @@ import { registerSalvageRoutes } from './routes/salvage.js';
 import { registerStationRoutes } from './routes/station.js';
 import { registerSystemRoutes } from './routes/system.js';
 import type { ApiContext } from './types.js';
+import { RequestMetrics } from './services/metrics.js';
 
 export async function buildApp() {
   const prisma = new PrismaClient();
@@ -35,7 +38,9 @@ export async function buildApp() {
       jwt: env.STREAMELEMENTS_JWT
     }),
     cooldowns: new Map<string, number>(),
-    realtime: new RealtimeHub()
+    realtime: new RealtimeHub(),
+    playerRealtime: new PlayerRealtimeHub()
+    ,metrics: new RequestMetrics()
   };
 
   const app = Fastify({
@@ -58,7 +63,12 @@ export async function buildApp() {
   await app.register(websocket);
 
   app.addHook('onRequest', async (request, reply) => {
+    (request as typeof request & { metricsStartedAt: number }).metricsStartedAt = performance.now();
     reply.header('x-request-id', request.id);
+  });
+  app.addHook('onResponse', async (request, reply) => {
+    const startedAt = (request as typeof request & { metricsStartedAt?: number }).metricsStartedAt ?? performance.now();
+    context.metrics.record(reply.statusCode, performance.now() - startedAt, Number(reply.getHeader('content-length') ?? 0));
   });
   app.setErrorHandler((error, request, reply) => {
     const response = errorResponse(error, isProd);
@@ -80,8 +90,10 @@ export async function buildApp() {
   await registerConstructionRoutes(app, context);
   await registerPointRoutes(app, context);
   await registerExpeditionRoutes(app, context);
+  await registerFleetRoutes(app, context);
   await registerPlayerRoutes(app, context);
   await registerIntegrationRoutes(app, context);
+  await registerEventSubRoutes(app, context);
   await registerAdminRoutes(app, context);
 
   return app;

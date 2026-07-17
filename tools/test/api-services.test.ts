@@ -4,6 +4,7 @@ import type { LoyaltyProvider } from '../../packages/integrations/src/streamelem
 import { parseRedisConnection } from '../../packages/integrations/src/redis.js';
 import { errorMessage, requestApi } from '../../packages/browser-client/src/index.js';
 import { runChargedAction } from '../../apps/api/src/services/loyalty.js';
+import { levelForXp } from '../../apps/api/src/services/actions.js';
 
 function loyaltyProvider(overrides: Partial<LoyaltyProvider> = {}): LoyaltyProvider {
   return {
@@ -82,4 +83,12 @@ test('post-debit action failures are refunded or marked ambiguous', async () => 
     reason: 'Rush scan', refundReason: 'Refund rush scan', idempotencyKey: 'three'
   }, async () => { throw new Error('action failed'); });
   assert.equal(ambiguous.status, 'ambiguous');
+});
+
+test('progression levels follow canonical threshold boundaries', () => {
+  const thresholds = [0, 100, 300, 650];
+  assert.equal(levelForXp(0, thresholds), 1);
+  assert.equal(levelForXp(99, thresholds), 1);
+  assert.equal(levelForXp(100, thresholds), 2);
+  assert.equal(levelForXp(650, thresholds), 4);
 });

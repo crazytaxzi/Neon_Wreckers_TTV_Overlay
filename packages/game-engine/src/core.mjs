@@ -46,7 +46,7 @@ function weightedPick(items, rng, weight) {
 }
 function intBetween(min, max, rng) { return Math.floor(min + rng() * (max - min + 1)); }
 
-export function salvageWreck({ wreck, player, items, careerBonus = 0, seed, mode = 'cutters', now = nowIso() }) {
+export function salvageWreck({ wreck, player, items, careerBonus = 0, rareDiscoveryBonus = 0, seed, mode = 'cutters', now = nowIso() }) {
   if (!wreck || wreck.depleted || wreck.integrity <= 4) throw new GameRuleError('WRECK_DEPLETED', 'The wreck is exhausted. Run another scan.');
   const rng = createRng(seed ?? `${wreck.id}:${player.id}:${mode}:${now}`);
   const riskFactor = { low:1, moderate:1.18, high:1.45, extreme:1.85 }[wreck.risk] ?? 1;
@@ -63,20 +63,49 @@ export function salvageWreck({ wreck, player, items, careerBonus = 0, seed, mode
     rewards.push(stack(requiredItem(items, 'scrap'), scrap));
     credits = Math.floor((22 + scrap * 4 + rng()*90) * modeFactor);
     if (rng() < .42 * modeFactor) rewards.push(stack(requiredItem(items, 'electronics'), Math.ceil(rng()*3*modeFactor)));
+    if (mode === 'cargo' && rng() < .24) rewards.push(stack(requiredItem(items, 'alloys'), 1 + Math.floor(rng()*3)));
     if (rng() < .18 * modeFactor) rewards.push(stack(requiredItem(items, 'fuel'), 1 + Math.floor(rng()*2)));
-    if (rng() < .055 * modeFactor) rewards.push(stack(requiredItem(items, 'unknown-relic'), 1));
+    if (rng() < (.055 + rareDiscoveryBonus) * modeFactor) rewards.push(stack(requiredItem(items, 'unknown-relic'), 1));
     if (mode === 'override' && rng() < .15) rewards.push(stack(requiredItem(items, 'rubber-rat-mascot'), 1));
+    const pool = wreckLootPool(wreck.archetype, mode);
+    const bonusRolls = mode === 'cargo' ? 2 : mode === 'override' ? 3 : 1;
+    for (let roll = 0; roll < bonusRolls; roll += 1) {
+      if (rng() > (mode === 'cutters' ? .38 : .68)) continue;
+      const itemSlug = pool[Math.floor(rng() * pool.length)];
+      rewards.push(stack(requiredItem(items, itemSlug), 1 + Math.floor(rng() * (mode === 'cargo' ? 3 : 2))));
+    }
   } else {
     credits = -Math.floor(35 + rng()*130*modeFactor);
     stationDamage.power = Math.ceil((2 + rng()*7) * riskFactor);
     stationDamage.integrity = Math.ceil((1 + rng()*4) * riskFactor);
   }
 
+  let budgetRemaining = Math.max(0, wreck.remainingLootBudget);
+  for (const reward of rewards) {
+    reward.quantity = Math.min(reward.quantity, budgetRemaining);
+    budgetRemaining -= reward.quantity;
+  }
+  for (let index = rewards.length - 1; index >= 0; index -= 1) {
+    if (rewards[index].quantity <= 0) rewards.splice(index, 1);
+  }
+
   const nextWreck = { ...wreck };
   nextWreck.integrity = clamp(wreck.integrity - integrityLoss, 0, 100);
-  nextWreck.remainingLootBudget = Math.max(0, wreck.remainingLootBudget - rewards.reduce((s,r) => s + r.quantity, 0));
+  nextWreck.remainingLootBudget = budgetRemaining;
   nextWreck.depleted = nextWreck.integrity <= 4 || nextWreck.remainingLootBudget <= 0;
   return { success, mode, rewards, credits, stationDamage, integrityLoss, wreck: nextWreck };
+}
+
+function wreckLootPool(archetype, mode) {
+  const pools = {
+    'helios-courier': ['electronics', 'sensor-lens', 'copper-coil', 'navigation-chart', 'medical-supplies'],
+    'orpheus-barge': ['ice-crystal', 'polymer', 'hull-plate', 'sealant-foam', 'copper-coil'],
+    'ashfall-cutter': ['plasma-conduit', 'power-core', 'grid-relay', 'drone-chassis', 'hull-plate'],
+    'morrowline-freighter': ['ration-pack', 'water-cartridge', 'nutrient-paste', 'algae-culture', 'medical-supplies', 'reactor-coolant'],
+    'research-skiff': ['research-data', 'chemical-gel', 'biofiber', 'sensor-lens', 'quantum-key', 'plasma-conduit']
+  };
+  const pool = pools[archetype] ?? ['ice-crystal', 'polymer', 'algae-culture', 'research-data'];
+  return mode === 'cargo' ? pool : pool.filter(slug => !['quantum-key', 'power-core', 'grid-relay'].includes(slug));
 }
 
 function requiredItem(items, slug) {
@@ -144,6 +173,16 @@ export function resolveExpedition({ expedition, items, seed, now = nowIso() }) {
     ? [stack(requiredItem(items, 'scrap'), intBetween(10,28,rng)), stack(requiredItem(items, 'credits'), intBetween(90,280,rng))]
     : [stack(requiredItem(items, 'scrap'), intBetween(2,8,rng))];
   if (success && rng() < .16) rewards.push(stack(requiredItem(items, 'research-data'), 1));
+  if (success) {
+    const missionPool = expedition.definition === 'dead-relay-ping'
+      ? ['research-data', 'electronics', 'sensor-lens', 'navigation-chart', 'plasma-conduit', 'quantum-key', 'grid-relay']
+      : ['ice-crystal', 'water-cartridge', 'algae-culture', 'nutrient-paste', 'polymer', 'biofiber', 'ration-pack'];
+    const rolls = expedition.definition === 'dead-relay-ping' ? 2 : 3;
+    for (let roll = 0; roll < rolls; roll += 1) {
+      const slug = missionPool[Math.floor(rng() * missionPool.length)];
+      rewards.push(stack(requiredItem(items, slug), 1 + Math.floor(rng() * 3)));
+    }
+  }
   return { ...expedition, status: success ? 'resolved' : 'failed', rewards, incidentLog: [...expedition.incidentLog, success ? 'Crew returned with salvage and almost believable stories.' : 'Expedition limped home. Nobody is allowed to touch the navigation toaster again.'] };
 }
 

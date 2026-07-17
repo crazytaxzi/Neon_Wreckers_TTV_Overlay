@@ -8,7 +8,7 @@ The authoritative Prisma schema is `infrastructure/database/prisma/schema.prisma
 - `Session` stores only a hash of the opaque session token, expiration, and revocation state.
 - `Player` owns progression, career, reputation, title, credits, inventory capacity, and player-scoped relationships.
 
-Twitch provider access and refresh tokens are not stored. A Twitch sign-in creates or updates the user and serializes starter player, ship, and crew creation inside a transaction.
+A Twitch sign-in creates or updates the user and serializes starter player, ship, and crew creation inside a transaction. Viewer tokens remain transient. The streamer authorization required for EventSub is stored separately in `TwitchCredential` using authenticated AES-256-GCM encryption so it can be renewed and revoked without exposing plaintext provider credentials.
 
 ## Shared station world
 
@@ -29,6 +29,9 @@ Wreck creation and salvage use a shared PostgreSQL advisory transaction lock so 
 - `CrewMember` stores role, level, morale, injuries, and traits.
 - `Expedition` stores definition, risk, launch and resolution times, status, rewards, and incident log.
 - `Notification` stores player-facing messages and optional deep links.
+- `ActionCooldown` stores restart-safe action windows; `ActionReceipt` stores generic idempotent outcomes.
+- `QuartersLayout`, `MuseumExhibit`, and `MarketTransaction` persist habitat, donation, and station-trade activity.
+- Expeditions persist their selected ship and crew IDs so active assets cannot be assigned twice.
 
 Construction uses conditional inventory updates to prevent double-spending. Expedition resolution and claiming use conditional status transitions so rewards cannot be granted twice.
 
@@ -37,6 +40,7 @@ Construction uses conditional inventory updates to prevent double-spending. Expe
 - `LoyaltyTransaction` is the durable point-action ledger. Its unique idempotency key is authoritative across restarts and multiple API processes. Statuses are `pending`, `committed`, `refunded`, `ambiguous`, and `failed`.
 - `ContentVersion` stores immutable versioned configuration records with lifecycle and scheduling metadata.
 - `AuditLog` records privileged actions with actor, request ID, target, and before/after data.
+- `ExternalEvent` deduplicates Twitch callbacks, while `RuntimeEvent` records active and completed content-defined events.
 
 The runtime game baseline is loaded from source-controlled content at process startup. `ContentVersion` is an operations record and audit trail; it does not silently replace source-controlled balance data.
 

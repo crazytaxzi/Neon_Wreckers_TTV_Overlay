@@ -32,6 +32,22 @@ test('salvage is deterministic for the same server seed', () => {
   assert.ok(first.wreck.integrity < wreck.integrity);
 });
 
+test('salvage rewards never exceed the wreck loot budget', () => {
+  const station = stationCopy();
+  const wreck = { ...discoverWreck({ station, playerId: 'p1', archetypes: wreckArchetypes, seed: 'tiny-budget' }), remainingLootBudget: 2 };
+  const result = salvageWreck({ wreck, player: { id: 'p1' }, items: itemsBySlug, seed: 'successful-budget', mode: 'override', now: '2026-07-11T00:00:00.000Z' });
+  assert.ok(result.rewards.reduce((sum, reward) => sum + reward.quantity, 0) <= 2);
+  assert.ok(result.wreck.remainingLootBudget >= 0);
+});
+
+test('recovered cargo can yield uncommon refined alloys', () => {
+  const station = stationCopy();
+  const wreck = { ...discoverWreck({ station, playerId: 'p1', archetypes: wreckArchetypes, seed: 'alloy-wreck' }), remainingLootBudget: 1000 };
+  const alloyDrops = Array.from({ length: 100 }, (_, index) => salvageWreck({ wreck, player: { id: 'p1' }, items: itemsBySlug, seed: `cargo-alloy-${index}`, mode: 'cargo', now: '2026-07-11T00:00:00.000Z' }).rewards.find(reward => reward.itemSlug === 'alloys')).filter(Boolean);
+  assert.ok(alloyDrops.length > 0, 'cargo salvage should produce alloys at an uncommon rate');
+  assert.ok(alloyDrops.every(drop => drop.quantity >= 1 && drop.quantity <= 3));
+});
+
 test('construction completes modules and records history and a plaque', () => {
   const station = stationCopy();
   station.modules.find(module => module.slug === 'habitat-ring').progress = 98;

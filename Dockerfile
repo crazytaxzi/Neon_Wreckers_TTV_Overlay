@@ -19,6 +19,7 @@ COPY packages ./packages
 COPY infrastructure ./infrastructure
 COPY content ./content
 COPY assets ./assets
+COPY docs ./docs
 COPY tools ./tools
 
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \

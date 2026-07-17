@@ -55,7 +55,7 @@ Expedition resolution and claiming additionally use conditional status transitio
 
 ## Authentication and external providers
 
-Twitch OAuth state and application sessions use signed, HTTP-only cookies. Session bearer values are random and stored only as SHA-256 hashes. Twitch access and refresh tokens are used only during the callback and are not persisted because no current feature consumes them.
+Twitch OAuth state and application sessions use signed, HTTP-only cookies. Session bearer values are random and stored only as SHA-256 hashes. Viewer provider tokens remain transient; the streamer's renewable EventSub authorization is stored with authenticated AES-256-GCM encryption.
 
 Point-funded actions use the database `LoyaltyTransaction` record as the local idempotency and reconciliation source. A debit is attempted before gameplay execution. A post-debit gameplay failure triggers compensation; compensation failure is recorded as ambiguous for manual review.
 

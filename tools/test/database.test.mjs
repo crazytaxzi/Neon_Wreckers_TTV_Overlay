@@ -3,16 +3,19 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const schemaPath = 'infrastructure/database/prisma/schema.prisma';
-const migrationPath = 'infrastructure/database/prisma/migrations/20260712000000_initial_schema/migration.sql';
+const migrationPaths = [
+  'infrastructure/database/prisma/migrations/20260712000000_initial_schema/migration.sql',
+  'infrastructure/database/prisma/migrations/20260716000000_full_game_mechanics/migration.sql'
+];
 const lockPath = 'infrastructure/database/prisma/migrations/migration_lock.toml';
 
 const schema = fs.readFileSync(schemaPath, 'utf8');
-const migration = fs.readFileSync(migrationPath, 'utf8');
+const migration = migrationPaths.map(file => fs.readFileSync(file, 'utf8')).join('\n');
 const migrationLock = fs.readFileSync(lockPath, 'utf8');
 
 const collect = (source, pattern) => [...source.matchAll(pattern)].map(match => match[1]).sort();
 
-test('initial migration covers every Prisma model and enum exactly once', () => {
+test('migration history covers every Prisma model and enum exactly once', () => {
   const schemaModels = collect(schema, /^model\s+(\w+)\s*\{/gm);
   const schemaEnums = collect(schema, /^enum\s+(\w+)\s*\{/gm);
   const migrationTables = collect(migration, /^CREATE TABLE "([^"]+)"/gm);
@@ -24,9 +27,12 @@ test('initial migration covers every Prisma model and enum exactly once', () => 
   assert.equal(new Set(migrationEnums).size, migrationEnums.length);
 });
 
-test('initial migration is transactional and structurally complete', () => {
-  assert.match(migration, /^BEGIN;/m);
-  assert.match(migration, /^COMMIT;/m);
+test('migration history is transactional and structurally complete', () => {
+  for (const migrationPath of migrationPaths) {
+    const sql = fs.readFileSync(migrationPath, 'utf8');
+    assert.match(sql, /^BEGIN;/m);
+    assert.match(sql, /^COMMIT;/m);
+  }
 
   const tableBlocks = [...migration.matchAll(/^CREATE TABLE "([^"]+)" \(([\s\S]*?)^\);/gm)];
   assert.ok(tableBlocks.length > 0, 'No table definitions were found.');
@@ -40,11 +46,11 @@ test('initial migration is transactional and structurally complete', () => {
 });
 
 test('schema contains only active persistence models and indexed query paths', () => {
-  for (const retired of ['ConstructionProject', 'LoyaltyAccount', 'AssetObject', 'IdempotencyKey']) {
+  for (const retired of ['LoyaltyAccount', 'AssetObject', 'IdempotencyKey']) {
     assert.doesNotMatch(schema, new RegExp(`model\\s+${retired}\\b`));
     assert.doesNotMatch(migration, new RegExp(`CREATE TABLE "${retired}"`));
   }
-  for (const retiredColumn of ['accessTokenEnc', 'refreshTokenEnc', 'tokenExpiresAt']) {
+  for (const retiredColumn of ['accessToken String', 'refreshToken String', 'tokenExpiresAt']) {
     assert.ok(!schema.includes(retiredColumn));
     assert.ok(!migration.includes(retiredColumn));
   }

@@ -367,7 +367,7 @@ Use `--restore-env` only when the archived environment must replace the current 
 
 - Twitch OAuth state and application sessions use signed, HTTP-only cookies.
 - Session bearer values are random and stored only as SHA-256 hashes.
-- Twitch access and refresh tokens are not persisted because no current feature requires them.
+- Viewer Twitch tokens are transient; the streamer's renewable EventSub authorization is encrypted at rest with a separate credential key.
 - StreamElements credentials remain server-side.
 - Point-funded actions require idempotency keys and durable transaction records.
 - Nginx terminates TLS, redirects HTTP to HTTPS, and proxies WebSocket upgrades.

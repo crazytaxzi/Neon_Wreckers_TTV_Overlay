@@ -13,6 +13,7 @@ import {
   Field,
   HealthBar,
   InventoryCard,
+  Input,
   LoadingScreen,
   Meter,
   ModuleCard,
@@ -75,6 +76,7 @@ type StationModule = {
   integrity: number;
   visualKey: string;
   effects: Record<string, unknown>;
+  project?: { id: string; kind: string; targetLevel: number; requirements: Record<string, number>; contributed: Record<string, number> } | null;
   plaques: Plaque[];
 };
 
@@ -92,6 +94,7 @@ type Station = {
   name: string;
   level: number;
   population: number;
+  populationStatus?: { capacity: number; trend: number; reasons: string[] };
   power: number;
   morale: number;
   integrity: number;
@@ -154,6 +157,7 @@ type CrewMember = {
 type Expedition = {
   id: string;
   definition: string;
+  shipId: string | null;
   name: string;
   status: string;
   risk: string;
@@ -199,6 +203,10 @@ type Marketplace = {
   listings: MarketplaceListing[];
 };
 
+type ItemDefinition = { slug: string; name: string; rarity: string; valueCredits: number; description: string; uses: string[]; recipes: string[]; sources: string[] };
+type AuctionListing = { id: string; itemSlug: string; itemName: string; quantity: number; priceCredits: number; sellerName: string; ownListing: boolean; expiresAt: string };
+type CraftingRecipe = { slug: string; name: string; durationSeconds: number; inputs: Record<string, number>; outputs: Record<string, number>; stationModule: string; unlocked: boolean };
+
 type QuartersObject = {
   key: string;
   x: number;
@@ -221,7 +229,7 @@ type UiPreferences = {
   glowIntensity: number;
 };
 
-type ActionHandler = (path: string, payload?: unknown, label?: string) => Promise<unknown | undefined>;
+type ActionHandler = (path: string, payload?: unknown, label?: string, headers?: HeadersInit) => Promise<unknown | undefined>;
 
 type GameData = {
   me: CurrentUser;
@@ -234,6 +242,9 @@ type GameData = {
   expeditions: Expedition[];
   notifications: PlayerNotification[];
   marketplace: Marketplace | null;
+  catalog: ItemDefinition[];
+  auctions: AuctionListing[];
+  recipes: CraftingRecipe[];
   quarters: Quarters | null;
   login: () => void;
   action: ActionHandler;
@@ -289,12 +300,15 @@ function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null | undefi
   const [expeditions, setExpeditions] = useState<Expedition[]>([]);
   const [notifications, setNotifications] = useState<PlayerNotification[]>([]);
   const [marketplace, setMarketplace] = useState<Marketplace | null>(null);
+  const [catalog, setCatalog] = useState<ItemDefinition[]>([]);
+  const [auctions, setAuctions] = useState<AuctionListing[]>([]);
+  const [recipes, setRecipes] = useState<CraftingRecipe[]>([]);
   const [quarters, setQuarters] = useState<Quarters | null>(null);
   const { pushToast } = useToast();
 
   const refresh = useCallback(async () => {
     setMe(await requestApi<CurrentUser>('/api/v1/me'));
-    const [stationResult, wreckResult, inventoryResult, shipsResult, crewResult, historyResult, expeditionsResult, notificationsResult, marketplaceResult, quartersResult] = await Promise.allSettled([
+    const [stationResult, wreckResult, inventoryResult, shipsResult, crewResult, historyResult, expeditionsResult, notificationsResult, marketplaceResult, quartersResult, catalogResult, auctionResult, recipesResult] = await Promise.allSettled([
       requestApi<Station>('/api/v1/station'),
       requestApi<Wreck>('/api/v1/wrecks/current'),
       requestApi<InventoryItem[]>('/api/v1/inventory'),
@@ -304,7 +318,10 @@ function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null | undefi
       requestApi<Expedition[]>('/api/v1/expeditions'),
       requestApi<PlayerNotification[]>('/api/v1/notifications'),
       requestApi<Marketplace>('/api/v1/marketplace/listings'),
-      requestApi<Quarters>('/api/v1/quarters')
+      requestApi<Quarters>('/api/v1/quarters'),
+      requestApi<ItemDefinition[]>('/api/v1/items/catalog'),
+      requestApi<AuctionListing[]>('/api/v1/auction/listings'),
+      requestApi<CraftingRecipe[]>('/api/v1/crafting/recipes')
     ]);
     if (stationResult.status === 'fulfilled') setStation(stationResult.value);
     if (wreckResult.status === 'fulfilled') setWreck(wreckResult.value);
@@ -316,6 +333,9 @@ function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null | undefi
     if (notificationsResult.status === 'fulfilled') setNotifications(notificationsResult.value);
     if (marketplaceResult.status === 'fulfilled') setMarketplace(marketplaceResult.value);
     if (quartersResult.status === 'fulfilled') setQuarters(quartersResult.value);
+    if (catalogResult.status === 'fulfilled') setCatalog(catalogResult.value);
+    if (auctionResult.status === 'fulfilled') setAuctions(auctionResult.value);
+    if (recipesResult.status === 'fulfilled') setRecipes(recipesResult.value);
   }, []);
 
   useEffect(() => {
@@ -334,17 +354,33 @@ function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null | undefi
     return () => socket.close();
   }, []);
 
+  useEffect(() => {
+    if (!me) return;
+    const url = new URL('/api/v1/player/ws', window.location.origin);
+    url.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const socket = new WebSocket(url);
+    socket.onmessage = event => {
+      try {
+        const message = JSON.parse(String(event.data)) as { type?: string };
+        if (message.type && message.type !== 'player.connected') void refresh();
+      } catch { /* Ignore malformed personal packets. */ }
+    };
+    const poll = window.setInterval(() => void refresh().catch(() => undefined), 15_000);
+    return () => { socket.close(); window.clearInterval(poll); };
+  }, [me?.id, refresh]);
+
   const login = () => {
     window.location.href = '/api/v1/auth/twitch/start';
   };
 
-  const action = useCallback<ActionHandler>(async (path, payload, label = 'Operation complete') => {
+  const action = useCallback<ActionHandler>(async (path, payload, label = 'Operation complete', headers) => {
     try {
       const data = await requestApi<unknown>(path, {
         method: 'POST',
+        headers,
         body: payload == null ? undefined : JSON.stringify(payload)
       });
-      pushToast({ title: label, tone: 'success' });
+      pushToast({ title: label, message: actionResultMessage(data), tone: 'success' });
       await refresh();
       return data;
     } catch (error) {
@@ -357,13 +393,15 @@ function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null | undefi
     }
   }, [pushToast, refresh]);
 
-  return { me, station, wreck, inventory, ships, crew, history, expeditions, notifications, marketplace, quarters, login, action, refresh };
+  return { me, station, wreck, inventory, ships, crew, history, expeditions, notifications, marketplace, catalog, auctions, recipes, quarters, login, action, refresh };
 }
 
 const navigation: TabItem[] = [
+  { id: 'guide', label: 'How to Play', icon: 'data' },
   { id: 'station', label: 'Station', icon: 'station' },
   { id: 'salvage', label: 'Salvage', icon: 'salvage' },
   { id: 'inventory', label: 'Hold', icon: 'inventory' },
+  { id: 'crafting', label: 'Craft', icon: 'resources' },
   { id: 'construction', label: 'Build', icon: 'construction' },
   { id: 'crew', label: 'Crew', icon: 'crew' },
   { id: 'ships', label: 'Ships', icon: 'expedition' },
@@ -413,19 +451,21 @@ function GameApp({ preferences, updatePreferences }: { preferences: UiPreference
   const me = game.me;
   const pageProps: GameData = { ...game, me };
   const pages: Record<string, ReactNode> = {
+    guide: <GuidePage />,
     station: <StationPage {...pageProps} />,
     salvage: <SalvagePage {...pageProps} />,
     inventory: <InventoryPage {...pageProps} />,
+    crafting: <CraftingPage recipes={game.recipes} inventory={game.inventory} catalog={game.catalog} action={game.action} />,
     construction: <ConstructionPage {...pageProps} />,
     crew: <CrewPage {...pageProps} />,
     ships: <ShipsPage {...pageProps} />,
     expeditions: <ExpeditionPage {...pageProps} />,
     museum: <MuseumPage {...pageProps} />,
     history: <HistoryPage {...pageProps} />,
-    notifications: <NotificationsPage notifications={game.notifications} />,
-    market: <MarketPage marketplace={game.marketplace} credits={me.player?.credits ?? 0} />,
-    quarters: <QuartersPage me={me} quarters={game.quarters} />,
-    profile: <ProfilePage me={me} />,
+    notifications: <NotificationsPage notifications={game.notifications} action={game.action} />,
+    market: <MarketPage marketplace={game.marketplace} credits={me.player?.credits ?? 0} inventory={game.inventory} catalog={game.catalog} auctions={game.auctions} action={game.action} />,
+    quarters: <QuartersPage me={me} quarters={game.quarters} action={game.action} />,
+    profile: <ProfilePage me={me} action={game.action} />,
     settings: <SettingsPage preferences={preferences} updatePreferences={updatePreferences} />
   };
 
@@ -435,7 +475,7 @@ function GameApp({ preferences, updatePreferences }: { preferences: UiPreference
         title="Station Zero Command Mesh"
         subtitle="Community salvage and orbital reconstruction network"
         status={<Badge tone="success" icon="network">LIVE LINK</Badge>}
-        actions={<Tooltip content="Refresh station telemetry"><Button variant="ghost" size="sm" icon={<NWIcon name="diagnostics" size={15} />} onClick={() => void game.refresh()}>Resync</Button></Tooltip>}
+        actions={<div className="inline-actions"><Tooltip content="Refresh station telemetry"><Button variant="ghost" size="sm" icon={<NWIcon name="diagnostics" size={15} />} onClick={() => void game.refresh()}>Resync</Button></Tooltip><Button variant="ghost" size="sm" onClick={() => void game.action('/api/v1/auth/logout', undefined, 'Signed out').then(() => { window.location.href = '/'; })}>Sign out</Button></div>}
         profile={<ProfileChip name={me.displayName} detail={`Rank ${me.player?.level ?? 1} · ${me.player?.title ?? 'Wrecker'}`} avatarUrl={me.avatarUrl || undefined} />}
       />}
       navigation={<CommandNavigation items={navigation} value={tab} onChange={setTab} />}
@@ -461,17 +501,29 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
   );
 }
 
-function StationPage({ station, wreck, inventory, history }: GameData) {
+function GuidePage() {
+  const steps = [
+    ['1. Salvage', 'Scan a wreck, then deploy cutters or cargo teams. Cargo mode rolls more wreck-specific materials; Research Skiffs yield Research Data, while freighters carry food and coolant supplies.'],
+    ['2. Build', 'Contribute recovered scrap, electronics, alloys, and research data to shared station modules.'],
+    ['3. Keep Zero alive', 'Repair the hull, fuel the reactor, and run food or medical drives. Power and integrity directly affect resident retention.'],
+    ['4. Trade', 'Buy fixed station stock or list your own items in the 48-hour player Auction House. Compare every item’s guide value first.'],
+    ['5. Expeditions', 'Glass Belt Runs return ice, water, algae, food, polymer, and biofiber. Dead Relay Pings return Research Data, electronics, lenses, charts, conduits, relays, and rare Quantum Keys.']
+  ];
+  return <div className="page-stack"><SectionTitle eyebrow="WRECKER ORIENTATION" title="How to Play" description="A quick path from first scan to a thriving player-run station." icon="data" /><Notification title="Hover for details" tone="info">Buttons, prices, status readouts, and item cards include contextual help. Timers count down beside actions that are busy.</Notification><ResponsiveGrid min="19rem">{steps.map(([title, body]) => <Card key={title}><span className="nw-eyebrow">FIELD MANUAL</span><h3>{title}</h3><p>{body}</p></Card>)}</ResponsiveGrid><Panel><SectionTitle eyebrow="COMMUNITY OBJECTIVE" title="Why population matters" icon="population" /><p>Residents are Station Zero’s workforce and survival score. A larger population supports future station capacity and shows that the community is keeping habitats safe. Residents arrive after food drives, clinics, good morale, and habitat construction; they leave when power, hull integrity, or morale becomes dangerous. The Station page names the current causes and gives every player actions to change them.</p></Panel></div>;
+}
+
+function StationPage({ station, wreck, inventory, history, action }: GameData) {
   const scrap = inventory.find(item => item.itemSlug === 'scrap')?.quantity ?? 0;
   return (
     <div className="page-stack">
       <SectionTitle eyebrow="ORBITAL COMMAND" title={station?.name ?? 'Station Zero'} description="Live station condition, active wreck telemetry, inventory readiness, and permanent community history." icon="station" />
       <ResponsiveGrid min="13rem" className="status-rack">
-        <PopulationDisplay current={station?.population ?? 0} trend={0} />
+        <Tooltip content={(station?.populationStatus?.reasons ?? ['Population reacts to power, hull safety, morale, food, and medical support.']).join(' ')}><div><PopulationDisplay current={station?.population ?? 0} capacity={station?.populationStatus?.capacity} trend={station?.populationStatus?.trend ?? 0} /></div></Tooltip>
         <StatusDisplay label="Power Reserve" value={station?.power ?? 0} unit="%" icon="power" tone={toneForValue(station?.power)} detail="Grid synchronized" />
         <StatusDisplay label="Hull Integrity" value={station?.integrity ?? 0} unit="%" icon="integrity" tone={toneForValue(station?.integrity)} detail={(station?.integrity ?? 0) < 50 ? 'Repair priority' : 'Pressure stable'} />
         <StatusDisplay label="Construction Stock" value={scrap} unit=" scrap" icon="resources" tone="info" detail="Personal hold" />
       </ResponsiveGrid>
+      <StationMaintenance station={station} inventory={inventory} action={action} />
       <SplitLayout ratio="minmax(0, 1.55fr) minmax(20rem, .85fr)">
         <StationSchematic station={station} />
         <div className="side-stack">
@@ -488,8 +540,27 @@ function StationPage({ station, wreck, inventory, history }: GameData) {
         <SectionTitle eyebrow="PERMANENT RECORD" title="Station Feed" description="Recent events written by server-side game systems." icon="events" />
         <HistoryList history={history} />
       </Panel>
+      {station?.modules.find(module => module.slug === 'refinery')?.state === 'active' && <Panel tone="purple"><SectionTitle eyebrow="REFINERY" title="Material Conversion" description="Convert 10 Hull Scrap into station-grade alloys." icon="reactor" /><Button onClick={() => void action('/api/v1/station/refine', { scrap: 10 }, 'Scrap refined')}>Refine 10 scrap</Button></Panel>}
     </div>
   );
+}
+
+function StationMaintenance({ station, inventory, action }: Pick<GameData, 'station' | 'inventory' | 'action'>) {
+  const [cooldowns, setCooldowns] = useState<Record<string, number>>({});
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
+  const run = async (key: string) => {
+    const result = await action('/api/v1/station/maintain', { action: key }, 'Community action complete') as { cooldownEndsAt?: string } | undefined;
+    if (result?.cooldownEndsAt) setCooldowns(current => ({ ...current, [key]: Date.parse(result.cooldownEndsAt!) }));
+  };
+  const qty = (slug: string) => inventory.find(item => item.itemSlug === slug)?.quantity ?? 0;
+  const options = [
+    { key: 'repair-hull', title: 'Repair Main Station', cost: '2 Hull Plates + 3 Sealant Foam', reward: '+8 integrity', ready: qty('hull-plate') >= 2 && qty('sealant-foam') >= 3 },
+    { key: 'fuel-reactor', title: 'Fuel Reactor Grid', cost: '2 Fuel Cells + 1 Reactor Coolant', reward: '+15 power', ready: qty('fuel') >= 2 && qty('reactor-coolant') >= 1 },
+    { key: 'food-drive', title: 'Run Food Drive', cost: '10 Ration Packs + 5 Water Cartridges', reward: '+6 residents, +4 morale', ready: qty('ration-pack') >= 10 && qty('water-cartridge') >= 5 },
+    { key: 'medical-clinic', title: 'Open Community Clinic', cost: '4 Medical Supplies', reward: '+3 residents, +6 morale', ready: qty('medical-supplies') >= 4 }
+  ];
+  return <Panel tone={(station?.integrity ?? 100) < 40 || (station?.power ?? 100) < 30 ? 'danger' : 'info'}><SectionTitle eyebrow="COMMUNITY OPERATIONS" title="Station Survival" description={(station?.populationStatus?.reasons ?? []).join(' ')} icon="population" /><ResponsiveGrid min="15rem">{options.map(option => { const remaining = (cooldowns[option.key] ?? 0) - now; return <Tooltip key={option.key} content={`Cost: ${option.cost}. Effect: ${option.reward}. These resources are consumed for the whole community.`}><Card><h3>{option.title}</h3><p>{option.cost}</p><Badge tone="success">{option.reward}</Badge><Button fullWidth disabled={!option.ready || remaining > 0} onClick={() => void run(option.key)}>{remaining > 0 ? `Ready in ${formatCountdown(remaining)}` : option.ready ? 'Contribute now' : 'Materials needed'}</Button></Card></Tooltip>; })}</ResponsiveGrid></Panel>;
 }
 
 function StationSchematic({ station }: { station: Station | null }) {
@@ -536,6 +607,7 @@ function SalvagePage({ wreck, action }: Pick<GameData, 'wreck' | 'action'>) {
         <Panel depth="medium">
           <ResponsiveGrid min="15rem" className="action-matrix">
             <CommandAction icon="scanner" title="Active Scan" detail="Acquire and profile the next salvage opportunity." onClick={() => void action('/api/v1/salvage/scan', undefined, 'Signal acquired')} />
+            <CommandAction icon="signal" title="Rush Scan" detail="Spend 75 StreamElements points to replace the current target immediately." onClick={() => void action('/api/v1/points/actions/rush_scan', undefined, 'Rush scan purchased', { 'Idempotency-Key': crypto.randomUUID() })} tone="purple" />
             <CommandAction icon="salvage" title="Deploy Cutters" detail="Execute the standard salvage profile." onClick={() => void action('/api/v1/salvage/deploy', { mode: 'cutters' }, 'Cutters deployed')} />
             <CommandAction icon="cargo" title="Recover Cargo" detail="Prioritize high-value internal cargo compartments." onClick={() => void action('/api/v1/salvage/deploy', { mode: 'cargo' }, 'Cargo team launched')} tone="info" />
             <CommandAction icon="danger" title="Safety Override" detail="Engage the existing high-risk deployment mode." onClick={() => setConfirmOverride(true)} tone="danger" />
@@ -544,14 +616,17 @@ function SalvagePage({ wreck, action }: Pick<GameData, 'wreck' | 'action'>) {
         </Panel>
         <WreckPanel wreck={wreck} />
       </SplitLayout>
-      <ConfirmWindow open={confirmOverride} onClose={() => setConfirmOverride(false)} onConfirm={() => { setConfirmOverride(false); void action('/api/v1/salvage/deploy', { mode: 'override' }, 'Override engaged'); }} title="Engage safety override?" confirmLabel="Engage override" tone="danger"><p>This command uses the existing high-risk salvage mode. Server restrictions and costs still apply.</p></ConfirmWindow>
+      <ConfirmWindow open={confirmOverride} onClose={() => setConfirmOverride(false)} onConfirm={() => { setConfirmOverride(false); void action('/api/v1/points/actions/safety_override', undefined, 'Override purchased', { 'Idempotency-Key': crypto.randomUUID() }); }} title="Purchase safety override?" confirmLabel="Spend 250 points" tone="danger"><p>This premium command charges StreamElements points before executing. Failed execution follows the server refund workflow.</p></ConfirmWindow>
     </div>
   );
 }
 
 function ConstructionPage({ station, inventory, action }: Pick<GameData, 'station' | 'inventory' | 'action'>) {
   const modules = station?.modules ?? [];
-  const activeProject = modules.find(module => module.state === 'building') ?? modules.find(module => module.slug === 'habitat-ring');
+  const defaultProject = modules.find(module => ['building', 'upgrading', 'damaged'].includes(module.state)) ?? modules.find(module => module.slug === 'habitat-ring');
+  const [moduleSlug, setModuleSlug] = useState(defaultProject?.slug ?? 'habitat-ring');
+  const activeProject = modules.find(module => module.slug === moduleSlug) ?? defaultProject;
+  const canContribute = Boolean(activeProject && ['locked', 'building', 'upgrading', 'damaged'].includes(activeProject.state));
   return (
     <div className="page-stack">
       <SectionTitle eyebrow="STRUCTURAL OPERATIONS" title="Construction Yard" description="Community module state and contribution progress, using the existing construction endpoint." icon="construction" />
@@ -559,59 +634,96 @@ function ConstructionPage({ station, inventory, action }: Pick<GameData, 'statio
         <ResponsiveGrid min="17rem">{modules.map(module => <ModuleCard key={module.slug} name={module.name} state={module.state} progress={module.progress ?? 0} icon={moduleIcon(module.slug)} />)}</ResponsiveGrid>
         <Panel tone="info" className="project-console">
           <SectionTitle eyebrow="ACTIVE PROJECT" title={activeProject?.name ?? 'No project queued'} icon="construction" />
+          <Field label="Construction target"><Select value={moduleSlug} onChange={event => setModuleSlug(event.target.value)}>{modules.map(module => <option key={module.slug} value={module.slug}>{module.name} · {module.state}</option>)}</Select></Field>
           <ProgressBar label="Build progress" value={activeProject?.progress ?? 0} tone="info" />
+          {activeProject?.project && <div className="material-readout"><span>Project requirements</span><strong>{Object.entries(activeProject.project.requirements).map(([slug, amount]) => `${slug} ${activeProject.project?.contributed[slug] ?? 0}/${amount}`).join(' · ')}</strong></div>}
           <div className="material-readout"><span>Available hold</span><strong>{inventory.map(item => `${item.name} ${item.quantity}`).join(' · ') || 'No materials'}</strong></div>
-          <Button variant="primary" fullWidth icon={<NWIcon name="resources" size={16} />} disabled={!activeProject} onClick={() => void action('/api/v1/construction/contribute', { moduleSlug: activeProject?.slug ?? 'habitat-ring', scrap: 10 }, 'Materials delivered')}>Contribute 10 Hull Scrap</Button>
+          <Button variant="primary" fullWidth icon={<NWIcon name="resources" size={16} />} disabled={!canContribute} onClick={() => void action('/api/v1/construction/contribute', { moduleSlug: activeProject?.slug ?? 'habitat-ring', scrap: 10 }, 'Materials delivered')}>Contribute 10 Hull Scrap</Button>
+          {activeProject?.state === 'active' && <Button variant="warning" fullWidth onClick={() => void action('/api/v1/construction/start', { moduleSlug: activeProject.slug, kind: 'upgrade' }, 'Module upgrade started')}>Start module upgrade</Button>}
+          <Button variant="ghost" fullWidth disabled={!canContribute} onClick={() => void action('/api/v1/construction/contribute', { moduleSlug: activeProject?.slug, electronics: 1 }, 'Electronics delivered')}>Contribute 1 Electronics</Button>
+          <Button variant="ghost" fullWidth disabled={!canContribute} onClick={() => void action('/api/v1/construction/contribute', { moduleSlug: activeProject?.slug, alloys: 1 }, 'Alloys delivered')}>Contribute 1 Alloy</Button>
+          <Button variant="ghost" fullWidth disabled={!canContribute} onClick={() => void action('/api/v1/construction/contribute', { moduleSlug: activeProject?.slug, researchData: 1 }, 'Research data delivered')}>Contribute 1 Research Data</Button>
         </Panel>
       </SplitLayout>
     </div>
   );
 }
 
-function InventoryPage({ inventory }: Pick<GameData, 'inventory'>) {
+function InventoryPage({ inventory, catalog }: Pick<GameData, 'inventory' | 'catalog'>) {
   const [filter, setFilter] = useState('all');
   const items = filter === 'all' ? inventory : inventory.filter(item => item.rarity === filter);
   return (
     <div className="page-stack">
       <SectionTitle eyebrow="PERSONAL LOGISTICS" title="Salvage Hold" description="Recovered resources, components, relics, and station currency records." icon="inventory" action={<Field label="Rarity filter" className="inline-field"><Select value={filter} onChange={(event: ChangeEvent<HTMLSelectElement>) => setFilter(event.target.value)}><option value="all">All records</option><option value="common">Common</option><option value="uncommon">Uncommon</option><option value="rare">Rare</option><option value="legendary">Legendary</option></Select></Field>} />
-      {items.length ? <ResponsiveGrid min="17rem">{items.map(item => <InventoryCard key={item.itemSlug} name={item.name} quantity={item.quantity} rarity={item.rarity} icon={itemIcon(item.itemSlug)} detail={item.visualKey} />)}</ResponsiveGrid> : <Notification title="No matching inventory" tone="info">Change the rarity filter to view other records.</Notification>}
+      {items.length ? <ResponsiveGrid min="17rem">{items.map(item => { const definition = catalog.find(entry => entry.slug === item.itemSlug); return <Tooltip key={item.itemSlug} content={`${definition?.description ?? item.name} Uses: ${definition?.uses.join('; ') || 'General salvage'}. Found: ${definition?.sources.join('; ') || 'Salvage operations'}.`}><div><InventoryCard name={item.name} quantity={item.quantity} rarity={item.rarity} icon={itemIcon(item.itemSlug)} detail={`${definition?.valueCredits ?? 0} cr each · ${definition?.recipes[0] ?? item.visualKey}`} /></div></Tooltip>; })}</ResponsiveGrid> : <Notification title="No matching inventory" tone="info">Change the rarity filter to view other records.</Notification>}
+      <Panel><SectionTitle eyebrow="ITEM CODEX" title="Values, Recipes & Discovery" description={`${catalog.length} known station items, including materials not yet recovered.`} icon="data" /><ResponsiveGrid min="18rem">{catalog.map(item => <Card key={item.slug}><div className="ship-card__head"><h3>{item.name}</h3><Badge tone="success">{item.valueCredits.toLocaleString()} cr</Badge></div><p>{item.description}</p><small><strong>USES</strong> {item.uses.join(' · ') || 'General trade and salvage'}</small><p><strong>RECIPE</strong> {item.recipes.join(' · ') || 'Cannot be crafted'}</p><small><strong>FIND IT</strong> {item.sources.join(' · ') || 'Salvage and trade'}</small></Card>)}</ResponsiveGrid></Panel>
     </div>
   );
 }
 
-function ShipsPage({ ships }: Pick<GameData, 'ships'>) {
+function CraftingPage({ recipes, inventory, catalog, action }: Pick<GameData, 'recipes' | 'inventory' | 'catalog' | 'action'>) {
+  const [cooldowns, setCooldowns] = useState<Record<string, number>>({});
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
+  const held = (slug: string) => inventory.find(item => item.itemSlug === slug)?.quantity ?? 0;
+  const craft = async (recipe: CraftingRecipe) => {
+    const result = await action('/api/v1/crafting/craft', { recipeSlug: recipe.slug, quantity: 1 }, `${recipe.name} crafted`) as { cooldownEndsAt?: string } | undefined;
+    if (result?.cooldownEndsAt) setCooldowns(current => ({ ...current, [recipe.slug]: Date.parse(result.cooldownEndsAt!) }));
+  };
+  return <div className="page-stack"><SectionTitle eyebrow="FABRICATION NETWORK" title="Crafting Bay" description="Turn salvage and expedition materials into reactor fuel, repair parts, food, medicine, and advanced components." icon="resources" /><Notification title="How the supply chain works" tone="info">Start with scrap, ice, algae, polymer, electronics, alloys, and Research Data from salvage or expeditions. Recipes consume the listed inputs immediately and place their output in your Hold. Locked recipes name the station module the community must activate.</Notification><ResponsiveGrid min="20rem">{recipes.map(recipe => { const ready = Object.entries(recipe.inputs).every(([slug, amount]) => held(slug) >= amount); const remaining = (cooldowns[recipe.slug] ?? 0) - now; return <Card key={recipe.slug}><div className="ship-card__head"><h3>{recipe.name}</h3><Badge tone={recipe.unlocked ? 'success' : 'warning'}>{recipe.unlocked ? `${recipe.durationSeconds}s` : `${recipe.stationModule} locked`}</Badge></div><div className="material-readout"><span>Requires</span><strong>{Object.entries(recipe.inputs).map(([slug, amount]) => `${catalog.find(item => item.slug === slug)?.name ?? slug} ${held(slug)}/${amount}`).join(' · ')}</strong></div><div className="material-readout"><span>Produces</span><strong>{Object.entries(recipe.outputs).map(([slug, amount]) => `${amount} × ${catalog.find(item => item.slug === slug)?.name ?? slug}`).join(' · ')}</strong></div><Button fullWidth disabled={!recipe.unlocked || !ready || remaining > 0} onClick={() => void craft(recipe)}>{remaining > 0 ? `Ready in ${formatCountdown(remaining)}` : !recipe.unlocked ? 'Station module offline' : ready ? 'Craft one batch' : 'Gather materials'}</Button></Card>; })}</ResponsiveGrid></div>;
+}
+
+function ShipsPage({ ships, crew, marketplace, station, me, action }: Pick<GameData, 'ships' | 'crew' | 'marketplace' | 'station' | 'me' | 'action'>) {
+  const fleetCapacity = Math.max(1, Math.floor(crew.length / 2));
+  const canAddShip = ships.length < fleetCapacity;
+  const shipyardActive = station?.modules.find(module => module.slug === 'shipyard')?.state === 'active';
   return (
     <div className="page-stack">
-      <SectionTitle eyebrow="FLEET REGISTRY" title="Ships" description="Condition, fuel, and cargo telemetry for registered station craft." icon="expedition" />
-      <ResponsiveGrid min="19rem">{ships.map(ship => <Card key={ship.id} className="ship-card"><div className="ship-card__schematic"><NWIcon name="expedition" size={50} /><span className="nw-numeric">{ship.classSlug}</span></div><div className="ship-card__head"><h3>{ship.name}</h3><Badge tone={toneForValue(ship.condition)}>{ship.condition}% condition</Badge></div><HealthBar label="Hull condition" value={ship.condition} /><div className="ship-card__stats"><StatusDisplay compact label="Cargo" value={ship.cargoCapacity} icon="cargo" tone="info" /><StatusDisplay compact label="Fuel" value={ship.fuel} icon="fuel" tone="purple" /></div></Card>)}</ResponsiveGrid>
+      <SectionTitle eyebrow="FLEET REGISTRY" title="Ships" description="Condition, fuel, cargo, and crew-supported fleet capacity." icon="expedition" action={<Badge tone={canAddShip ? 'success' : 'warning'}>{ships.length}/{fleetCapacity} SLOTS</Badge>} />
+      <ResponsiveGrid min="19rem">{ships.map(ship => <Card key={ship.id} className="ship-card"><div className="ship-card__schematic"><NWIcon name="expedition" size={50} /><span className="nw-numeric">{ship.classSlug}</span></div><div className="ship-card__head"><h3>{ship.name}</h3><Badge tone={toneForValue(ship.condition)}>{ship.condition}% condition</Badge></div><HealthBar label="Hull condition" value={ship.condition} /><div className="ship-card__stats"><StatusDisplay compact label="Cargo" value={ship.cargoCapacity} icon="cargo" tone="info" /><StatusDisplay compact label="Fuel" value={ship.fuel} icon="fuel" tone="purple" /></div><div className="inline-actions"><Button size="sm" onClick={() => void action(`/api/v1/ships/${ship.id}/refuel`, { cells: 1 }, 'Ship refueled')}>Use fuel cell</Button><Button size="sm" variant="ghost" disabled={ship.condition >= 100} onClick={() => void action(`/api/v1/ships/${ship.id}/repair`, { amount: Math.min(10, 100 - ship.condition) }, 'Ship repaired')}>Repair hull</Button><Button size="sm" variant="ghost" onClick={() => void action(`/api/v1/ships/${ship.id}/upgrade`, { slug: 'expanded-hold' }, 'Cargo upgrade installed')}>Upgrade hold</Button></div></Card>)}</ResponsiveGrid>
       {!ships.length && <Notification title="No registered craft" tone="info">The fleet registry is currently empty.</Notification>}
+      <Panel tone="purple"><SectionTitle eyebrow="SHIP BROKER" title="Expand the Fleet" description="Each registered ship requires two recruited crew. Purchases require an active Marketplace and Shipyard." icon="trade" /><ResponsiveGrid min="13rem"><StatusDisplay label="Credits" value={me.player?.credits ?? 0} unit=" cr" icon="credits" tone="success" /><StatusDisplay label="Crew" value={crew.length} icon="crew" tone="info" /><StatusDisplay label="Fleet Capacity" value={fleetCapacity} icon="expedition" tone="purple" /></ResponsiveGrid>{!marketplace?.unlocked && <Notification title="Marketplace offline" tone="warning">Repair the Marketplace module in the Build menu before buying ships.</Notification>}{!shipyardActive && <Notification title="Shipyard offline" tone="warning">Complete the Shipyard module before buying ships.</Notification>}<div className="inline-actions"><Button disabled={!canAddShip || !marketplace?.unlocked || !shipyardActive || (me.player?.credits ?? 0) < 1200} onClick={() => void action('/api/v1/ships/purchase', { classSlug: 'salvage-skiff' }, 'Salvage Skiff purchased')}>Buy Salvage Skiff · 1,200 cr</Button><Button variant="ghost" disabled={!canAddShip || !marketplace?.unlocked || !shipyardActive || (me.player?.credits ?? 0) < 2200} onClick={() => void action('/api/v1/ships/purchase', { classSlug: 'cargo-hauler' }, 'Cargo Hauler purchased')}>Buy Cargo Hauler · 2,200 cr</Button></div>{!canAddShip && <p>Recruit {Math.max(0, (ships.length + 1) * 2 - crew.length)} more crew to open the next fleet slot.</p>}</Panel>
     </div>
   );
 }
 
-function CrewPage({ crew }: Pick<GameData, 'crew'>) {
+function CrewPage({ crew, action }: Pick<GameData, 'crew' | 'action'>) {
+  const [recruitName, setRecruitName] = useState('Nova');
+  const [recruitRole, setRecruitRole] = useState('engineer');
   return (
     <div className="page-stack">
       <SectionTitle eyebrow="PERSONNEL NETWORK" title="Crew Roster" description="Role, level, morale, and trait telemetry from the station crew service." icon="crew" />
-      <ResponsiveGrid min="18rem">{crew.map(member => <Card key={member.id} className="crew-card"><div className="crew-card__identity"><div className="crew-ident">{member.name.slice(0, 2).toUpperCase()}</div><div><h3>{member.name}</h3><p>{member.role} · Level {member.level}</p></div><Badge tone={toneForValue(member.morale)}>{member.morale}% morale</Badge></div><ProgressBar label="Morale" value={member.morale} tone={toneForValue(member.morale)} /><div className="trait-list">{member.traits?.map((trait: string) => <Pill key={trait} tone="neutral">{trait}</Pill>)}</div></Card>)}</ResponsiveGrid>
+      <ResponsiveGrid min="18rem">{crew.map(member => <Card key={member.id} className="crew-card"><div className="crew-card__identity"><div className="crew-ident">{member.name.slice(0, 2).toUpperCase()}</div><div><h3>{member.name}</h3><p>{member.role} · Level {member.level}</p></div><Badge tone={toneForValue(member.morale)}>{member.morale}% morale</Badge></div><ProgressBar label="Morale" value={member.morale} tone={toneForValue(member.morale)} /><div className="trait-list">{member.traits?.map((trait: string) => <Pill key={trait} tone="neutral">{trait}</Pill>)}</div><Button size="sm" variant="ghost" onClick={() => void action(`/api/v1/crew/${member.id}/train`, undefined, 'Crew member trained')}>Train crew</Button></Card>)}</ResponsiveGrid>
       {!crew.length && <Notification title="No crew records" tone="info">Personnel data has not yet been assigned to this station.</Notification>}
+      <Panel><SectionTitle eyebrow="RECRUITMENT" title="Hire Crew" description="Recruitment costs are enforced by the server." icon="crew" /><Field label="Crew name"><Input value={recruitName} onChange={event => setRecruitName(event.target.value)} /></Field><Field label="Role"><Select value={recruitRole} onChange={event => setRecruitRole(event.target.value)}><option value="pilot">Pilot</option><option value="engineer">Engineer</option><option value="medic">Medic</option><option value="scout">Scout</option><option value="quartermaster">Quartermaster</option></Select></Field><Button onClick={() => void action('/api/v1/crew/recruit', { name: recruitName, role: recruitRole }, 'Crew recruited')}>Recruit for 400 credits</Button></Panel>
     </div>
   );
 }
 
-function ExpeditionPage({ expeditions, action }: Pick<GameData, 'expeditions' | 'action'>) {
+function ExpeditionPage({ expeditions, ships, crew, action }: Pick<GameData, 'expeditions' | 'ships' | 'crew' | 'action'>) {
+  const [shipId, setShipId] = useState(ships[0]?.id ?? '');
+  const [crewIds, setCrewIds] = useState<string[]>(crew.slice(0, 3).map(member => member.id));
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { if (!shipId && ships[0]) setShipId(ships[0].id); }, [shipId, ships]);
+  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
+  const toggleCrew = (id: string) => setCrewIds(current => current.includes(id) ? current.filter(candidate => candidate !== id) : [...current, id].slice(0, 4));
+  const launch = (definition: string) => action('/api/v1/expeditions/launch', { definition, shipId: shipId || undefined, crewIds }, 'Expedition launched');
+  const selectedMission = expeditions.find(expedition => expedition.status === 'active' && expedition.shipId === shipId);
+  const selectedCountdown = selectedMission?.resolvesAt ? formatCountdown(Date.parse(selectedMission.resolvesAt) - now) : null;
   return (
     <div className="page-stack">
       <SectionTitle eyebrow="DEEP FIELD" title="Expeditions" description="Launch existing expedition definitions, observe worker resolution, and claim server-calculated rewards." icon="expedition" />
       <ResponsiveGrid min="18rem" className="expedition-launchers">
-        <CommandAction icon="expedition" title="Glass Belt Run" detail="Moderate-risk deployment using one fuel and two crew." onClick={() => void action('/api/v1/expeditions/launch', { definition: 'glass-belt-run' }, 'Expedition launched')} />
-        <CommandAction icon="signal" title="Dead Relay Ping" detail="High-risk signal investigation using the existing definition." onClick={() => void action('/api/v1/expeditions/launch', { definition: 'dead-relay-ping' }, 'Expedition launched')} tone="purple" />
+        <CommandAction icon="expedition" title="Glass Belt Run" detail={selectedCountdown ? `Selected ship returns in ${selectedCountdown}` : 'Moderate-risk deployment using one fuel and two crew.'} disabled={Boolean(selectedMission)} onClick={() => void launch('glass-belt-run')} />
+        <CommandAction icon="signal" title="Dead Relay Ping" detail={selectedCountdown ? `Selected ship returns in ${selectedCountdown}` : 'High-risk signal investigation requiring two fuel and three crew.'} disabled={Boolean(selectedMission)} onClick={() => void launch('dead-relay-ping')} tone="purple" />
       </ResponsiveGrid>
+      <Panel><SectionTitle eyebrow="MISSION LOADOUT" title="Assign ship and crew" icon="crew" /><Field label="Ship"><Select value={shipId} onChange={event => setShipId(event.target.value)}>{ships.map(ship => <option key={ship.id} value={ship.id}>{ship.name} · {ship.fuel} fuel</option>)}</Select></Field><div className="trait-list">{crew.map(member => <Button key={member.id} size="sm" variant={crewIds.includes(member.id) ? 'primary' : 'ghost'} onClick={() => toggleCrew(member.id)}>{member.name} · {member.role}</Button>)}</div><p>{crewIds.length} crew assigned. Up to four may deploy.</p></Panel>
       <Panel>
         <SectionTitle eyebrow="MISSION LEDGER" title="Deployment History" icon="archive" />
         <DataGrid rows={expeditions ?? []} getRowKey={expedition => expedition.id} empty="No expeditions have been launched." columns={[
           { key: 'name', header: 'Mission', render: expedition => <strong>{expedition.name}</strong> },
           { key: 'status', header: 'Status', render: expedition => <Badge tone={expeditionTone(expedition.status)}>{expedition.status}</Badge> },
+          { key: 'return', header: 'Return', render: expedition => expedition.status === 'active' && expedition.resolvesAt ? <span className="nw-numeric">{formatCountdown(Date.parse(expedition.resolvesAt) - now)}</span> : <span className="nw-numeric">—</span> },
           { key: 'log', header: 'Incident log', render: expedition => expedition.incidentLog?.join(' ') || 'Awaiting telemetry' },
           { key: 'action', header: 'Command', align: 'right', render: expedition => ['resolved', 'failed'].includes(expedition.status) ? <Button size="sm" variant="primary" onClick={() => void action(`/api/v1/expeditions/${expedition.id}/claim`, undefined, 'Expedition claimed')}>Claim</Button> : <span className="nw-numeric">LOCKED</span> }
         ]} />
@@ -620,12 +732,14 @@ function ExpeditionPage({ expeditions, action }: Pick<GameData, 'expeditions' | 
   );
 }
 
-function MuseumPage({ station }: Pick<GameData, 'station'>) {
+function MuseumPage({ station, inventory, action }: Pick<GameData, 'station' | 'inventory' | 'action'>) {
   const plaques = station?.modules.flatMap(module => module.plaques ?? []) ?? [];
+  const artifacts = inventory.filter(item => item.itemSlug === 'unknown-relic');
   return (
     <div className="page-stack">
       <SectionTitle eyebrow="CULTURAL ARCHIVE" title="Museum & Founders Hall" description="Permanent plaques earned by the community and stored in station records." icon="museum" />
       {plaques.length ? <ResponsiveGrid min="19rem">{plaques.map(plaque => <Card key={plaque.id} className="plaque-card"><NWIcon name="museum" size={24} /><span className="nw-eyebrow">ARCHIVE PLAQUE</span><h3>{plaque.title}</h3><p>{plaque.body}</p></Card>)}</ResponsiveGrid> : <Notification title="No plaques installed" tone="info" icon="museum">Community milestones will appear here when the existing game systems create them.</Notification>}
+      {artifacts.map(item => <Panel key={item.itemSlug} tone="purple"><SectionTitle eyebrow="DONATION READY" title={item.name} icon="museum" /><p>{item.quantity} held in personal inventory.</p><Button onClick={() => void action('/api/v1/museum/donate', { itemSlug: item.itemSlug }, 'Artifact donated')}>Donate artifact</Button></Panel>)}
     </div>
   );
 }
@@ -639,22 +753,28 @@ function HistoryPage({ history }: Pick<GameData, 'history'>) {
   );
 }
 
-function NotificationsPage({ notifications }: { notifications: PlayerNotification[] }) {
+function NotificationsPage({ notifications, action }: { notifications: PlayerNotification[]; action: ActionHandler }) {
   const unread = notifications.filter(notification => !notification.readAt).length;
   return (
     <div className="page-stack">
-      <SectionTitle eyebrow="PERSONAL SIGNALS" title="Notifications" description="Server-persisted notices for this authenticated wrecker." icon="notifications" action={<Badge tone={unread ? 'warning' : 'success'}>{unread} unread</Badge>} />
+      <SectionTitle eyebrow="PERSONAL SIGNALS" title="Notifications" description="Server-persisted notices for this authenticated wrecker." icon="notifications" action={<div className="inline-actions"><Badge tone={unread ? 'warning' : 'success'}>{unread} unread</Badge>{unread > 0 && <Button size="sm" variant="ghost" onClick={() => void action('/api/v1/notifications/read-all', undefined, 'Notifications marked read')}>Mark all read</Button>}</div>} />
       {notifications.length ? <Panel><ScrollableList label="Player notifications" maxHeight="68vh">{notifications.map(notification => (
         <Notification key={notification.id} title={notification.title} tone={notificationTone(notification)} icon="notifications">
           {notification.body}
           <span className="notification-meta nw-numeric">{notification.type.toUpperCase()} · {new Date(notification.createdAt).toLocaleString()}{notification.readAt ? ' · READ' : ' · UNREAD'}</span>
+          {!notification.readAt && <Button size="sm" variant="ghost" onClick={() => void action(`/api/v1/notifications/${notification.id}/read`, undefined, 'Notification marked read')}>Mark read</Button>}
         </Notification>
       ))}</ScrollableList></Panel> : <Notification title="Signal queue clear" tone="success">No personal notifications are currently stored for this account.</Notification>}
     </div>
   );
 }
 
-function MarketPage({ marketplace, credits }: { marketplace: Marketplace | null; credits: number }) {
+function MarketPage({ marketplace, credits, inventory, catalog, auctions, action }: { marketplace: Marketplace | null; credits: number; inventory: InventoryItem[]; catalog: ItemDefinition[]; auctions: AuctionListing[]; action: ActionHandler }) {
+  const [sellItem, setSellItem] = useState(inventory.find(item => item.quantity > 0)?.itemSlug ?? '');
+  const [sellQuantity, setSellQuantity] = useState(1);
+  const [sellPrice, setSellPrice] = useState(100);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
   return (
     <div className="page-stack">
       <SectionTitle eyebrow="COMMERCE NETWORK" title="Marketplace" description="Live marketplace availability and server-provided listings." icon="trade" action={<Badge tone={marketplace?.unlocked ? 'success' : 'warning'}>{marketplace?.unlocked ? 'ONLINE' : 'LOCKED'}</Badge>} />
@@ -662,31 +782,45 @@ function MarketPage({ marketplace, credits }: { marketplace: Marketplace | null;
       {marketplace?.unlocked ? (marketplace.listings.length ? <Panel><DataGrid caption="Current station marketplace listings" rows={marketplace.listings} getRowKey={listing => listing.slug} columns={[
         { key: 'item', header: 'Listing', render: listing => <span className="market-listing"><NWIcon name={itemIcon(listing.itemSlug)} size={17} /><strong>{listing.name}</strong></span> },
         { key: 'quantity', header: 'Quantity', align: 'right', render: listing => <span className="nw-numeric">{listing.quantity}</span> },
-        { key: 'price', header: 'Price', align: 'right', render: listing => <span className="nw-numeric">{listing.priceCredits.toLocaleString()} cr</span> }
+        { key: 'price', header: 'Price', align: 'right', render: listing => <span className="nw-numeric">{listing.priceCredits.toLocaleString()} cr</span> },
+        { key: 'buy', header: 'Command', align: 'right', render: listing => <Button size="sm" disabled={credits < listing.priceCredits} onClick={() => void action('/api/v1/marketplace/buy', { slug: listing.slug, quantity: 1 }, 'Purchase complete')}>Buy</Button> }
       ]} /></Panel> : <Notification title="No listings transmitted" tone="info">The marketplace module is active, but the server returned no current listings.</Notification>) : <Panel className="locked-system"><div className="locked-system__glyph"><NWIcon name="market" size={58} /></div><Badge tone="warning">MODULE OFFLINE</Badge><h2>Marketplace access unavailable</h2><p>The server reports that the marketplace module is not active. The interface cannot bypass that station state.</p><ProgressBar value={0} label="Network availability" tone="warning" /></Panel>}
+      {marketplace?.unlocked && <><Panel><SectionTitle eyebrow="PLAYER MARKET" title="Auction House" description="Player listings hold items for 48 hours. The shown price is for the full stack." icon="trade" /><DataGrid caption="Active player auctions" rows={auctions} getRowKey={listing => listing.id} empty="No active player auctions." columns={[
+        { key: 'item', header: 'Item', render: listing => <Tooltip content={catalog.find(item => item.slug === listing.itemSlug)?.description ?? listing.itemName}><strong>{listing.quantity} × {listing.itemName}</strong></Tooltip> },
+        { key: 'seller', header: 'Seller', render: listing => listing.sellerName },
+        { key: 'value', header: 'Guide value', align: 'right', render: listing => <span className="nw-numeric">{((catalog.find(item => item.slug === listing.itemSlug)?.valueCredits ?? 0) * listing.quantity).toLocaleString()} cr</span> },
+        { key: 'price', header: 'Auction price', align: 'right', render: listing => <span className="nw-numeric">{listing.priceCredits.toLocaleString()} cr</span> },
+        { key: 'time', header: 'Ends', render: listing => <span className="nw-numeric">{formatCountdown(Date.parse(listing.expiresAt) - now)}</span> },
+        { key: 'buy', header: 'Command', align: 'right', render: listing => <Button size="sm" disabled={listing.ownListing || credits < listing.priceCredits} onClick={() => void action(`/api/v1/auction/${listing.id}/buy`, undefined, 'Auction purchase complete')}>{listing.ownListing ? 'Your listing' : 'Buy stack'}</Button> }
+      ]} /></Panel><Panel><SectionTitle eyebrow="CREATE LISTING" title="Auction Your Items" icon="inventory" /><ResponsiveGrid min="12rem"><Field label="Item"><Select value={sellItem} onChange={event => setSellItem(event.target.value)}>{inventory.filter(item => item.quantity > 0 && item.itemSlug !== 'credits').map(item => <option key={item.itemSlug} value={item.itemSlug}>{item.name} ({item.quantity})</option>)}</Select></Field><Field label="Quantity"><Input type="number" min={1} value={sellQuantity} onChange={event => setSellQuantity(Number(event.target.value))} /></Field><Field label="Full stack price (credits)"><Input type="number" min={1} value={sellPrice} onChange={event => setSellPrice(Number(event.target.value))} /></Field></ResponsiveGrid><p>Guide value: {((catalog.find(item => item.slug === sellItem)?.valueCredits ?? 0) * sellQuantity).toLocaleString()} cr</p><Button disabled={!sellItem || sellQuantity < 1 || sellPrice < 1} onClick={() => void action('/api/v1/auction/list', { itemSlug: sellItem, quantity: sellQuantity, priceCredits: sellPrice }, 'Auction created')}>List for 48 hours</Button></Panel><Panel><SectionTitle eyebrow="SELL INVENTORY" title="Station Buyback" icon="trade" /><ResponsiveGrid min="14rem">{inventory.filter(item => item.quantity > 0).map(item => { const value = catalog.find(entry => entry.slug === item.itemSlug)?.valueCredits ?? 0; return <Tooltip key={item.itemSlug} content={`Guide value ${value} credits. Station buyback may pay a different amount based on career and spread.`}><Card><strong>{item.name}</strong><p>{item.quantity} available · {value.toLocaleString()} cr guide value each</p><Button size="sm" variant="ghost" onClick={() => void action('/api/v1/marketplace/sell', { itemSlug: item.itemSlug, quantity: 1 }, 'Item sold')}>Sell one</Button></Card></Tooltip>; })}</ResponsiveGrid></Panel></>}
     </div>
   );
 }
 
-function QuartersPage({ me, quarters }: { me: CurrentUser; quarters: Quarters | null }) {
+function QuartersPage({ me, quarters, action }: { me: CurrentUser; quarters: Quarters | null; action: ActionHandler }) {
+  const [theme, setTheme] = useState(quarters?.layout.theme ?? 'station-zero-default');
+  const [objects, setObjects] = useState<QuartersObject[]>(quarters?.layout.objects ?? []);
+  const moveObject = (index: number, dx: number, dy: number) => setObjects(current => current.map((object, objectIndex) => objectIndex === index ? { ...object, x: Math.max(0, Math.min(7, object.x + dx)), y: Math.max(0, Math.min(4, object.y + dy)) } : object));
   return (
     <div className="page-stack">
       <SectionTitle eyebrow="PERSONAL HABITAT" title="Quarters Interface" description="Authenticated occupant identity and the current server-provided habitat layout." icon="module" />
       <SplitLayout>
         <Panel><SectionTitle eyebrow="OCCUPANT" title={me.displayName} icon="twitch" /><ProfileChip name={me.displayName} detail={`${me.player?.career ?? 'Wrecker'} · Level ${me.player?.level ?? 1}`} avatarUrl={me.avatarUrl || undefined} /><div className="quarters-readouts"><StatusDisplay label="Access Level" value={me.player?.level ?? 1} icon="module" tone="purple" /><StatusDisplay label="Credits" value={me.player?.credits ?? 0} unit=" cr" icon="credits" tone="success" /><StatusDisplay label="Layout Theme" value={quarters?.layout.theme ?? 'UNAVAILABLE'} icon="settings" tone="info" /></div></Panel>
-        <Panel><SectionTitle eyebrow="HABITAT MAP" title="Installed objects" description="Coordinates are supplied by the current quarters endpoint." icon="diagnostics" />{quarters ? <div className="quarters-map" role="img" aria-label={`Quarters layout containing ${quarters.layout.objects.length} objects`}>{quarters.layout.objects.map(object => <div key={`${object.key}-${object.x}-${object.y}`} className="quarters-object" style={{ '--quarters-x': object.x, '--quarters-y': object.y } as CSSProperties}><NWIcon name={quartersObjectIcon(object.key)} size={19} /><span>{object.key.replaceAll('-', ' ')}</span><small className="nw-numeric">X{object.x} Y{object.y}</small></div>)}</div> : <Notification title="Layout unavailable" tone="warning">The quarters endpoint did not return a layout during this synchronization cycle.</Notification>}</Panel>
+        <Panel><SectionTitle eyebrow="HABITAT MAP" title="Installed objects" description="Move owned fixtures on the eight-by-five habitat grid and save the layout." icon="diagnostics" />{quarters ? <><Field label="Habitat theme"><Select value={theme} onChange={event => setTheme(event.target.value)}><option value="station-zero-default">Station Zero</option><option value="frost-wrecks">Frost Wrecks</option></Select></Field><div className="quarters-map" role="img" aria-label={`Quarters layout containing ${objects.length} objects`}>{objects.map(object => <div key={`${object.key}-${object.x}-${object.y}`} className="quarters-object" style={{ '--quarters-x': object.x, '--quarters-y': object.y } as CSSProperties}><NWIcon name={quartersObjectIcon(object.key)} size={19} /><span>{object.key.replaceAll('-', ' ')}</span><small className="nw-numeric">X{object.x} Y{object.y}</small></div>)}</div><div className="settings-grid">{objects.map((object, index) => <div key={object.key} className="inline-actions"><strong>{object.key.replaceAll('-', ' ')}</strong><Button size="sm" variant="ghost" onClick={() => moveObject(index, -1, 0)}>←</Button><Button size="sm" variant="ghost" onClick={() => moveObject(index, 1, 0)}>→</Button><Button size="sm" variant="ghost" onClick={() => moveObject(index, 0, -1)}>↑</Button><Button size="sm" variant="ghost" onClick={() => moveObject(index, 0, 1)}>↓</Button></div>)}</div><Button onClick={() => void action('/api/v1/quarters', { theme, objects }, 'Quarters saved')}>Save layout</Button></> : <Notification title="Layout unavailable" tone="warning">The quarters endpoint did not return a layout during this synchronization cycle.</Notification>}</Panel>
       </SplitLayout>
     </div>
   );
 }
 
-function ProfilePage({ me }: { me: CurrentUser }) {
+function ProfilePage({ me, action }: { me: CurrentUser; action: ActionHandler }) {
   return (
     <div className="page-stack">
       <SectionTitle eyebrow="IDENTITY RECORD" title="Wrecker Profile" description="Authenticated Twitch identity and existing player progression data." icon="twitch" />
       <Panel depth="medium" className="profile-console">
         <ProfileChip name={me.displayName} detail={me.player?.title ?? 'Wrecker'} avatarUrl={me.avatarUrl || undefined} />
         <ResponsiveGrid min="12rem"><StatusDisplay label="Level" value={me.player?.level ?? 1} icon="crew" tone="purple" /><StatusDisplay label="Credits" value={me.player?.credits ?? 0} unit=" cr" icon="credits" tone="success" /><StatusDisplay label="Career" value={me.player?.career ?? 'Wrecker'} icon="salvage" tone="info" /></ResponsiveGrid>
+        <Field label="Retrain career" hint="The first selection is free; later changes cost credits and have a cooldown."><Select defaultValue={me.player?.career ?? 'salvager'} onChange={event => void action('/api/v1/player/career', { career: event.target.value }, 'Career updated')}><option value="salvager">Salvager</option><option value="hauler">Hauler</option><option value="engineer">Engineer</option><option value="builder">Builder</option><option value="explorer">Explorer</option><option value="trader">Trader</option></Select></Field>
+        <Button variant="ghost" onClick={() => void action('/api/v1/auth/logout', undefined, 'Signed out').then(() => { window.location.href = '/'; })}>Sign out</Button>
       </Panel>
     </div>
   );
@@ -721,9 +855,9 @@ function SettingsPage({ preferences, updatePreferences }: { preferences: UiPrefe
   );
 }
 
-function CommandAction({ icon, title, detail, onClick, tone = 'success' }: { icon: IconName; title: string; detail: string; onClick: () => void; tone?: Tone }) {
+function CommandAction({ icon, title, detail, onClick, tone = 'success', disabled = false }: { icon: IconName; title: string; detail: string; onClick: () => void; tone?: Tone; disabled?: boolean }) {
   return (
-    <button className={`command-action nw-tone--${tone}`} onClick={onClick}>
+    <button className={`command-action nw-tone--${tone}`} onClick={onClick} disabled={disabled}>
       <span className="command-action__icon"><NWIcon name={icon} size={25} /></span>
       <span className="nw-eyebrow">COMMAND</span>
       <strong>{title}</strong>
@@ -731,6 +865,30 @@ function CommandAction({ icon, title, detail, onClick, tone = 'success' }: { ico
       <i aria-hidden="true">EXECUTE</i>
     </button>
   );
+}
+
+function formatCountdown(milliseconds: number) {
+  if (milliseconds <= 0) return '00:00';
+  const totalSeconds = Math.ceil(milliseconds / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor(totalSeconds % 3600 / 60);
+  const seconds = totalSeconds % 60;
+  return hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}` : `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+function actionResultMessage(value: unknown) {
+  if (!value || typeof value !== 'object') return 'Station records synchronized.';
+  const record = value as Record<string, unknown>;
+  if (typeof record.received === 'string') return `Received: ${record.received}.`;
+  if (record.received && typeof record.received === 'object') {
+    if (Array.isArray(record.received)) return `Received: ${record.received.map(entry => { const item = entry as Record<string, unknown>; return `${item.quantity ?? ''} ${item.name ?? item.itemSlug ?? 'reward'}`; }).join(', ')}.`;
+    const received = record.received as Record<string, unknown>;
+    return `Received ${received.quantity ?? ''} ${received.name ?? received.itemSlug ?? 'reward'}.`;
+  }
+  const rewards = ['credits', 'creditsSpent', 'creditsEarned', 'scrapConsumed', 'alloysProduced', 'xp', 'loot', 'reward']
+    .filter(key => record[key] != null)
+    .map(key => `${key.replace(/([A-Z])/g, ' $1').toLowerCase()}: ${typeof record[key] === 'object' ? JSON.stringify(record[key]) : String(record[key])}`);
+  return rewards.length ? rewards.join(' · ') : 'The action completed and your station data was updated.';
 }
 
 function HistoryList({ history, limit = 12 }: { history: HistoryEntry[]; limit?: number }) {

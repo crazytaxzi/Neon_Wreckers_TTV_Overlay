@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
 import { discoverWreck } from '@neon-wreckers/game-engine';
-import { initialStation, wreckArchetypes } from '@neon-wreckers/content';
+import { initialStation, modules, wreckArchetypes } from '@neon-wreckers/content';
 
 const prisma = new PrismaClient();
 
@@ -47,6 +47,25 @@ async function main() {
         integrity: module.integrity,
         visualKey: module.visualKey,
         effects: JSON.parse(JSON.stringify(module.effects)) as Prisma.InputJsonValue
+      }
+    });
+  }
+
+  const seededModuleSlugs = new Set(stationSeed.modules.map(module => module.slug));
+  for (const definition of modules.filter(module => !seededModuleSlugs.has(module.slug))) {
+    await prisma.stationModule.upsert({
+      where: { stationId_slug: { stationId: station.id, slug: definition.slug } },
+      update: { name: definition.name, visualKey: definition.visualKey, effects: JSON.parse(JSON.stringify(definition.effects)) as Prisma.InputJsonValue },
+      create: {
+        stationId: station.id,
+        slug: definition.slug,
+        name: definition.name,
+        level: 0,
+        state: definition.slug === 'marketplace' ? 'damaged' : 'locked',
+        progress: 0,
+        integrity: definition.slug === 'marketplace' ? 35 : 100,
+        visualKey: definition.visualKey,
+        effects: JSON.parse(JSON.stringify(definition.effects)) as Prisma.InputJsonValue
       }
     });
   }

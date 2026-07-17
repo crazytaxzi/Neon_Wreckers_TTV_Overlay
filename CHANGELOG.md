@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.0 - Full mechanics foundation
+
+- Added durable cooldowns, career progression, module prerequisites/upgrades, plaque persistence, ship and crew management, expedition assignments, station buy/sell trading, persistent quarters, museum donations, notification actions, seasons, admin live events, and Twitch EventSub ingestion.
+- Made Rush Scan and Safety Override point-funded premium actions and added replay ownership checks.
+- Added a backward-compatible database migration and expanded content, route, migration, and engine verification.
+
 ## 2.0.0 - Phase 2: UI foundation and design system
 
 ### Interface system

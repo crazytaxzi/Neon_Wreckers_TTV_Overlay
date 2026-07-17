@@ -14,6 +14,7 @@ import {
   upsertPlayerForTwitch
 } from '../services/auth.js';
 import { publicMe } from '../services/station.js';
+import { saveTwitchCredential } from '../services/twitch-credentials.js';
 
 export async function registerAuthRoutes(app: FastifyInstance, context: ApiContext) {
   app.get('/api/v1/auth/twitch/start', async (_request, reply) => {
@@ -53,6 +54,7 @@ export async function registerAuthRoutes(app: FastifyInstance, context: ApiConte
     const token = await exchangeTwitchCode(config, query.code);
     const twitchUser = await fetchTwitchUser(env.TWITCH_CLIENT_ID, token.access_token);
     const user = await upsertPlayerForTwitch(context.prisma, twitchUser);
+    if (twitchUser.id === env.STREAMER_TWITCH_ID) await saveTwitchCredential(context.prisma, user.id, token);
     const session = await createSession(context.prisma, user.id);
     setSessionCookie(reply, session.raw, session.expiresAt);
     reply.clearCookie('nw_twitch_state', { path: '/api/v1/auth/twitch' });

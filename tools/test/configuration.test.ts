@@ -12,6 +12,7 @@ Object.assign(process.env, {
 
 const { parseEnvironment } = await import('../../apps/api/src/env.js');
 const { readSignedCookie } = await import('../../apps/api/src/services/auth.js');
+const { decryptCredential, encryptCredential } = await import('../../apps/api/src/services/twitch-credentials.js');
 const {
   constructionProgressRules,
   expeditionDefinitions,
@@ -52,6 +53,13 @@ test('signed cookie reader rejects invalid signatures', () => {
 
   assert.equal(readSignedCookie(valid, 'nw_session'), 'raw-token');
   assert.equal(readSignedCookie(invalid, 'nw_session'), null);
+});
+
+test('streamer credentials use authenticated encryption at rest', () => {
+  const encrypted = encryptCredential('renewable-secret');
+  assert.notEqual(encrypted, 'renewable-secret');
+  assert.equal(decryptCredential(encrypted), 'renewable-secret');
+  assert.throws(() => decryptCredential(`${encrypted.slice(0, -1)}x`));
 });
 
 test('runtime game configuration matches the canonical balance document', () => {

@@ -70,6 +70,8 @@ The installer validates `.env`, installs Docker and Certbot when absent, validat
 - `TWITCH_CLIENT_SECRET`: Twitch application client secret.
 - `TWITCH_REDIRECT_URI`: exact HTTPS callback registered with Twitch, normally `https://PUBLIC_HOST/api/v1/auth/twitch/callback`.
 - `TWITCH_REQUIRED_SCOPES`: space- or comma-separated OAuth scopes.
+- `TWITCH_EVENTSUB_SECRET`: high-entropy 10–100 character secret shared with Twitch to verify EventSub webhook signatures.
+- `CREDENTIAL_ENCRYPTION_KEY`: separate high-entropy secret used to encrypt the streamer's renewable Twitch authorization at rest.
 - `STREAMER_TWITCH_ID`: immutable Twitch user ID that receives streamer and admin roles during sign-in.
 
 ### StreamElements

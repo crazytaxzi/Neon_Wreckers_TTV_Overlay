@@ -2,9 +2,11 @@ import type { FastifyInstance } from 'fastify';
 import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { GameRuleError, launchExpedition, resolveExpedition } from '@neon-wreckers/game-engine';
-import { expeditionDefinitions, itemsBySlug } from '@neon-wreckers/content';
+import { expeditionDefinitions, itemsBySlug, progressionRules } from '@neon-wreckers/content';
 import type { ApiContext } from '../types.js';
 import { requireAdmin, requireUser } from '../services/auth.js';
+import { acquireTransactionLock } from '../lib/database.js';
+import { levelForXp } from '../services/actions.js';
 
 const launchSchema = z.object({
   definition: z.string().min(1).default('glass-belt-run'),
@@ -44,6 +46,7 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
       },
       take: 4
     });
+    if (crew.some(member => member.injuredUntil && member.injuredUntil > new Date())) throw new GameRuleError('CREW_INJURED', 'An assigned crew member is still recovering.');
     const launched = launchExpedition({
       player: user.player,
       ship,
@@ -51,11 +54,19 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
       expeditionDefinition: definition
     });
     const expedition = await context.prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
-      await transaction.ship.update({ where: { id: ship.id }, data: { fuel: launched.ship.fuel } });
+      await acquireTransactionLock(transaction, `player:${playerId}:expedition`);
+      if (await transaction.expedition.findFirst({ where: { playerId, shipId: ship.id, status: 'active' } })) throw new GameRuleError('SHIP_BUSY', 'That ship is already away on expedition.');
+      const active = await transaction.expedition.findMany({ where: { playerId, status: 'active' }, select: { crewIds: true } });
+      const busyCrew = new Set(active.flatMap(candidate => candidate.crewIds));
+      if (crew.some(member => busyCrew.has(member.id))) throw new GameRuleError('CREW_BUSY', 'An assigned crew member is already away.');
+      const consumed = await transaction.ship.updateMany({ where: { id: ship.id, playerId, fuel: { gte: definition.fuelCost }, condition: { gt: 0 } }, data: { fuel: { decrement: definition.fuelCost } } });
+      if (!consumed.count) throw new GameRuleError('NO_FUEL', 'The selected ship is unavailable or lacks fuel.');
       return transaction.expedition.create({
         data: {
           playerId,
           definition: body.definition,
+          shipId: ship.id,
+          crewIds: crew.map(member => member.id),
           name: launched.name,
           status: 'active',
           risk: launched.risk,
@@ -149,6 +160,14 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
       visualKey: string;
     }>;
     const history = await context.prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
+      const inventory = await transaction.inventoryStack.findMany({ where: { playerId } });
+      const rewardItems = rewards.filter(reward => reward.itemSlug !== 'credits');
+      const newSlugs = new Set(rewardItems.filter(reward => !inventory.some(stack => stack.itemSlug === reward.itemSlug)).map(reward => reward.itemSlug));
+      if (inventory.length + newSlugs.size > user.player.inventoryCapacity) throw new GameRuleError('INVENTORY_FULL', 'Clear inventory space before claiming this expedition.');
+      for (const reward of rewardItems) {
+        const current = inventory.find(stack => stack.itemSlug === reward.itemSlug)?.quantity ?? 0;
+        if (current + reward.quantity > itemsBySlug[reward.itemSlug].stackLimit) throw new GameRuleError('STACK_LIMIT', `${reward.name} stack limit reached.`);
+      }
       const claimed = await transaction.expedition.updateMany({
         where: { id: expedition.id, playerId, status: { in: ['resolved', 'failed'] } },
         data: { status: 'claimed' }
@@ -167,6 +186,9 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
       if (credits) {
         await transaction.player.update({ where: { id: playerId }, data: { credits: { increment: credits } } });
       }
+      const currentPlayer = await transaction.player.findUniqueOrThrow({ where: { id: playerId } });
+      const xpGain = expedition.status === 'resolved' ? 30 : 10;
+      await transaction.player.update({ where: { id: playerId }, data: { xp: { increment: xpGain }, level: levelForXp(currentPlayer.xp + xpGain, progressionRules.levelXp), reputation: { increment: expedition.status === 'resolved' ? 2 : 0 } } });
       const station = await transaction.station.findUniqueOrThrow({ where: { slug: 'station-zero' } });
       return transaction.historyEntry.create({
         data: {
