@@ -163,7 +163,7 @@ export function launchExpedition({ player, ship, crew, expeditionDefinition, see
   };
 }
 
-export function resolveExpedition({ expedition, items, seed, now = nowIso() }) {
+export function resolveExpedition({ expedition, expeditionDefinition, items, seed, now = nowIso() }) {
   if (expedition.status !== 'active') throw new GameRuleError('EXPEDITION_NOT_ACTIVE','This expedition is not active.');
   if (Date.parse(now) < Date.parse(expedition.resolvesAt)) throw new GameRuleError('EXPEDITION_NOT_READY','Crew is still out past the local beacon line.');
   const rng = createRng(seed ?? `${expedition.id}:${now}`);
@@ -174,12 +174,8 @@ export function resolveExpedition({ expedition, items, seed, now = nowIso() }) {
     : [stack(requiredItem(items, 'scrap'), intBetween(2,8,rng))];
   if (success && rng() < .16) rewards.push(stack(requiredItem(items, 'research-data'), 1));
   if (success) {
-    const missionPool = expedition.definition === 'dead-relay-ping'
-      ? ['research-data', 'electronics', 'sensor-lens', 'navigation-chart', 'plasma-conduit', 'quantum-key', 'grid-relay']
-      : ['ice-crystal', 'water-cartridge', 'algae-culture', 'nutrient-paste', 'polymer', 'biofiber', 'ration-pack'];
-    const rolls = expedition.definition === 'dead-relay-ping' ? 2 : 3;
-    for (let roll = 0; roll < rolls; roll += 1) {
-      const slug = missionPool[Math.floor(rng() * missionPool.length)];
+    for (let roll = 0; roll < expeditionDefinition.lootRolls; roll += 1) {
+      const slug = expeditionDefinition.lootPool[Math.floor(rng() * expeditionDefinition.lootPool.length)];
       rewards.push(stack(requiredItem(items, slug), 1 + Math.floor(rng() * 3)));
     }
   }

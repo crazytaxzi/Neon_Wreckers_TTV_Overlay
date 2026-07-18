@@ -64,6 +64,7 @@
     "sellPrices": { "scrap": 4, "electronics": 35, "fuel": 45, "alloys": 50, "research-data": 140, "unknown-relic": 300 }
   },
   "crafting": {
+    "fuel-cell": { "name": "Fuel Cells", "durationSeconds": 30, "inputs": { "reactor-coolant": 1, "electronics": 2 }, "outputs": { "fuel": 2 }, "stationModule": "refinery" },
     "coolant": { "name": "Reactor Coolant", "durationSeconds": 20, "inputs": { "chemical-gel": 2, "ice-crystal": 1 }, "outputs": { "reactor-coolant": 1 }, "stationModule": "refinery" },
     "sealant": { "name": "Sealant Foam", "durationSeconds": 12, "inputs": { "polymer": 2, "chemical-gel": 1 }, "outputs": { "sealant-foam": 2 }, "stationModule": "refinery" },
     "hull-plate": { "name": "Hull Plate", "durationSeconds": 25, "inputs": { "scrap": 5, "alloys": 2 }, "outputs": { "hull-plate": 1 }, "stationModule": "refinery" },
@@ -90,9 +91,12 @@
     {
       "slug": "glass-belt-run",
       "name": "Glass Belt Run",
+      "description": "Skim the crystalline debris belt for survival supplies and refinery feedstock.",
       "risk": "moderate",
       "fuelCost": 1,
       "minCrew": 2,
+      "lootPool": ["ice-crystal", "water-cartridge", "algae-culture", "nutrient-paste", "polymer", "biofiber", "ration-pack"],
+      "lootRolls": 3,
       "durationMinutes": [
         20,
         35
@@ -101,13 +105,49 @@
     {
       "slug": "dead-relay-ping",
       "name": "Dead Relay Ping",
+      "description": "Board a silent navigation relay where valuable signal hardware may still be intact.",
       "risk": "high",
       "fuelCost": 2,
       "minCrew": 3,
+      "lootPool": ["research-data", "electronics", "sensor-lens", "navigation-chart", "plasma-conduit", "quantum-key", "grid-relay"],
+      "lootRolls": 2,
       "durationMinutes": [
         30,
         55
       ]
+    },
+    {
+      "slug": "derelict-convoy-sweep",
+      "name": "Derelict Convoy Sweep",
+      "description": "Search a scattered freight convoy for structural parts and intact drive supplies.",
+      "risk": "moderate",
+      "fuelCost": 2,
+      "minCrew": 2,
+      "lootPool": ["scrap", "alloys", "electronics", "fuel", "hull-plate", "sealant-foam", "drone-chassis"],
+      "lootRolls": 3,
+      "durationMinutes": [25, 45]
+    },
+    {
+      "slug": "cryo-vault-descent",
+      "name": "Cryo Vault Descent",
+      "description": "Descend into a frozen research vault stocked with medical and reactor materials.",
+      "risk": "high",
+      "fuelCost": 3,
+      "minCrew": 3,
+      "lootPool": ["ice-crystal", "reactor-coolant", "medical-supplies", "chemical-gel", "research-data", "power-core"],
+      "lootRolls": 3,
+      "durationMinutes": [35, 60]
+    },
+    {
+      "slug": "black-nebula-breach",
+      "name": "Black Nebula Breach",
+      "description": "Push beyond reliable telemetry into a volatile relic field with exceptional salvage.",
+      "risk": "extreme",
+      "fuelCost": 4,
+      "minCrew": 4,
+      "lootPool": ["unknown-relic", "quantum-key", "grid-relay", "power-core", "navigation-chart", "plasma-conduit", "research-data"],
+      "lootRolls": 4,
+      "durationMinutes": [50, 80]
     }
   ]
 }

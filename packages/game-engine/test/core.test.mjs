@@ -94,11 +94,11 @@ test('expeditions consume fuel and resolve deterministically after their timer',
   });
   assert.equal(launched.ship.fuel, 3);
   assert.throws(
-    () => resolveExpedition({ expedition: launched, items: itemsBySlug, seed: 'resolve-1', now: '2026-07-11T00:05:00.000Z' }),
+    () => resolveExpedition({ expedition: launched, expeditionDefinition: expeditionDefinitions['glass-belt-run'], items: itemsBySlug, seed: 'resolve-1', now: '2026-07-11T00:05:00.000Z' }),
     error => error instanceof GameRuleError && error.code === 'EXPEDITION_NOT_READY'
   );
-  const first = resolveExpedition({ expedition: launched, items: itemsBySlug, seed: 'resolve-1', now: '2026-07-12T00:00:00.000Z' });
-  const second = resolveExpedition({ expedition: launched, items: itemsBySlug, seed: 'resolve-1', now: '2026-07-12T00:00:00.000Z' });
+  const first = resolveExpedition({ expedition: launched, expeditionDefinition: expeditionDefinitions['glass-belt-run'], items: itemsBySlug, seed: 'resolve-1', now: '2026-07-12T00:00:00.000Z' });
+  const second = resolveExpedition({ expedition: launched, expeditionDefinition: expeditionDefinitions['glass-belt-run'], items: itemsBySlug, seed: 'resolve-1', now: '2026-07-12T00:00:00.000Z' });
   assert.deepEqual(first, second);
   assert.ok(['resolved', 'failed'].includes(first.status));
 });

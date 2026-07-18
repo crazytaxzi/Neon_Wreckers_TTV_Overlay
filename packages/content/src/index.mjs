@@ -82,9 +82,12 @@ const pointActionSchema = z.object({ cost: z.number().int().positive() });
 const expeditionDefinitionSchema = z.object({
   slug,
   name: z.string().min(1),
+  description: z.string().min(1),
   risk,
   fuelCost: z.number().int().nonnegative(),
   minCrew: z.number().int().nonnegative(),
+  lootPool: z.array(slug).min(1),
+  lootRolls: z.number().int().positive(),
   durationMinutes: z.tuple([z.number().int().positive(), z.number().int().positive()])
     .refine(([minimum, maximum]) => maximum >= minimum, 'Expedition duration maximum must be greater than or equal to its minimum.')
 });

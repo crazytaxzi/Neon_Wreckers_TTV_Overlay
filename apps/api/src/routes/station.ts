@@ -36,6 +36,18 @@ export async function registerStationRoutes(app: FastifyInstance, context: ApiCo
     return { data: await context.prisma.crewMember.findMany({ where: { playerId: user.player.id } }), requestId: request.id };
   });
 
+  app.get('/api/v1/cooldowns', async request => {
+    const user = await requireUser(context.prisma, request);
+    return {
+      data: await context.prisma.actionCooldown.findMany({
+        where: { playerId: user.player.id, expiresAt: { gt: new Date() } },
+        select: { actionKey: true, expiresAt: true },
+        orderBy: { expiresAt: 'asc' }
+      }),
+      requestId: request.id
+    };
+  });
+
   app.get('/api/v1/history', async request => ({
     data: await context.prisma.historyEntry.findMany({ orderBy: { createdAt: 'desc' }, take: 50 }),
     requestId: request.id
@@ -81,7 +93,7 @@ export async function registerStationRoutes(app: FastifyInstance, context: ApiCo
     } as const;
     const rule = rules[body.action];
     const result = await context.prisma.$transaction(async transaction => {
-      await enforceDurableCooldown(transaction, user.player.id, `station:${body.action}`, rule.cooldown);
+      const cooldownEndsAt = await enforceDurableCooldown(transaction, user.player.id, `station:${body.action}`, rule.cooldown);
       for (const [itemSlug, quantity] of Object.entries(rule.items)) {
         const removed = await transaction.inventoryStack.updateMany({ where: { playerId: user.player.id, itemSlug, quantity: { gte: quantity } }, data: { quantity: { decrement: quantity } } });
         if (!removed.count) throw new GameRuleError('NOT_ENOUGH_MATERIALS', `Requires ${quantity} × ${itemsBySlugFallback(itemSlug)}.`);
@@ -96,7 +108,7 @@ export async function registerStationRoutes(app: FastifyInstance, context: ApiCo
       const received = [rule.integrity && `+${rule.integrity} hull integrity`, rule.power && `${rule.power > 0 ? '+' : ''}${rule.power} power`, rule.population && `+${rule.population} population`, rule.morale && `+${rule.morale} morale`].filter(Boolean).join(', ');
       await transaction.notification.create({ data: { playerId: user.player.id, type: 'reward', title: rule.label, body: `Your action provided ${received}. Cooldown: ${rule.cooldown} seconds.` } });
       await transaction.historyEntry.create({ data: { stationId: station.id, playerId: user.player.id, category: 'community', title: rule.label, body: `${user.displayName} provided ${received}.`, actorDisplayName: user.displayName } });
-      return { action: body.action, received, station: { integrity: updated.integrity, power: updated.power, population: updated.population, morale: updated.morale }, cooldownEndsAt: new Date(Date.now() + rule.cooldown * 1000).toISOString() };
+      return { action: body.action, received, station: { integrity: updated.integrity, power: updated.power, population: updated.population, morale: updated.morale }, cooldownEndsAt: cooldownEndsAt.toISOString() };
     });
     return { data: result, requestId: request.id };
   });

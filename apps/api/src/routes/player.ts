@@ -16,10 +16,19 @@ const quartersSchema = z.object({
   objects: z.array(z.object({ key: z.enum(quartersRules.objects as [string, ...string[]]), x: z.number().int().min(0).lt(quartersRules.width), y: z.number().int().min(0).lt(quartersRules.height) })).max(30)
 }).refine(body => new Set(body.objects.map(object => `${object.x}:${object.y}`)).size === body.objects.length, 'Quarters objects cannot overlap.');
 const careerSchema = z.object({ career: z.enum(Object.keys(careerRules) as [string, ...string[]]) });
+const auctionDurationSchema = z.union([z.literal(6), z.literal(12), z.literal(24), z.literal(48), z.literal(72)]);
+
+function auctionCancellationFee(priceCredits: number) {
+  return Math.min(250, Math.max(10, Math.ceil(priceCredits * 0.02)));
+}
 
 export async function registerPlayerRoutes(app: FastifyInstance, context: ApiContext) {
   app.get('/api/v1/items/catalog', async request => ({
-    data: items.map(item => ({ ...item, valueCredits: item.valueCredits || marketplaceRules.sellPrices[item.slug] || 0 })),
+    data: items.map(item => ({
+      ...item,
+      valueCredits: item.valueCredits || marketplaceRules.sellPrices[item.slug] || 0,
+      sellable: marketplaceRules.sellPrices[item.slug] != null
+    })),
     requestId: request.id
   }));
 
@@ -31,13 +40,13 @@ export async function registerPlayerRoutes(app: FastifyInstance, context: ApiCon
 
   app.post('/api/v1/crafting/craft', async request => {
     const user = await requireUser(context.prisma, request);
-    const body = z.object({ recipeSlug: z.string().min(1), quantity: z.number().int().positive().max(25).default(1) }).parse(request.body);
+    const body = z.object({ recipeSlug: z.string().min(1), quantity: z.number().int().positive().max(5).default(1) }).parse(request.body);
     const recipe = craftingRules[body.recipeSlug];
     if (!recipe) throw new GameRuleError('RECIPE_NOT_FOUND', 'Unknown crafting recipe.');
     const station = await stationDto(context.prisma);
     if (station.modules.find(module => module.slug === recipe.stationModule)?.state !== 'active') throw new GameRuleError('CRAFTING_STATION_OFFLINE', `Requires the active ${recipe.stationModule.replaceAll('-', ' ')} module.`);
     const result = await context.prisma.$transaction(async transaction => {
-      await enforceDurableCooldown(transaction, user.player.id, `craft:${body.recipeSlug}`, recipe.durationSeconds);
+      const cooldownEndsAt = await enforceDurableCooldown(transaction, user.player.id, `craft:${body.recipeSlug}`, recipe.durationSeconds * body.quantity);
       await acquireTransactionLock(transaction, `player:${user.player.id}:crafting`);
       for (const [itemSlug, amount] of Object.entries(recipe.inputs)) {
         const required = amount * body.quantity;
@@ -53,7 +62,7 @@ export async function registerPlayerRoutes(app: FastifyInstance, context: ApiCon
       }
       const summary = received.map(item => `${item.quantity} × ${item.name}`).join(', ');
       await transaction.notification.create({ data: { playerId: user.player.id, type: 'crafting', title: `${recipe.name} crafted`, body: `Received ${summary}.` } });
-      return { received, cooldownEndsAt: new Date(Date.now() + recipe.durationSeconds * 1000).toISOString() };
+      return { received, quantity: body.quantity, cooldownEndsAt: cooldownEndsAt.toISOString() };
     });
     return { data: result, requestId: request.id };
   });
@@ -91,20 +100,20 @@ export async function registerPlayerRoutes(app: FastifyInstance, context: ApiCon
       include: { seller: { include: { user: { select: { displayName: true } } } } },
       orderBy: { createdAt: 'desc' }, take: 100
     });
-    return { data: listings.map(listing => ({ ...listing, sellerName: listing.seller.user.displayName, ownListing: listing.sellerId === user.player.id })), requestId: request.id };
+    return { data: listings.map(listing => ({ ...listing, sellerName: listing.seller.user.displayName, ownListing: listing.sellerId === user.player.id, cancellationFee: auctionCancellationFee(listing.priceCredits) })), requestId: request.id };
   });
 
   app.post('/api/v1/auction/list', async request => {
     const user = await requireUser(context.prisma, request);
-    const body = z.object({ itemSlug: z.string().min(1), quantity: z.number().int().positive().max(999), priceCredits: z.number().int().positive().max(10_000_000) }).parse(request.body);
+    const body = z.object({ itemSlug: z.string().min(1), quantity: z.number().int().positive().max(999), priceCredits: z.number().int().positive().max(10_000_000), durationHours: auctionDurationSchema.default(48) }).parse(request.body);
     const item = itemsBySlug[body.itemSlug];
     if (!item || item.slug === 'credits') throw new GameRuleError('ITEM_NOT_LISTABLE', 'That item cannot be auctioned.');
     const listing = await context.prisma.$transaction(async transaction => {
       await acquireTransactionLock(transaction, `player:${user.player.id}:auction`);
       const removed = await transaction.inventoryStack.updateMany({ where: { playerId: user.player.id, itemSlug: body.itemSlug, quantity: { gte: body.quantity } }, data: { quantity: { decrement: body.quantity } } });
       if (!removed.count) throw new GameRuleError('NOT_ENOUGH_ITEMS', 'Not enough inventory to create this listing.');
-      const created = await transaction.auctionListing.create({ data: { sellerId: user.player.id, itemSlug: item.slug, itemName: item.name, quantity: body.quantity, priceCredits: body.priceCredits, expiresAt: new Date(Date.now() + 48 * 60 * 60_000) } });
-      await transaction.notification.create({ data: { playerId: user.player.id, type: 'auction', title: 'Auction listed', body: `${body.quantity} × ${item.name} listed for ${body.priceCredits.toLocaleString()} credits.` } });
+      const created = await transaction.auctionListing.create({ data: { sellerId: user.player.id, itemSlug: item.slug, itemName: item.name, quantity: body.quantity, priceCredits: body.priceCredits, expiresAt: new Date(Date.now() + body.durationHours * 60 * 60_000) } });
+      await transaction.notification.create({ data: { playerId: user.player.id, type: 'auction', title: 'Auction listed', body: `${body.quantity} × ${item.name} listed for ${body.priceCredits.toLocaleString()} credits for ${body.durationHours} hours.` } });
       return created;
     });
     return { data: listing, requestId: request.id };
@@ -129,6 +138,28 @@ export async function registerPlayerRoutes(app: FastifyInstance, context: ApiCon
         { playerId: listing.sellerId, type: 'reward', title: 'Auction sold', body: `${listing.quantity} × ${listing.itemName} sold. You received ${listing.priceCredits.toLocaleString()} credits.` }
       ] });
       return { received: { itemSlug: listing.itemSlug, name: listing.itemName, quantity: listing.quantity }, creditsSpent: listing.priceCredits };
+    });
+    return { data: result, requestId: request.id };
+  });
+
+  app.post('/api/v1/auction/:id/cancel', async request => {
+    const user = await requireUser(context.prisma, request);
+    const id = String((request.params as { id: string }).id);
+    const result = await context.prisma.$transaction(async transaction => {
+      await acquireTransactionLock(transaction, `auction:${id}`);
+      const listing = await transaction.auctionListing.findUnique({ where: { id } });
+      if (!listing || listing.status !== 'active') throw new GameRuleError('LISTING_UNAVAILABLE', 'This auction is no longer active.');
+      if (listing.sellerId !== user.player.id) throw new GameRuleError('NOT_LISTING_OWNER', 'Only the seller may cancel this auction.');
+      const item = itemsBySlug[listing.itemSlug];
+      const current = await transaction.inventoryStack.findUnique({ where: { playerId_itemSlug: { playerId: user.player.id, itemSlug: listing.itemSlug } } });
+      if ((current?.quantity ?? 0) + listing.quantity > item.stackLimit) throw new GameRuleError('STACK_LIMIT', `Make room in your ${listing.itemName} stack before cancelling.`);
+      const cancellationFee = auctionCancellationFee(listing.priceCredits);
+      const charged = await transaction.player.updateMany({ where: { id: user.player.id, credits: { gte: cancellationFee } }, data: { credits: { decrement: cancellationFee } } });
+      if (!charged.count) throw new GameRuleError('NOT_ENOUGH_CREDITS', `Cancelling this auction costs ${cancellationFee} credits.`);
+      await transaction.auctionListing.update({ where: { id }, data: { status: 'cancelled' } });
+      await transaction.inventoryStack.upsert({ where: { playerId_itemSlug: { playerId: user.player.id, itemSlug: listing.itemSlug } }, update: { quantity: { increment: listing.quantity } }, create: { playerId: user.player.id, itemSlug: listing.itemSlug, name: listing.itemName, quantity: listing.quantity, rarity: item.rarity, visualKey: item.visualKey } });
+      await transaction.notification.create({ data: { playerId: user.player.id, type: 'auction', title: 'Auction cancelled', body: `${listing.quantity} × ${listing.itemName} returned to your hold. Cancellation fee: ${cancellationFee} credits.` } });
+      return { cancelled: true, returned: { itemSlug: listing.itemSlug, name: listing.itemName, quantity: listing.quantity }, cancellationFee };
     });
     return { data: result, requestId: request.id };
   });

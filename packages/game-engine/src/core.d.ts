@@ -77,9 +77,12 @@ export interface WreckState {
 export interface ExpeditionDefinition {
   slug: string;
   name: string;
+  description: string;
   risk: Risk;
   fuelCost: number;
   minCrew: number;
+  lootPool: readonly string[];
+  lootRolls: number;
   durationMinutes: readonly [number, number];
 }
 
@@ -150,6 +153,7 @@ export function launchExpedition(args: {
 }): ExpeditionState & { launchedAt: string; resolvesAt: string; ship: Record<string, unknown> & { fuel: number } };
 export function resolveExpedition(args: {
   expedition: ExpeditionState;
+  expeditionDefinition: ExpeditionDefinition;
   items: Readonly<Record<string, ItemDefinition>>;
   seed?: string;
   now?: string;

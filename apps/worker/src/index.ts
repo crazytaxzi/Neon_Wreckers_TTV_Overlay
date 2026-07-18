@@ -1,7 +1,7 @@
 import { PrismaClient, type Prisma } from '@prisma/client';
 import { Queue, Worker } from 'bullmq';
 import { discoverWreck, resolveExpedition } from '@neon-wreckers/game-engine';
-import { events, itemsBySlug, seasons, wreckArchetypes } from '@neon-wreckers/content';
+import { events, expeditionDefinitions, itemsBySlug, seasons, wreckArchetypes } from '@neon-wreckers/content';
 import { parseRedisConnection } from '@neon-wreckers/integrations';
 
 const redisUrl = process.env.REDIS_URL;
@@ -29,6 +29,7 @@ const worker = new Worker(
         incidentLog: expedition.incidentLog as string[],
         rewards: expedition.rewards as unknown[]
       },
+      expeditionDefinition: expeditionDefinitions[expedition.definition],
       items: itemsBySlug,
       now: expedition.resolvesAt.toISOString()
     });
@@ -121,7 +122,7 @@ async function tickLiveOperations() {
   const now = new Date();
   const overdueExpeditions = await prisma.expedition.findMany({ where: { status: 'active', resolvesAt: { lte: now } }, select: { id: true }, take: 100 });
   for (const expedition of overdueExpeditions) {
-    await gameQueue.add('resolve-expedition', { expeditionId: expedition.id }, { jobId: `reconcile:${expedition.id}:${Math.floor(now.getTime() / 60_000)}`, attempts: 3, backoff: { type: 'exponential', delay: 5_000 }, removeOnComplete: 100, removeOnFail: 500 });
+    await gameQueue.add('resolve-expedition', { expeditionId: expedition.id }, { jobId: `reconcile-${expedition.id}-${Math.floor(now.getTime() / 60_000)}`, attempts: 3, backoff: { type: 'exponential', delay: 5_000 }, removeOnComplete: 100, removeOnFail: 500 });
   }
   await prisma.contentVersion.updateMany({ where: { lifecycle: 'scheduled', scheduledAt: { lte: now }, OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] }, data: { lifecycle: 'active', publishedAt: now } });
   await prisma.contentVersion.updateMany({ where: { lifecycle: 'active', expiresAt: { lte: now } }, data: { lifecycle: 'archived' } });
@@ -166,6 +167,25 @@ async function tickLiveOperations() {
   }
 }
 
+async function recoverActiveExpeditions() {
+  const activeExpeditions = await prisma.expedition.findMany({ where: { status: 'active' }, select: { id: true, resolvesAt: true }, take: 500 });
+  for (const expedition of activeExpeditions) {
+    if (!expedition.resolvesAt) {
+      console.error('Active expedition has no resolution time', { expeditionId: expedition.id });
+      continue;
+    }
+    await gameQueue.add('resolve-expedition', { expeditionId: expedition.id }, {
+      delay: Math.max(0, expedition.resolvesAt.getTime() - Date.now()),
+      jobId: `recovery-${expedition.id}`,
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5_000 },
+      removeOnComplete: 100,
+      removeOnFail: 500
+    });
+  }
+}
+
+void recoverActiveExpeditions().catch(error => console.error('Active expedition recovery failed', error));
 void tickLiveOperations().catch(error => console.error('Live operations tick failed', error));
 const liveOperationsTimer = setInterval(() => void tickLiveOperations().catch(error => console.error('Live operations tick failed', error)), 60_000);
 liveOperationsTimer.unref();

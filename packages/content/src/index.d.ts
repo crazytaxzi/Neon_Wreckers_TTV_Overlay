@@ -88,9 +88,12 @@ export interface InitialStation {
 export interface ExpeditionDefinition {
   slug: string;
   name: string;
+  description: string;
   risk: Risk;
   fuelCost: number;
   minCrew: number;
+  lootPool: readonly string[];
+  lootRolls: number;
   durationMinutes: readonly [number, number];
 }
 

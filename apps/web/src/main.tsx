@@ -158,6 +158,7 @@ type Expedition = {
   id: string;
   definition: string;
   shipId: string | null;
+  crewIds: string[];
   name: string;
   status: string;
   risk: string;
@@ -203,9 +204,20 @@ type Marketplace = {
   listings: MarketplaceListing[];
 };
 
-type ItemDefinition = { slug: string; name: string; rarity: string; valueCredits: number; description: string; uses: string[]; recipes: string[]; sources: string[] };
-type AuctionListing = { id: string; itemSlug: string; itemName: string; quantity: number; priceCredits: number; sellerName: string; ownListing: boolean; expiresAt: string };
+type ItemDefinition = { slug: string; name: string; rarity: string; valueCredits: number; sellable: boolean; description: string; uses: string[]; recipes: string[]; sources: string[] };
+type AuctionListing = { id: string; itemSlug: string; itemName: string; quantity: number; priceCredits: number; sellerName: string; ownListing: boolean; cancellationFee: number; expiresAt: string };
 type CraftingRecipe = { slug: string; name: string; durationSeconds: number; inputs: Record<string, number>; outputs: Record<string, number>; stationModule: string; unlocked: boolean };
+type ActionCooldown = { actionKey: string; expiresAt: string };
+type ExpeditionDefinition = {
+  slug: string;
+  name: string;
+  description: string;
+  risk: string;
+  fuelCost: number;
+  minCrew: number;
+  durationMinutes: [number, number];
+  lootPool: Array<{ slug: string; name: string; rarity: string }>;
+};
 
 type QuartersObject = {
   key: string;
@@ -240,11 +252,13 @@ type GameData = {
   crew: CrewMember[];
   history: HistoryEntry[];
   expeditions: Expedition[];
+  expeditionDefinitions: ExpeditionDefinition[];
   notifications: PlayerNotification[];
   marketplace: Marketplace | null;
   catalog: ItemDefinition[];
   auctions: AuctionListing[];
   recipes: CraftingRecipe[];
+  cooldowns: ActionCooldown[];
   quarters: Quarters | null;
   login: () => void;
   action: ActionHandler;
@@ -298,17 +312,19 @@ function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null | undefi
   const [crew, setCrew] = useState<CrewMember[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [expeditions, setExpeditions] = useState<Expedition[]>([]);
+  const [expeditionDefinitions, setExpeditionDefinitions] = useState<ExpeditionDefinition[]>([]);
   const [notifications, setNotifications] = useState<PlayerNotification[]>([]);
   const [marketplace, setMarketplace] = useState<Marketplace | null>(null);
   const [catalog, setCatalog] = useState<ItemDefinition[]>([]);
   const [auctions, setAuctions] = useState<AuctionListing[]>([]);
   const [recipes, setRecipes] = useState<CraftingRecipe[]>([]);
+  const [cooldowns, setCooldowns] = useState<ActionCooldown[]>([]);
   const [quarters, setQuarters] = useState<Quarters | null>(null);
   const { pushToast } = useToast();
 
   const refresh = useCallback(async () => {
     setMe(await requestApi<CurrentUser>('/api/v1/me'));
-    const [stationResult, wreckResult, inventoryResult, shipsResult, crewResult, historyResult, expeditionsResult, notificationsResult, marketplaceResult, quartersResult, catalogResult, auctionResult, recipesResult] = await Promise.allSettled([
+    const [stationResult, wreckResult, inventoryResult, shipsResult, crewResult, historyResult, expeditionsResult, expeditionDefinitionsResult, notificationsResult, marketplaceResult, quartersResult, catalogResult, auctionResult, recipesResult, cooldownResult] = await Promise.allSettled([
       requestApi<Station>('/api/v1/station'),
       requestApi<Wreck>('/api/v1/wrecks/current'),
       requestApi<InventoryItem[]>('/api/v1/inventory'),
@@ -316,12 +332,14 @@ function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null | undefi
       requestApi<CrewMember[]>('/api/v1/crew'),
       requestApi<HistoryEntry[]>('/api/v1/history'),
       requestApi<Expedition[]>('/api/v1/expeditions'),
+      requestApi<ExpeditionDefinition[]>('/api/v1/expeditions/definitions'),
       requestApi<PlayerNotification[]>('/api/v1/notifications'),
       requestApi<Marketplace>('/api/v1/marketplace/listings'),
       requestApi<Quarters>('/api/v1/quarters'),
       requestApi<ItemDefinition[]>('/api/v1/items/catalog'),
       requestApi<AuctionListing[]>('/api/v1/auction/listings'),
-      requestApi<CraftingRecipe[]>('/api/v1/crafting/recipes')
+      requestApi<CraftingRecipe[]>('/api/v1/crafting/recipes'),
+      requestApi<ActionCooldown[]>('/api/v1/cooldowns')
     ]);
     if (stationResult.status === 'fulfilled') setStation(stationResult.value);
     if (wreckResult.status === 'fulfilled') setWreck(wreckResult.value);
@@ -330,12 +348,14 @@ function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null | undefi
     if (crewResult.status === 'fulfilled') setCrew(crewResult.value);
     if (historyResult.status === 'fulfilled') setHistory(historyResult.value);
     if (expeditionsResult.status === 'fulfilled') setExpeditions(expeditionsResult.value);
+    if (expeditionDefinitionsResult.status === 'fulfilled') setExpeditionDefinitions(expeditionDefinitionsResult.value);
     if (notificationsResult.status === 'fulfilled') setNotifications(notificationsResult.value);
     if (marketplaceResult.status === 'fulfilled') setMarketplace(marketplaceResult.value);
     if (quartersResult.status === 'fulfilled') setQuarters(quartersResult.value);
     if (catalogResult.status === 'fulfilled') setCatalog(catalogResult.value);
     if (auctionResult.status === 'fulfilled') setAuctions(auctionResult.value);
     if (recipesResult.status === 'fulfilled') setRecipes(recipesResult.value);
+    if (cooldownResult.status === 'fulfilled') setCooldowns(cooldownResult.value);
   }, []);
 
   useEffect(() => {
@@ -393,7 +413,7 @@ function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null | undefi
     }
   }, [pushToast, refresh]);
 
-  return { me, station, wreck, inventory, ships, crew, history, expeditions, notifications, marketplace, catalog, auctions, recipes, quarters, login, action, refresh };
+  return { me, station, wreck, inventory, ships, crew, history, expeditions, expeditionDefinitions, notifications, marketplace, catalog, auctions, recipes, cooldowns, quarters, login, action, refresh };
 }
 
 const navigation: TabItem[] = [
@@ -455,7 +475,7 @@ function GameApp({ preferences, updatePreferences }: { preferences: UiPreference
     station: <StationPage {...pageProps} />,
     salvage: <SalvagePage {...pageProps} />,
     inventory: <InventoryPage {...pageProps} />,
-    crafting: <CraftingPage recipes={game.recipes} inventory={game.inventory} catalog={game.catalog} action={game.action} />,
+    crafting: <CraftingPage recipes={game.recipes} inventory={game.inventory} catalog={game.catalog} cooldowns={game.cooldowns} action={game.action} />,
     construction: <ConstructionPage {...pageProps} />,
     crew: <CrewPage {...pageProps} />,
     ships: <ShipsPage {...pageProps} />,
@@ -512,7 +532,7 @@ function GuidePage() {
   return <div className="page-stack"><SectionTitle eyebrow="WRECKER ORIENTATION" title="How to Play" description="A quick path from first scan to a thriving player-run station." icon="data" /><Notification title="Hover for details" tone="info">Buttons, prices, status readouts, and item cards include contextual help. Timers count down beside actions that are busy.</Notification><ResponsiveGrid min="19rem">{steps.map(([title, body]) => <Card key={title}><span className="nw-eyebrow">FIELD MANUAL</span><h3>{title}</h3><p>{body}</p></Card>)}</ResponsiveGrid><Panel><SectionTitle eyebrow="COMMUNITY OBJECTIVE" title="Why population matters" icon="population" /><p>Residents are Station Zero’s workforce and survival score. A larger population supports future station capacity and shows that the community is keeping habitats safe. Residents arrive after food drives, clinics, good morale, and habitat construction; they leave when power, hull integrity, or morale becomes dangerous. The Station page names the current causes and gives every player actions to change them.</p></Panel></div>;
 }
 
-function StationPage({ station, wreck, inventory, history, action }: GameData) {
+function StationPage({ station, wreck, inventory, history, cooldowns, action }: GameData) {
   const scrap = inventory.find(item => item.itemSlug === 'scrap')?.quantity ?? 0;
   return (
     <div className="page-stack">
@@ -523,7 +543,7 @@ function StationPage({ station, wreck, inventory, history, action }: GameData) {
         <StatusDisplay label="Hull Integrity" value={station?.integrity ?? 0} unit="%" icon="integrity" tone={toneForValue(station?.integrity)} detail={(station?.integrity ?? 0) < 50 ? 'Repair priority' : 'Pressure stable'} />
         <StatusDisplay label="Construction Stock" value={scrap} unit=" scrap" icon="resources" tone="info" detail="Personal hold" />
       </ResponsiveGrid>
-      <StationMaintenance station={station} inventory={inventory} action={action} />
+      <StationMaintenance station={station} inventory={inventory} cooldowns={cooldowns} action={action} />
       <SplitLayout ratio="minmax(0, 1.55fr) minmax(20rem, .85fr)">
         <StationSchematic station={station} />
         <div className="side-stack">
@@ -545,13 +565,11 @@ function StationPage({ station, wreck, inventory, history, action }: GameData) {
   );
 }
 
-function StationMaintenance({ station, inventory, action }: Pick<GameData, 'station' | 'inventory' | 'action'>) {
-  const [cooldowns, setCooldowns] = useState<Record<string, number>>({});
+function StationMaintenance({ station, inventory, cooldowns, action }: Pick<GameData, 'station' | 'inventory' | 'cooldowns' | 'action'>) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
   const run = async (key: string) => {
-    const result = await action('/api/v1/station/maintain', { action: key }, 'Community action complete') as { cooldownEndsAt?: string } | undefined;
-    if (result?.cooldownEndsAt) setCooldowns(current => ({ ...current, [key]: Date.parse(result.cooldownEndsAt!) }));
+    await action('/api/v1/station/maintain', { action: key }, 'Community action complete');
   };
   const qty = (slug: string) => inventory.find(item => item.itemSlug === slug)?.quantity ?? 0;
   const options = [
@@ -560,7 +578,7 @@ function StationMaintenance({ station, inventory, action }: Pick<GameData, 'stat
     { key: 'food-drive', title: 'Run Food Drive', cost: '10 Ration Packs + 5 Water Cartridges', reward: '+6 residents, +4 morale', ready: qty('ration-pack') >= 10 && qty('water-cartridge') >= 5 },
     { key: 'medical-clinic', title: 'Open Community Clinic', cost: '4 Medical Supplies', reward: '+3 residents, +6 morale', ready: qty('medical-supplies') >= 4 }
   ];
-  return <Panel tone={(station?.integrity ?? 100) < 40 || (station?.power ?? 100) < 30 ? 'danger' : 'info'}><SectionTitle eyebrow="COMMUNITY OPERATIONS" title="Station Survival" description={(station?.populationStatus?.reasons ?? []).join(' ')} icon="population" /><ResponsiveGrid min="15rem">{options.map(option => { const remaining = (cooldowns[option.key] ?? 0) - now; return <Tooltip key={option.key} content={`Cost: ${option.cost}. Effect: ${option.reward}. These resources are consumed for the whole community.`}><Card><h3>{option.title}</h3><p>{option.cost}</p><Badge tone="success">{option.reward}</Badge><Button fullWidth disabled={!option.ready || remaining > 0} onClick={() => void run(option.key)}>{remaining > 0 ? `Ready in ${formatCountdown(remaining)}` : option.ready ? 'Contribute now' : 'Materials needed'}</Button></Card></Tooltip>; })}</ResponsiveGrid></Panel>;
+  return <Panel tone={(station?.integrity ?? 100) < 40 || (station?.power ?? 100) < 30 ? 'danger' : 'info'}><SectionTitle eyebrow="COMMUNITY OPERATIONS" title="Station Survival" description={(station?.populationStatus?.reasons ?? []).join(' ')} icon="population" /><ResponsiveGrid min="15rem">{options.map(option => { const remaining = cooldownRemaining(cooldowns, `station:${option.key}`, now); return <Tooltip key={option.key} content={`Cost: ${option.cost}. Effect: ${option.reward}. These resources are consumed for the whole community.`}><Card><h3>{option.title}</h3><p>{option.cost}</p><Badge tone="success">{option.reward}</Badge><Button fullWidth disabled={!option.ready || remaining > 0} onClick={() => void run(option.key)}>{remaining > 0 ? `Ready in ${formatCountdown(remaining)}` : option.ready ? 'Contribute now' : 'Materials needed'}</Button></Card></Tooltip>; })}</ResponsiveGrid></Panel>;
 }
 
 function StationSchematic({ station }: { station: Station | null }) {
@@ -598,19 +616,25 @@ function WreckPanel({ wreck }: { wreck: Wreck | null }) {
   );
 }
 
-function SalvagePage({ wreck, action }: Pick<GameData, 'wreck' | 'action'>) {
+function SalvagePage({ wreck, cooldowns, action }: Pick<GameData, 'wreck' | 'cooldowns' | 'action'>) {
   const [confirmOverride, setConfirmOverride] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
+  const scanRemaining = cooldownRemaining(cooldowns, 'scan', now);
+  const cuttersRemaining = cooldownRemaining(cooldowns, 'salvage:cutters', now);
+  const cargoRemaining = cooldownRemaining(cooldowns, 'salvage:cargo', now);
+  const overrideRemaining = cooldownRemaining(cooldowns, 'salvage:override', now);
   return (
     <div className="page-stack">
       <SectionTitle eyebrow="WRECK OPERATIONS" title="Salvage Control" description="All rolls, costs, rewards, and damage remain authoritative on the server." icon="salvage" />
       <SplitLayout ratio="minmax(0, 1.35fr) minmax(20rem, .65fr)">
         <Panel depth="medium">
           <ResponsiveGrid min="15rem" className="action-matrix">
-            <CommandAction icon="scanner" title="Active Scan" detail="Acquire and profile the next salvage opportunity." onClick={() => void action('/api/v1/salvage/scan', undefined, 'Signal acquired')} />
+            <CommandAction icon="scanner" title="Active Scan" detail={scanRemaining > 0 ? `Ready in ${formatCountdown(scanRemaining)}` : 'Acquire and profile the next salvage opportunity.'} disabled={scanRemaining > 0} onClick={() => void action('/api/v1/salvage/scan', undefined, 'Signal acquired')} />
             <CommandAction icon="signal" title="Rush Scan" detail="Spend 75 StreamElements points to replace the current target immediately." onClick={() => void action('/api/v1/points/actions/rush_scan', undefined, 'Rush scan purchased', { 'Idempotency-Key': crypto.randomUUID() })} tone="purple" />
-            <CommandAction icon="salvage" title="Deploy Cutters" detail="Execute the standard salvage profile." onClick={() => void action('/api/v1/salvage/deploy', { mode: 'cutters' }, 'Cutters deployed')} />
-            <CommandAction icon="cargo" title="Recover Cargo" detail="Prioritize high-value internal cargo compartments." onClick={() => void action('/api/v1/salvage/deploy', { mode: 'cargo' }, 'Cargo team launched')} tone="info" />
-            <CommandAction icon="danger" title="Safety Override" detail="Engage the existing high-risk deployment mode." onClick={() => setConfirmOverride(true)} tone="danger" />
+            <CommandAction icon="salvage" title="Deploy Cutters" detail={cuttersRemaining > 0 ? `Ready in ${formatCountdown(cuttersRemaining)}` : 'Execute the standard salvage profile.'} disabled={cuttersRemaining > 0} onClick={() => void action('/api/v1/salvage/deploy', { mode: 'cutters' }, 'Cutters deployed')} />
+            <CommandAction icon="cargo" title="Recover Cargo" detail={cargoRemaining > 0 ? `Ready in ${formatCountdown(cargoRemaining)}` : 'Prioritize high-value internal cargo compartments.'} disabled={cargoRemaining > 0} onClick={() => void action('/api/v1/salvage/deploy', { mode: 'cargo' }, 'Cargo team launched')} tone="info" />
+            <CommandAction icon="danger" title="Safety Override" detail={overrideRemaining > 0 ? `Ready in ${formatCountdown(overrideRemaining)}` : 'Engage the existing high-risk deployment mode.'} disabled={overrideRemaining > 0} onClick={() => setConfirmOverride(true)} tone="danger" />
           </ResponsiveGrid>
           <Notification title="Server authority active" tone="info" icon="network">The interface submits commands only. It does not calculate outcomes, rewards, cooldowns, or balance.</Notification>
         </Panel>
@@ -661,16 +685,15 @@ function InventoryPage({ inventory, catalog }: Pick<GameData, 'inventory' | 'cat
   );
 }
 
-function CraftingPage({ recipes, inventory, catalog, action }: Pick<GameData, 'recipes' | 'inventory' | 'catalog' | 'action'>) {
-  const [cooldowns, setCooldowns] = useState<Record<string, number>>({});
+function CraftingPage({ recipes, inventory, catalog, cooldowns, action }: Pick<GameData, 'recipes' | 'inventory' | 'catalog' | 'cooldowns' | 'action'>) {
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
   const held = (slug: string) => inventory.find(item => item.itemSlug === slug)?.quantity ?? 0;
-  const craft = async (recipe: CraftingRecipe) => {
-    const result = await action('/api/v1/crafting/craft', { recipeSlug: recipe.slug, quantity: 1 }, `${recipe.name} crafted`) as { cooldownEndsAt?: string } | undefined;
-    if (result?.cooldownEndsAt) setCooldowns(current => ({ ...current, [recipe.slug]: Date.parse(result.cooldownEndsAt!) }));
+  const craft = async (recipe: CraftingRecipe, quantity: number) => {
+    await action('/api/v1/crafting/craft', { recipeSlug: recipe.slug, quantity }, `${quantity} × ${recipe.name} crafted`);
   };
-  return <div className="page-stack"><SectionTitle eyebrow="FABRICATION NETWORK" title="Crafting Bay" description="Turn salvage and expedition materials into reactor fuel, repair parts, food, medicine, and advanced components." icon="resources" /><Notification title="How the supply chain works" tone="info">Start with scrap, ice, algae, polymer, electronics, alloys, and Research Data from salvage or expeditions. Recipes consume the listed inputs immediately and place their output in your Hold. Locked recipes name the station module the community must activate.</Notification><ResponsiveGrid min="20rem">{recipes.map(recipe => { const ready = Object.entries(recipe.inputs).every(([slug, amount]) => held(slug) >= amount); const remaining = (cooldowns[recipe.slug] ?? 0) - now; return <Card key={recipe.slug}><div className="ship-card__head"><h3>{recipe.name}</h3><Badge tone={recipe.unlocked ? 'success' : 'warning'}>{recipe.unlocked ? `${recipe.durationSeconds}s` : `${recipe.stationModule} locked`}</Badge></div><div className="material-readout"><span>Requires</span><strong>{Object.entries(recipe.inputs).map(([slug, amount]) => `${catalog.find(item => item.slug === slug)?.name ?? slug} ${held(slug)}/${amount}`).join(' · ')}</strong></div><div className="material-readout"><span>Produces</span><strong>{Object.entries(recipe.outputs).map(([slug, amount]) => `${amount} × ${catalog.find(item => item.slug === slug)?.name ?? slug}`).join(' · ')}</strong></div><Button fullWidth disabled={!recipe.unlocked || !ready || remaining > 0} onClick={() => void craft(recipe)}>{remaining > 0 ? `Ready in ${formatCountdown(remaining)}` : !recipe.unlocked ? 'Station module offline' : ready ? 'Craft one batch' : 'Gather materials'}</Button></Card>; })}</ResponsiveGrid></div>;
+  return <div className="page-stack"><SectionTitle eyebrow="FABRICATION NETWORK" title="Crafting Bay" description="Turn salvage and expedition materials into reactor fuel, repair parts, food, medicine, and advanced components." icon="resources" /><Notification title="How the supply chain works" tone="info">Choose a batch of up to five. Materials are consumed immediately, and fabrication time scales with the batch size.</Notification><ResponsiveGrid min="20rem">{recipes.map(recipe => { const maxAffordable = Math.min(5, ...Object.entries(recipe.inputs).map(([slug, amount]) => Math.floor(held(slug) / amount))); const quantity = quantities[recipe.slug] ?? 1; const ready = maxAffordable >= quantity; const remaining = cooldownRemaining(cooldowns, `craft:${recipe.slug}`, now); const setQuantity = (value: number) => setQuantities(current => ({ ...current, [recipe.slug]: Math.max(1, Math.min(5, value)) })); return <Card key={recipe.slug}><div className="ship-card__head"><h3>{recipe.name}</h3><Badge tone={recipe.unlocked ? 'success' : 'warning'}>{recipe.unlocked ? `${recipe.durationSeconds * quantity}s batch` : `${recipe.stationModule} locked`}</Badge></div><Field label={`Batch size · materials available for ${maxAffordable}`}><div className="inline-actions"><Button type="button" size="sm" variant="ghost" disabled={quantity <= 1} aria-label={`Decrease ${recipe.name} batch`} onClick={() => setQuantity(quantity - 1)}>−</Button><StatusDisplay compact label="Quantity" value={quantity} icon="resources" tone="info" /><Button type="button" size="sm" variant="ghost" disabled={quantity >= 5} aria-label={`Increase ${recipe.name} batch`} onClick={() => setQuantity(quantity + 1)}>+</Button></div></Field><div className="material-readout"><span>Requires</span><strong>{Object.entries(recipe.inputs).map(([slug, amount]) => `${catalog.find(item => item.slug === slug)?.name ?? slug} ${held(slug)}/${amount * quantity}`).join(' · ')}</strong></div><div className="material-readout"><span>Produces</span><strong>{Object.entries(recipe.outputs).map(([slug, amount]) => `${amount * quantity} × ${catalog.find(item => item.slug === slug)?.name ?? slug}`).join(' · ')}</strong></div><Button fullWidth disabled={!recipe.unlocked || !ready || remaining > 0} onClick={() => void craft(recipe, quantity)}>{remaining > 0 ? `Ready in ${formatCountdown(remaining)}` : !recipe.unlocked ? 'Station module offline' : ready ? `Craft ${quantity}` : `Need materials for ${quantity}`}</Button></Card>; })}</ResponsiveGrid></div>;
 }
 
 function ShipsPage({ ships, crew, marketplace, station, me, action }: Pick<GameData, 'ships' | 'crew' | 'marketplace' | 'station' | 'me' | 'action'>) {
@@ -690,34 +713,43 @@ function ShipsPage({ ships, crew, marketplace, station, me, action }: Pick<GameD
 function CrewPage({ crew, action }: Pick<GameData, 'crew' | 'action'>) {
   const [recruitName, setRecruitName] = useState('Nova');
   const [recruitRole, setRecruitRole] = useState('engineer');
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
   return (
     <div className="page-stack">
       <SectionTitle eyebrow="PERSONNEL NETWORK" title="Crew Roster" description="Role, level, morale, and trait telemetry from the station crew service." icon="crew" />
-      <ResponsiveGrid min="18rem">{crew.map(member => <Card key={member.id} className="crew-card"><div className="crew-card__identity"><div className="crew-ident">{member.name.slice(0, 2).toUpperCase()}</div><div><h3>{member.name}</h3><p>{member.role} · Level {member.level}</p></div><Badge tone={toneForValue(member.morale)}>{member.morale}% morale</Badge></div><ProgressBar label="Morale" value={member.morale} tone={toneForValue(member.morale)} /><div className="trait-list">{member.traits?.map((trait: string) => <Pill key={trait} tone="neutral">{trait}</Pill>)}</div><Button size="sm" variant="ghost" onClick={() => void action(`/api/v1/crew/${member.id}/train`, undefined, 'Crew member trained')}>Train crew</Button></Card>)}</ResponsiveGrid>
+      <ResponsiveGrid min="18rem">{crew.map(member => { const exhaustion = member.injuredUntil ? Date.parse(member.injuredUntil) - now : 0; return <Card key={member.id} className="crew-card"><div className="crew-card__identity"><div className="crew-ident">{member.name.slice(0, 2).toUpperCase()}</div><div><h3>{member.name}</h3><p>{member.role} · Level {member.level}</p></div><Badge tone={exhaustion > 0 ? 'warning' : toneForValue(member.morale)}>{exhaustion > 0 ? `Resting ${formatCountdown(exhaustion)}` : `${member.morale}% morale`}</Badge></div><ProgressBar label="Morale" value={member.morale} tone={toneForValue(member.morale)} /><div className="trait-list">{member.traits?.map((trait: string) => <Pill key={trait} tone="neutral">{trait}</Pill>)}</div><Button size="sm" variant="ghost" disabled={exhaustion > 0} onClick={() => void action(`/api/v1/crew/${member.id}/train`, undefined, 'Crew member trained')}>{exhaustion > 0 ? `Available in ${formatCountdown(exhaustion)}` : 'Train crew'}</Button></Card>; })}</ResponsiveGrid>
       {!crew.length && <Notification title="No crew records" tone="info">Personnel data has not yet been assigned to this station.</Notification>}
       <Panel><SectionTitle eyebrow="RECRUITMENT" title="Hire Crew" description="Recruitment costs are enforced by the server." icon="crew" /><Field label="Crew name"><Input value={recruitName} onChange={event => setRecruitName(event.target.value)} /></Field><Field label="Role"><Select value={recruitRole} onChange={event => setRecruitRole(event.target.value)}><option value="pilot">Pilot</option><option value="engineer">Engineer</option><option value="medic">Medic</option><option value="scout">Scout</option><option value="quartermaster">Quartermaster</option></Select></Field><Button onClick={() => void action('/api/v1/crew/recruit', { name: recruitName, role: recruitRole }, 'Crew recruited')}>Recruit for 400 credits</Button></Panel>
     </div>
   );
 }
 
-function ExpeditionPage({ expeditions, ships, crew, action }: Pick<GameData, 'expeditions' | 'ships' | 'crew' | 'action'>) {
+function ExpeditionPage({ expeditions, expeditionDefinitions, ships, crew, action }: Pick<GameData, 'expeditions' | 'expeditionDefinitions' | 'ships' | 'crew' | 'action'>) {
   const [shipId, setShipId] = useState(ships[0]?.id ?? '');
-  const [crewIds, setCrewIds] = useState<string[]>(crew.slice(0, 3).map(member => member.id));
+  const activeCrewIds = new Set(expeditions.filter(expedition => expedition.status === 'active').flatMap(expedition => expedition.crewIds ?? []));
+  const availableCrew = crew.filter(member => !activeCrewIds.has(member.id) && (!member.injuredUntil || Date.parse(member.injuredUntil) <= Date.now()));
+  const [crewIds, setCrewIds] = useState<string[]>(availableCrew.slice(0, 3).map(member => member.id));
   const [now, setNow] = useState(Date.now());
+  const [lootInfo, setLootInfo] = useState<ExpeditionDefinition | null>(null);
   useEffect(() => { if (!shipId && ships[0]) setShipId(ships[0].id); }, [shipId, ships]);
+  useEffect(() => { setCrewIds(current => current.filter(id => !activeCrewIds.has(id) && crew.some(member => member.id === id && (!member.injuredUntil || Date.parse(member.injuredUntil) <= Date.now())))); }, [expeditions, crew]);
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
   const toggleCrew = (id: string) => setCrewIds(current => current.includes(id) ? current.filter(candidate => candidate !== id) : [...current, id].slice(0, 4));
   const launch = (definition: string) => action('/api/v1/expeditions/launch', { definition, shipId: shipId || undefined, crewIds }, 'Expedition launched');
   const selectedMission = expeditions.find(expedition => expedition.status === 'active' && expedition.shipId === shipId);
   const selectedCountdown = selectedMission?.resolvesAt ? formatCountdown(Date.parse(selectedMission.resolvesAt) - now) : null;
+  const selectedShip = ships.find(ship => ship.id === shipId);
   return (
     <div className="page-stack">
       <SectionTitle eyebrow="DEEP FIELD" title="Expeditions" description="Launch existing expedition definitions, observe worker resolution, and claim server-calculated rewards." icon="expedition" />
       <ResponsiveGrid min="18rem" className="expedition-launchers">
-        <CommandAction icon="expedition" title="Glass Belt Run" detail={selectedCountdown ? `Selected ship returns in ${selectedCountdown}` : 'Moderate-risk deployment using one fuel and two crew.'} disabled={Boolean(selectedMission)} onClick={() => void launch('glass-belt-run')} />
-        <CommandAction icon="signal" title="Dead Relay Ping" detail={selectedCountdown ? `Selected ship returns in ${selectedCountdown}` : 'High-risk signal investigation requiring two fuel and three crew.'} disabled={Boolean(selectedMission)} onClick={() => void launch('dead-relay-ping')} tone="purple" />
+        {expeditionDefinitions.map(definition => {
+          const unavailable = Boolean(selectedMission) || !selectedShip || selectedShip.fuel < definition.fuelCost || crewIds.length < definition.minCrew;
+          return <Card key={definition.slug} tone={definition.risk === 'extreme' || definition.risk === 'high' ? 'purple' : undefined}><div className="inline-actions"><NWIcon name={definition.risk === 'high' || definition.risk === 'extreme' ? 'signal' : 'expedition'} size={24} /><Badge tone={riskTone(definition.risk)}>{definition.risk} risk</Badge></div><h3>{definition.name}</h3><p>{selectedCountdown ? `Selected ship returns in ${selectedCountdown}` : definition.description}</p><div className="trait-list"><Pill tone="purple">{definition.fuelCost} fuel</Pill><Pill tone="neutral">{definition.minCrew} crew</Pill><Pill tone="neutral">{definition.durationMinutes[0]}–{definition.durationMinutes[1]} min</Pill></div><div className="inline-actions"><Button size="sm" disabled={unavailable} onClick={() => void launch(definition.slug)}>Launch</Button><Button size="sm" variant="ghost" onClick={() => setLootInfo(definition)}>Loot info</Button></div></Card>;
+        })}
       </ResponsiveGrid>
-      <Panel><SectionTitle eyebrow="MISSION LOADOUT" title="Assign ship and crew" icon="crew" /><Field label="Ship"><Select value={shipId} onChange={event => setShipId(event.target.value)}>{ships.map(ship => <option key={ship.id} value={ship.id}>{ship.name} · {ship.fuel} fuel</option>)}</Select></Field><div className="trait-list">{crew.map(member => <Button key={member.id} size="sm" variant={crewIds.includes(member.id) ? 'primary' : 'ghost'} onClick={() => toggleCrew(member.id)}>{member.name} · {member.role}</Button>)}</div><p>{crewIds.length} crew assigned. Up to four may deploy.</p></Panel>
+      <Panel><SectionTitle eyebrow="MISSION LOADOUT" title="Assign ship and crew" icon="crew" /><Field label="Ship"><Select value={shipId} onChange={event => setShipId(event.target.value)}>{ships.map(ship => <option key={ship.id} value={ship.id}>{ship.name} · {ship.fuel} fuel</option>)}</Select></Field><div className="trait-list">{crew.map(member => { const busy = activeCrewIds.has(member.id); const resting = Boolean(member.injuredUntil && Date.parse(member.injuredUntil) > now); return <Button key={member.id} size="sm" disabled={busy || resting} variant={crewIds.includes(member.id) ? 'primary' : 'ghost'} onClick={() => toggleCrew(member.id)}>{member.name} · {busy ? 'deployed' : resting ? `resting ${formatCountdown(Date.parse(member.injuredUntil!) - now)}` : member.role}</Button>; })}</div><p>{crewIds.length} crew assigned. Deployed and resting crew are unavailable; up to four may deploy.</p></Panel>
       <Panel>
         <SectionTitle eyebrow="MISSION LEDGER" title="Deployment History" icon="archive" />
         <DataGrid rows={expeditions ?? []} getRowKey={expedition => expedition.id} empty="No expeditions have been launched." columns={[
@@ -728,6 +760,7 @@ function ExpeditionPage({ expeditions, ships, crew, action }: Pick<GameData, 'ex
           { key: 'action', header: 'Command', align: 'right', render: expedition => ['resolved', 'failed'].includes(expedition.status) ? <Button size="sm" variant="primary" onClick={() => void action(`/api/v1/expeditions/${expedition.id}/claim`, undefined, 'Expedition claimed')}>Claim</Button> : <span className="nw-numeric">LOCKED</span> }
         ]} />
       </Panel>
+      <ConfirmWindow open={Boolean(lootInfo)} onClose={() => setLootInfo(null)} onConfirm={() => setLootInfo(null)} title={`${lootInfo?.name ?? 'Expedition'} loot pool`} confirmLabel="Close"><p>Possible finds are shown by rarity only. Drop rates and roll counts are intentionally hidden.</p><div className="trait-list">{lootInfo?.lootPool.map(item => <Pill key={item.slug} tone={rarityTone(item.rarity)}>{item.name} · {item.rarity}</Pill>)}</div></ConfirmWindow>
     </div>
   );
 }
@@ -773,6 +806,8 @@ function MarketPage({ marketplace, credits, inventory, catalog, auctions, action
   const [sellItem, setSellItem] = useState(inventory.find(item => item.quantity > 0)?.itemSlug ?? '');
   const [sellQuantity, setSellQuantity] = useState(1);
   const [sellPrice, setSellPrice] = useState(100);
+  const [auctionDuration, setAuctionDuration] = useState(48);
+  const [cancelListing, setCancelListing] = useState<AuctionListing | null>(null);
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
   return (
@@ -785,14 +820,14 @@ function MarketPage({ marketplace, credits, inventory, catalog, auctions, action
         { key: 'price', header: 'Price', align: 'right', render: listing => <span className="nw-numeric">{listing.priceCredits.toLocaleString()} cr</span> },
         { key: 'buy', header: 'Command', align: 'right', render: listing => <Button size="sm" disabled={credits < listing.priceCredits} onClick={() => void action('/api/v1/marketplace/buy', { slug: listing.slug, quantity: 1 }, 'Purchase complete')}>Buy</Button> }
       ]} /></Panel> : <Notification title="No listings transmitted" tone="info">The marketplace module is active, but the server returned no current listings.</Notification>) : <Panel className="locked-system"><div className="locked-system__glyph"><NWIcon name="market" size={58} /></div><Badge tone="warning">MODULE OFFLINE</Badge><h2>Marketplace access unavailable</h2><p>The server reports that the marketplace module is not active. The interface cannot bypass that station state.</p><ProgressBar value={0} label="Network availability" tone="warning" /></Panel>}
-      {marketplace?.unlocked && <><Panel><SectionTitle eyebrow="PLAYER MARKET" title="Auction House" description="Player listings hold items for 48 hours. The shown price is for the full stack." icon="trade" /><DataGrid caption="Active player auctions" rows={auctions} getRowKey={listing => listing.id} empty="No active player auctions." columns={[
+      {marketplace?.unlocked && <><Panel><SectionTitle eyebrow="PLAYER MARKET" title="Auction House" description="Player listings run for 6 to 72 hours. The shown price is for the full stack." icon="trade" /><DataGrid caption="Active player auctions" rows={auctions} getRowKey={listing => listing.id} empty="No active player auctions." columns={[
         { key: 'item', header: 'Item', render: listing => <Tooltip content={catalog.find(item => item.slug === listing.itemSlug)?.description ?? listing.itemName}><strong>{listing.quantity} × {listing.itemName}</strong></Tooltip> },
         { key: 'seller', header: 'Seller', render: listing => listing.sellerName },
         { key: 'value', header: 'Guide value', align: 'right', render: listing => <span className="nw-numeric">{((catalog.find(item => item.slug === listing.itemSlug)?.valueCredits ?? 0) * listing.quantity).toLocaleString()} cr</span> },
         { key: 'price', header: 'Auction price', align: 'right', render: listing => <span className="nw-numeric">{listing.priceCredits.toLocaleString()} cr</span> },
         { key: 'time', header: 'Ends', render: listing => <span className="nw-numeric">{formatCountdown(Date.parse(listing.expiresAt) - now)}</span> },
-        { key: 'buy', header: 'Command', align: 'right', render: listing => <Button size="sm" disabled={listing.ownListing || credits < listing.priceCredits} onClick={() => void action(`/api/v1/auction/${listing.id}/buy`, undefined, 'Auction purchase complete')}>{listing.ownListing ? 'Your listing' : 'Buy stack'}</Button> }
-      ]} /></Panel><Panel><SectionTitle eyebrow="CREATE LISTING" title="Auction Your Items" icon="inventory" /><ResponsiveGrid min="12rem"><Field label="Item"><Select value={sellItem} onChange={event => setSellItem(event.target.value)}>{inventory.filter(item => item.quantity > 0 && item.itemSlug !== 'credits').map(item => <option key={item.itemSlug} value={item.itemSlug}>{item.name} ({item.quantity})</option>)}</Select></Field><Field label="Quantity"><Input type="number" min={1} value={sellQuantity} onChange={event => setSellQuantity(Number(event.target.value))} /></Field><Field label="Full stack price (credits)"><Input type="number" min={1} value={sellPrice} onChange={event => setSellPrice(Number(event.target.value))} /></Field></ResponsiveGrid><p>Guide value: {((catalog.find(item => item.slug === sellItem)?.valueCredits ?? 0) * sellQuantity).toLocaleString()} cr</p><Button disabled={!sellItem || sellQuantity < 1 || sellPrice < 1} onClick={() => void action('/api/v1/auction/list', { itemSlug: sellItem, quantity: sellQuantity, priceCredits: sellPrice }, 'Auction created')}>List for 48 hours</Button></Panel><Panel><SectionTitle eyebrow="SELL INVENTORY" title="Station Buyback" icon="trade" /><ResponsiveGrid min="14rem">{inventory.filter(item => item.quantity > 0).map(item => { const value = catalog.find(entry => entry.slug === item.itemSlug)?.valueCredits ?? 0; return <Tooltip key={item.itemSlug} content={`Guide value ${value} credits. Station buyback may pay a different amount based on career and spread.`}><Card><strong>{item.name}</strong><p>{item.quantity} available · {value.toLocaleString()} cr guide value each</p><Button size="sm" variant="ghost" onClick={() => void action('/api/v1/marketplace/sell', { itemSlug: item.itemSlug, quantity: 1 }, 'Item sold')}>Sell one</Button></Card></Tooltip>; })}</ResponsiveGrid></Panel></>}
+        { key: 'buy', header: 'Command', align: 'right', render: listing => listing.ownListing ? <Button size="sm" variant="warning" disabled={credits < listing.cancellationFee} onClick={() => setCancelListing(listing)}>Cancel · {listing.cancellationFee} cr</Button> : <Button size="sm" disabled={credits < listing.priceCredits} onClick={() => void action(`/api/v1/auction/${listing.id}/buy`, undefined, 'Auction purchase complete')}>Buy stack</Button> }
+      ]} /></Panel><Panel><SectionTitle eyebrow="CREATE LISTING" title="Auction Your Items" icon="inventory" /><ResponsiveGrid min="12rem"><Field label="Item"><Select value={sellItem} onChange={event => setSellItem(event.target.value)}>{inventory.filter(item => item.quantity > 0 && item.itemSlug !== 'credits').map(item => <option key={item.itemSlug} value={item.itemSlug}>{item.name} ({item.quantity})</option>)}</Select></Field><Field label="Quantity"><Input type="number" min={1} value={sellQuantity} onChange={event => setSellQuantity(Number(event.target.value))} /></Field><Field label="Full stack price (credits)"><Input type="number" min={1} value={sellPrice} onChange={event => setSellPrice(Number(event.target.value))} /></Field><Field label="Auction duration"><Select value={auctionDuration} onChange={event => setAuctionDuration(Number(event.target.value))}><option value={6}>6 hours</option><option value={12}>12 hours</option><option value={24}>24 hours</option><option value={48}>48 hours</option><option value={72}>72 hours</option></Select></Field></ResponsiveGrid><p>Guide value: {((catalog.find(item => item.slug === sellItem)?.valueCredits ?? 0) * sellQuantity).toLocaleString()} cr</p><Button disabled={!sellItem || sellQuantity < 1 || sellPrice < 1} onClick={() => void action('/api/v1/auction/list', { itemSlug: sellItem, quantity: sellQuantity, priceCredits: sellPrice, durationHours: auctionDuration }, 'Auction created')}>List for {auctionDuration} hours</Button></Panel><Panel><SectionTitle eyebrow="SELL INVENTORY" title="Station Buyback" icon="trade" /><ResponsiveGrid min="14rem">{inventory.filter(item => item.quantity > 0 && catalog.find(entry => entry.slug === item.itemSlug)?.sellable).map(item => { const value = catalog.find(entry => entry.slug === item.itemSlug)?.valueCredits ?? 0; return <Tooltip key={item.itemSlug} content={`Guide value ${value} credits. Station buyback may pay a different amount based on career and spread.`}><Card><strong>{item.name}</strong><p>{item.quantity} available · {value.toLocaleString()} cr guide value each</p><Button size="sm" variant="ghost" onClick={() => void action('/api/v1/marketplace/sell', { itemSlug: item.itemSlug, quantity: 1 }, 'Item sold')}>Sell one</Button></Card></Tooltip>; })}</ResponsiveGrid></Panel><ConfirmWindow open={Boolean(cancelListing)} onClose={() => setCancelListing(null)} onConfirm={() => { if (cancelListing) void action(`/api/v1/auction/${cancelListing.id}/cancel`, undefined, 'Auction cancelled'); setCancelListing(null); }} title="Cancel this auction?" confirmLabel={`Pay ${cancelListing?.cancellationFee ?? 0} credits`} tone="warning"><p>The full item stack will return to your hold. The cancellation fee is 2% of the asking price, with a 10-credit minimum and 250-credit cap.</p></ConfirmWindow></>}
     </div>
   );
 }
@@ -876,6 +911,11 @@ function formatCountdown(milliseconds: number) {
   return hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}` : `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
+function cooldownRemaining(cooldowns: ActionCooldown[], actionKey: string, now: number) {
+  const cooldown = cooldowns.find(candidate => candidate.actionKey === actionKey);
+  return cooldown ? Date.parse(cooldown.expiresAt) - now : 0;
+}
+
 function actionResultMessage(value: unknown) {
   if (!value || typeof value !== 'object') return 'Station records synchronized.';
   const record = value as Record<string, unknown>;
@@ -926,6 +966,13 @@ function riskTone(risk?: string): Tone {
   if (value.includes('high') || value.includes('extreme')) return 'danger';
   if (value.includes('medium') || value.includes('moderate')) return 'warning';
   return 'info';
+}
+
+function rarityTone(rarity?: string): Tone {
+  if (rarity === 'legendary' || rarity === 'epic') return 'purple';
+  if (rarity === 'rare') return 'warning';
+  if (rarity === 'uncommon') return 'info';
+  return 'neutral';
 }
 
 function expeditionTone(status?: string): Tone {

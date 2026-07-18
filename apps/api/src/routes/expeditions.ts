@@ -15,6 +15,27 @@ const launchSchema = z.object({
 });
 
 export async function registerExpeditionRoutes(app: FastifyInstance, context: ApiContext) {
+  app.get('/api/v1/expeditions/definitions', async request => {
+    await requireUser(context.prisma, request);
+    return {
+      data: Object.values(expeditionDefinitions).map(definition => ({
+        slug: definition.slug,
+        name: definition.name,
+        description: definition.description,
+        risk: definition.risk,
+        fuelCost: definition.fuelCost,
+        minCrew: definition.minCrew,
+        durationMinutes: definition.durationMinutes,
+        lootPool: definition.lootPool.map(itemSlug => ({
+          slug: itemSlug,
+          name: itemsBySlug[itemSlug].name,
+          rarity: itemsBySlug[itemSlug].rarity
+        }))
+      })),
+      requestId: request.id
+    };
+  });
+
   app.get('/api/v1/expeditions', async request => {
     const user = await requireUser(context.prisma, request);
     return {
@@ -82,7 +103,7 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
       { expeditionId: expedition.id },
       {
         delay: Math.max(0, Date.parse(launched.resolvesAt) - Date.now()),
-        jobId: `resolve:${expedition.id}`,
+        jobId: `resolve-${expedition.id}`,
         attempts: 3,
         backoff: { type: 'exponential', delay: 5_000 },
         removeOnComplete: 100,
@@ -114,6 +135,7 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
         incidentLog: expedition.incidentLog as string[],
         rewards: expedition.rewards as unknown[]
       },
+      expeditionDefinition: expeditionDefinitions[expedition.definition],
       items: itemsBySlug,
       now: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
     });
