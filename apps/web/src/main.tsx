@@ -675,12 +675,40 @@ function ConstructionPage({ station, inventory, action }: Pick<GameData, 'statio
 
 function InventoryPage({ inventory, catalog }: Pick<GameData, 'inventory' | 'catalog'>) {
   const [filter, setFilter] = useState('all');
-  const items = filter === 'all' ? inventory : inventory.filter(item => item.rarity === filter);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('name');
+  const catalogBySlug = new Map(catalog.map(item => [item.slug, item]));
+  const rows = inventory.map(item => {
+    const definition = catalogBySlug.get(item.itemSlug);
+    const unitValue = definition?.valueCredits ?? 0;
+    return { ...item, definition, unitValue, totalValue: unitValue * item.quantity };
+  });
+  const query = search.trim().toLowerCase();
+  const items = rows
+    .filter(item => (filter === 'all' || item.rarity === filter) && (!query || `${item.name} ${item.itemSlug} ${item.definition?.uses.join(' ') ?? ''}`.toLowerCase().includes(query)))
+    .sort((left, right) => sort === 'quantity' ? right.quantity - left.quantity : sort === 'value' ? right.totalValue - left.totalValue : sort === 'rarity' ? rarityRank(right.rarity) - rarityRank(left.rarity) || left.name.localeCompare(right.name) : left.name.localeCompare(right.name));
+  const totalUnits = inventory.reduce((sum, item) => sum + item.quantity, 0);
+  const totalValue = rows.reduce((sum, item) => sum + item.totalValue, 0);
+  const rareStacks = inventory.filter(item => rarityRank(item.rarity) >= rarityRank('rare')).length;
   return (
     <div className="page-stack">
-      <SectionTitle eyebrow="PERSONAL LOGISTICS" title="Salvage Hold" description="Recovered resources, components, relics, and station currency records." icon="inventory" action={<Field label="Rarity filter" className="inline-field"><Select value={filter} onChange={(event: ChangeEvent<HTMLSelectElement>) => setFilter(event.target.value)}><option value="all">All records</option><option value="common">Common</option><option value="uncommon">Uncommon</option><option value="rare">Rare</option><option value="legendary">Legendary</option></Select></Field>} />
-      {items.length ? <ResponsiveGrid min="17rem">{items.map(item => { const definition = catalog.find(entry => entry.slug === item.itemSlug); return <Tooltip key={item.itemSlug} content={`${definition?.description ?? item.name} Uses: ${definition?.uses.join('; ') || 'General salvage'}. Found: ${definition?.sources.join('; ') || 'Salvage operations'}.`}><div><InventoryCard name={item.name} quantity={item.quantity} rarity={item.rarity} icon={itemIcon(item.itemSlug)} detail={`${definition?.valueCredits ?? 0} cr each · ${definition?.recipes[0] ?? item.visualKey}`} /></div></Tooltip>; })}</ResponsiveGrid> : <Notification title="No matching inventory" tone="info">Change the rarity filter to view other records.</Notification>}
-      <Panel><SectionTitle eyebrow="ITEM CODEX" title="Values, Recipes & Discovery" description={`${catalog.length} known station items, including materials not yet recovered.`} icon="data" /><ResponsiveGrid min="18rem">{catalog.map(item => <Card key={item.slug}><div className="ship-card__head"><h3>{item.name}</h3><Badge tone="success">{item.valueCredits.toLocaleString()} cr</Badge></div><p>{item.description}</p><small><strong>USES</strong> {item.uses.join(' · ') || 'General trade and salvage'}</small><p><strong>RECIPE</strong> {item.recipes.join(' · ') || 'Cannot be crafted'}</p><small><strong>FIND IT</strong> {item.sources.join(' · ') || 'Salvage and trade'}</small></Card>)}</ResponsiveGrid></Panel>
+      <SectionTitle eyebrow="PERSONAL LOGISTICS" title="Salvage Hold" description="A compact manifest for tracking every recovered resource, component, relic, and credit." icon="inventory" />
+      <div className="hold-summary"><div><span>Unique stacks</span><strong>{inventory.length}</strong></div><div><span>Total units</span><strong>{totalUnits.toLocaleString()}</strong></div><div><span>Guide value</span><strong>{totalValue.toLocaleString()} cr</strong></div><div><span>Rare+ stacks</span><strong>{rareStacks}</strong></div></div>
+      <Panel className="hold-ledger"><div className="hold-toolbar"><Field label="Search hold"><Input value={search} placeholder="Item, code, or use…" onChange={event => setSearch(event.target.value)} /></Field><Field label="Rarity"><Select value={filter} onChange={(event: ChangeEvent<HTMLSelectElement>) => setFilter(event.target.value)}><option value="all">All rarities</option><option value="common">Common</option><option value="uncommon">Uncommon</option><option value="rare">Rare</option><option value="epic">Epic</option><option value="legendary">Legendary</option></Select></Field><Field label="Sort by"><Select value={sort} onChange={event => setSort(event.target.value)}><option value="name">Item name</option><option value="quantity">Quantity</option><option value="value">Stack value</option><option value="rarity">Rarity</option></Select></Field></div><div className="hold-result-count">Showing <strong>{items.length}</strong> of {inventory.length} held stacks</div>{items.length ? <DataGrid rows={items} getRowKey={item => item.itemSlug} empty="No items in hold." columns={[
+        { key: 'item', header: 'Item', render: item => <div className="hold-item"><span className="hold-item__icon"><NWIcon name={itemIcon(item.itemSlug)} size={18} /></span><div><strong>{item.name}</strong><small>{item.itemSlug}</small></div></div> },
+        { key: 'rarity', header: 'Rarity', render: item => <Badge tone={rarityTone(item.rarity)}>{item.rarity}</Badge> },
+        { key: 'quantity', header: 'Quantity', align: 'right', render: item => <strong className="nw-numeric hold-quantity">{item.quantity.toLocaleString()}</strong> },
+        { key: 'unit', header: 'Each', align: 'right', render: item => <span className="nw-numeric">{item.unitValue.toLocaleString()} cr</span> },
+        { key: 'total', header: 'Stack value', align: 'right', render: item => <strong className="nw-numeric">{item.totalValue.toLocaleString()} cr</strong> },
+        { key: 'use', header: 'Primary use', render: item => <span className="hold-use">{item.definition?.uses[0] ?? 'General salvage'}</span> }
+      ]} /> : <Notification title="No matching inventory" tone="info">Adjust the search or rarity filter to view other records.</Notification>}</Panel>
+      <Panel className="hold-codex"><SectionTitle eyebrow="ITEM CODEX" title="Values, Recipes & Discovery" description={`${catalog.length} known station items, including materials not yet recovered.`} icon="data" /><DataGrid rows={catalog} getRowKey={item => item.slug} empty="No catalog records." columns={[
+        { key: 'item', header: 'Known item', render: item => <div><strong>{item.name}</strong><small className="hold-code">{item.slug}</small></div> },
+        { key: 'rarity', header: 'Rarity', render: item => <Badge tone={rarityTone(item.rarity)}>{item.rarity}</Badge> },
+        { key: 'value', header: 'Guide value', align: 'right', render: item => <span className="nw-numeric">{item.valueCredits.toLocaleString()} cr</span> },
+        { key: 'recipe', header: 'Recipe', render: item => item.recipes[0] ?? 'Not craftable' },
+        { key: 'source', header: 'Found through', render: item => item.sources[0] ?? 'Salvage and trade' }
+      ]} /></Panel>
     </div>
   );
 }
@@ -973,6 +1001,10 @@ function rarityTone(rarity?: string): Tone {
   if (rarity === 'rare') return 'warning';
   if (rarity === 'uncommon') return 'info';
   return 'neutral';
+}
+
+function rarityRank(rarity?: string) {
+  return { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4 }[String(rarity ?? '').toLowerCase()] ?? 0;
 }
 
 function expeditionTone(status?: string): Tone {
