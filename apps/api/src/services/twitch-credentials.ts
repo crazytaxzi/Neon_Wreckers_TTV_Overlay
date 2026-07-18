@@ -16,9 +16,13 @@ export function encryptCredential(value: string) {
 export function decryptCredential(value: string) {
   const [iv, tag, encrypted] = value.split('.');
   if (!iv || !tag || !encrypted) throw new Error('Encrypted credential is malformed.');
-  const decipher = crypto.createDecipheriv('aes-256-gcm', key(), Buffer.from(iv, 'base64url'));
-  decipher.setAuthTag(Buffer.from(tag, 'base64url'));
-  return Buffer.concat([decipher.update(Buffer.from(encrypted, 'base64url')), decipher.final()]).toString('utf8');
+  const ivBytes = Buffer.from(iv, 'base64url');
+  const tagBytes = Buffer.from(tag, 'base64url');
+  const encryptedBytes = Buffer.from(encrypted, 'base64url');
+  if (ivBytes.toString('base64url') !== iv || tagBytes.toString('base64url') !== tag || encryptedBytes.toString('base64url') !== encrypted) throw new Error('Encrypted credential is malformed.');
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key(), ivBytes);
+  decipher.setAuthTag(tagBytes);
+  return Buffer.concat([decipher.update(encryptedBytes), decipher.final()]).toString('utf8');
 }
 
 export async function saveTwitchCredential(prisma: PrismaClient, userId: string, token: { access_token: string; refresh_token: string; expires_in: number; scope: string[] }) {

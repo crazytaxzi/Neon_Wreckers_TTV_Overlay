@@ -245,10 +245,11 @@ export function PopulationDisplay({ current, capacity, trend = 0 }: { current: n
   );
 }
 
-export function ModuleCard({ name, state, progress, icon = 'module', description, stats, action }: {
+export function ModuleCard({ name, state, progress, progressLabel = 'Module progress', icon = 'module', description, stats, action }: {
   name: string;
   state: string;
   progress: number;
+  progressLabel?: string;
   icon?: IconName;
   description?: string;
   stats?: ReactNode;
@@ -260,7 +261,7 @@ export function ModuleCard({ name, state, progress, icon = 'module', description
       <div className="nw-module-card__icon"><NWIcon name={icon} size={24} /></div>
       <div className="nw-module-card__head"><h3>{name}</h3><Badge tone={tone}>{state}</Badge></div>
       {description && <p>{description}</p>}
-      <ProgressBar value={progress} label="Module progress" tone={tone} />
+      <ProgressBar value={progress} label={progressLabel} tone={tone} />
       {stats && <div className="nw-module-card__stats">{stats}</div>}
       {action && <div className="nw-module-card__action">{action}</div>}
     </Card>

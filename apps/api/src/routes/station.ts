@@ -1,21 +1,24 @@
 import type { FastifyInstance } from 'fastify';
-import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
-import { GameRuleError } from '@neon-wreckers/game-engine';
+import { GameRuleError, salvageWreckProfile } from '@neon-wreckers/game-engine';
+import { careerRules, itemsBySlug } from '@neon-wreckers/content';
 import type { ApiContext } from '../types.js';
 import { requireUser } from '../services/auth.js';
 import { getOrCreateCurrentWreck } from '../services/salvage.js';
 import { stationDto } from '../services/station.js';
-import { acquireTransactionLock } from '../lib/database.js';
 import { enforceDurableCooldown } from '../services/actions.js';
 
 export async function registerStationRoutes(app: FastifyInstance, context: ApiContext) {
   app.get('/api/v1/station', async request => ({ data: await stationDto(context.prisma), requestId: request.id }));
 
-  app.get('/api/v1/wrecks/current', async request => ({
-    data: await getOrCreateCurrentWreck(context),
-    requestId: request.id
-  }));
+  app.get('/api/v1/wrecks/current', async request => {
+    const user = await requireUser(context.prisma, request);
+    const [wreck, station] = await Promise.all([getOrCreateCurrentWreck(context), stationDto(context.prisma)]);
+    const commandBonus = Number(station.modules.find(module => module.slug === 'command-pod')?.effects.scanBonus ?? 0);
+    const researchBonus = Number(station.modules.find(module => module.slug === 'research-lab')?.effects.rareDiscoveryBonus ?? 0);
+    const profile = salvageWreckProfile({ wreck, careerBonus: commandBonus + Number(careerRules[user.player.career]?.salvageSuccessBonus ?? 0), rareDiscoveryBonus: researchBonus + Number(careerRules[user.player.career]?.rareDiscoveryBonus ?? 0) });
+    return { data: { ...wreck, salvageProfile: Object.fromEntries(Object.entries(profile).map(([mode, stats]) => [mode, { ...stats, wreckLootPool: stats.wreckLootPool.map(slug => ({ slug, name: itemsBySlug[slug].name, rarity: itemsBySlug[slug].rarity })) }])) }, requestId: request.id };
+  });
 
   app.get('/api/v1/inventory', async request => {
     const user = await requireUser(context.prisma, request);
@@ -48,10 +51,10 @@ export async function registerStationRoutes(app: FastifyInstance, context: ApiCo
     };
   });
 
-  app.get('/api/v1/history', async request => ({
-    data: await context.prisma.historyEntry.findMany({ orderBy: { createdAt: 'desc' }, take: 50 }),
-    requestId: request.id
-  }));
+  app.get('/api/v1/history', async request => {
+    const query = z.object({ limit: z.coerce.number().int().min(1).max(5000).default(2000) }).parse(request.query ?? {});
+    return { data: await context.prisma.historyEntry.findMany({ orderBy: { createdAt: 'desc' }, take: query.limit }), requestId: request.id };
+  });
 
   app.get('/api/v1/notifications', async request => {
     const user = await requireUser(context.prisma, request);
@@ -66,20 +69,8 @@ export async function registerStationRoutes(app: FastifyInstance, context: ApiCo
   });
 
   app.post('/api/v1/station/refine', async request => {
-    const user = await requireUser(context.prisma, request);
-    const scrap = z.object({ scrap: z.number().int().min(10).max(1000) }).parse(request.body).scrap;
-    const station = await stationDto(context.prisma);
-    const refinery = station.modules.find(module => module.slug === 'refinery');
-    if (refinery?.state !== 'active') throw new GameRuleError('REFINERY_OFFLINE', 'The Refinery module is offline.');
-    const alloys = Math.floor(scrap * Number(refinery.effects.scrapToAlloyRate ?? 0));
-    if (alloys < 1) throw new GameRuleError('REFINE_TOO_SMALL', 'Submit enough scrap to produce at least one alloy.');
-    await context.prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
-      await acquireTransactionLock(transaction, `player:${user.player.id}:refinery`);
-      const removed = await transaction.inventoryStack.updateMany({ where: { playerId: user.player.id, itemSlug: 'scrap', quantity: { gte: scrap } }, data: { quantity: { decrement: scrap } } });
-      if (!removed.count) throw new GameRuleError('NOT_ENOUGH_MATERIALS', 'Not enough scrap to refine.');
-      await transaction.inventoryStack.upsert({ where: { playerId_itemSlug: { playerId: user.player.id, itemSlug: 'alloys' } }, update: { quantity: { increment: alloys } }, create: { playerId: user.player.id, itemSlug: 'alloys', name: 'Refined Alloys', quantity: alloys, rarity: 'uncommon', visualKey: 'item-alloys' } });
-    });
-    return { data: { scrapConsumed: scrap, alloysProduced: alloys }, requestId: request.id };
+    await requireUser(context.prisma, request);
+    throw new GameRuleError('REFINING_MOVED', 'Alloy refining now uses the timed Refined Alloys recipe in the Crafting tab.');
   });
 
   app.post('/api/v1/station/maintain', async request => {

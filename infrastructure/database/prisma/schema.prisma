@@ -118,6 +118,7 @@ model Player {
   exhibits          MuseumExhibit[]
   marketTransactions MarketTransaction[]
   cooldowns         ActionCooldown[]
+  craftingJobs      CraftingJob[]
   auctionSales      AuctionListing[] @relation("AuctionSeller")
   auctionPurchases  AuctionListing[] @relation("AuctionBuyer")
 }
@@ -253,6 +254,8 @@ model Ship {
   fuel          Int      @default(4)
   cargoCapacity Int      @default(24)
   upgrades      String[] @default([])
+  ownedSkins    String[] @default([])
+  activeSkin    String?
   visualKey     String
   createdAt     DateTime @default(now())
   expeditions   Expedition[]
@@ -267,6 +270,8 @@ model CrewMember {
   name         String
   role         String
   level        Int       @default(1)
+  jobStars     Int       @default(1)
+  talentStars  Int       @default(1)
   morale       Int       @default(75)
   injuredUntil DateTime?
   traits       String[]  @default([])
@@ -335,6 +340,21 @@ model ActionReceipt {
   @@index([playerId, createdAt])
 }
 
+model CraftingJob {
+  id          String   @id @default(cuid())
+  playerId    String
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  recipeSlug  String
+  quantity    Int
+  status      String   @default("active")
+  resolvesAt  DateTime
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([status, resolvesAt])
+  @@index([playerId, createdAt])
+}
+
 model MarketTransaction {
   id          String   @id @default(cuid())
   playerId    String
@@ -382,9 +402,10 @@ model MuseumExhibit {
   player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
   itemSlug    String
   name        String
+  quantity    Int      @default(1)
   donatedAt   DateTime @default(now())
 
-  @@unique([playerId, itemSlug])
+  @@index([playerId, itemSlug])
   @@index([donatedAt])
 }
 
@@ -426,10 +447,12 @@ model HistoryEntry {
   title            String
   body             String
   actorDisplayName String?
+  details          Json     @default("{}")
   createdAt        DateTime @default(now())
 
   @@index([stationId, createdAt])
   @@index([playerId, createdAt])
+  @@index([category, createdAt])
 }
 
 model Notification {

@@ -6,7 +6,7 @@ import { acquireTransactionLock } from '../lib/database.js';
 import { stationDto } from './station.js';
 import { enforceDurableCooldown, levelForXp } from './actions.js';
 
-const SCAN_COOLDOWN_SECONDS = 15;
+const SCAN_COOLDOWN_SECONDS = 60;
 const WRECK_LOCK_KEY = 'station-zero:wreck';
 
 export async function getOrCreateCurrentWreck(context: ApiContext) {
@@ -46,10 +46,12 @@ export async function getOrCreateCurrentWreck(context: ApiContext) {
 }
 
 export async function scanForWreck(context: ApiContext, user: AuthenticatedUserWithPlayer, force = false) {
+  const previous = await context.prisma.wreck.findFirst({ orderBy: { createdAt: 'desc' } });
+  const rotatingArchetypes = wreckArchetypes.filter(archetype => archetype.slug !== previous?.archetype);
   const discovered = discoverWreck({
     station: await stationDto(context.prisma),
     playerId: user.player.id,
-    archetypes: wreckArchetypes
+    archetypes: rotatingArchetypes.length ? rotatingArchetypes : wreckArchetypes
   });
 
   const result = await context.prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
@@ -84,7 +86,8 @@ export async function scanForWreck(context: ApiContext, user: AuthenticatedUserW
         category: 'salvage',
         title: 'Signal acquired',
         body: `${user.displayName} located the ${wreck.name}.`,
-        actorDisplayName: user.displayName
+        actorDisplayName: user.displayName,
+        details: { operation: 'scan', wreck: { id: wreck.id, name: wreck.name, archetype: wreck.archetype, risk: wreck.risk } }
       }
     });
     return { wreck, history };
@@ -116,6 +119,7 @@ export async function deploySalvage(
       items: itemsBySlug,
       careerBonus: Number(careerRules[player.career]?.salvageSuccessBonus ?? 0) + currentStationModuleEffect(stationState, 'command-pod', 'scanBonus'),
       rareDiscoveryBonus: currentStationModuleEffect(stationState, 'research-lab', 'rareDiscoveryBonus') + Number(careerRules[player.career]?.rareDiscoveryBonus ?? 0),
+      cargoYieldBonus: currentStationModuleEffect(stationState, 'cargo-bay', 'cargoYieldBonus'),
       mode
     });
     const inventory = await transaction.inventoryStack.findMany({ where: { playerId: player.id } });
@@ -171,9 +175,10 @@ export async function deploySalvage(
         category: 'salvage',
         title: outcome.success ? 'Salvage secured' : 'Salvage accident',
         body: outcome.success
-          ? `${user.displayName} recovered ${outcome.rewards.map(reward => `${reward.quantity} ${reward.name}`).join(', ')}.`
-          : `${user.displayName}'s run went sideways. Repairs have been billed to the chaos jar.`,
-        actorDisplayName: user.displayName
+          ? `${user.displayName} used ${mode} on ${wreck.name} and recovered ${outcome.rewards.map(reward => `${reward.quantity} × ${reward.name}`).join(', ') || 'no cargo'}, plus ${outcome.credits.toLocaleString()} credits.`
+          : `${user.displayName} used ${mode} on ${wreck.name}; the run failed, cost ${Math.abs(outcome.credits).toLocaleString()} credits, and caused ${outcome.stationDamage.integrity} hull / ${outcome.stationDamage.power} power damage.`,
+        actorDisplayName: user.displayName,
+        details: { operation: 'salvage', mode, wreckId: wreck.id, wreckName: wreck.name, wreckArchetype: wreck.archetype, risk: wreck.risk, success: outcome.success, credits: outcome.credits, integrityLoss: outcome.integrityLoss, stationDamage: outcome.stationDamage, items: outcome.rewards.map(item => ({ itemSlug: item.itemSlug, name: item.name, quantity: item.quantity, rarity: item.rarity })) }
       }
     });
     return { outcome, history };

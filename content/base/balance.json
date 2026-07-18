@@ -30,6 +30,16 @@
   },
   "ships": {
     "crewPerShip": 2,
+    "renameCredits": 100,
+    "skinCooldownSeconds": 2592000,
+    "skins": [
+      { "slug": "salvage-skiff-industrial", "classSlug": "salvage-skiff", "name": "Ironclaw", "description": "Reinforced cutting frame that complements hull upgrades.", "credits": 25000, "repairDiscount": 0.1, "successBonus": 0.03 },
+      { "slug": "salvage-skiff-ghost", "classSlug": "salvage-skiff", "name": "Voidghost", "description": "Low-signature drive package built for efficient expedition routing.", "credits": 25000, "fuelDiscount": 1, "successBonus": 0.02 },
+      { "slug": "salvage-skiff-reclaimer", "classSlug": "salvage-skiff", "name": "Reclaimer", "description": "Recovery-drone configuration that extends the hold and loot telemetry.", "credits": 25000, "cargoBonus": 6, "lootRollBonus": 1 },
+      { "slug": "cargo-hauler-bulwark", "classSlug": "cargo-hauler", "name": "Bulwark", "description": "Armored commercial frame with lower repair overhead.", "credits": 25000, "repairDiscount": 0.15, "successBonus": 0.02 },
+      { "slug": "cargo-hauler-horizon", "classSlug": "cargo-hauler", "name": "Horizon", "description": "Long-range command package tuned for expedition efficiency.", "credits": 25000, "fuelDiscount": 1, "successBonus": 0.04 },
+      { "slug": "cargo-hauler-leviathan", "classSlug": "cargo-hauler", "name": "Leviathan", "description": "Flagship cargo architecture with a vast supplemental hold.", "credits": 25000, "cargoBonus": 12, "lootRollBonus": 1 }
+    ],
     "purchases": [
       { "slug": "salvage-skiff", "name": "Salvage Skiff", "credits": 1200, "cargoCapacity": 24, "fuel": 4, "visualKey": "ship-salvage-skiff" },
       { "slug": "cargo-hauler", "name": "Cargo Hauler", "credits": 2200, "cargoCapacity": 40, "fuel": 5, "visualKey": "ship-cargo-hauler" }
@@ -37,9 +47,9 @@
     "refuel": { "fuelPerCell": 1 },
     "repair": { "creditsPerCondition": 8, "alloysPerTwentyCondition": 1 },
     "upgrades": [
-      { "slug": "reinforced-hull", "name": "Reinforced Hull", "credits": 600, "alloys": 8, "conditionBonus": 10 },
-      { "slug": "expanded-hold", "name": "Expanded Hold", "credits": 500, "alloys": 5, "cargoBonus": 8 },
-      { "slug": "efficient-drive", "name": "Efficient Drive", "credits": 750, "electronics": 8, "fuelDiscount": 1 }
+      { "slug": "reinforced-hull", "name": "Reinforced Hull", "description": "Reduces all ship repair credit costs by 20%.", "credits": 600, "alloys": 8, "repairDiscount": 0.2 },
+      { "slug": "expanded-hold", "name": "Expanded Hold", "description": "Adds 8 cargo capacity and one weighted loot roll to every successful expedition.", "credits": 500, "alloys": 5, "cargoBonus": 8, "lootRollBonus": 1 },
+      { "slug": "efficient-drive", "name": "Efficient Drive", "description": "Reduces every expedition fuel cost by 1, to a minimum cost of 1.", "credits": 750, "electronics": 8, "fuelDiscount": 1 }
     ]
   },
   "crew": {
@@ -51,20 +61,21 @@
   "marketplace": {
     "sellMultiplier": 0.55,
     "listings": [
-      { "slug": "fuel-cell-bundle", "name": "Fuel Cell Bundle", "priceCredits": 240, "itemSlug": "fuel", "quantity": 3 },
-      { "slug": "refined-alloy-pack", "name": "Refined Alloy Pack", "priceCredits": 360, "itemSlug": "alloys", "quantity": 5 },
-      { "slug": "electronics-crate", "name": "Electronics Crate", "priceCredits": 300, "itemSlug": "electronics", "quantity": 4 }
-      ,{ "slug": "coolant-canister", "name": "Reactor Coolant Canister", "priceCredits": 190, "itemSlug": "reactor-coolant", "quantity": 2 }
-      ,{ "slug": "sealant-kit", "name": "Sealant Foam Kit", "priceCredits": 110, "itemSlug": "sealant-foam", "quantity": 5 }
-      ,{ "slug": "ration-case", "name": "Ration Case", "priceCredits": 140, "itemSlug": "ration-pack", "quantity": 12 }
-      ,{ "slug": "water-case", "name": "Water Cartridge Case", "priceCredits": 90, "itemSlug": "water-cartridge", "quantity": 10 }
+      { "slug": "fuel-cell-bundle", "name": "Fuel Cell Bundle", "priceCredits": 390, "itemSlug": "fuel", "quantity": 5 },
+      { "slug": "refined-alloy-pack", "name": "Refined Alloy Pack", "priceCredits": 300, "itemSlug": "alloys", "quantity": 5 },
+      { "slug": "electronics-crate", "name": "Electronics Crate", "priceCredits": 225, "itemSlug": "electronics", "quantity": 4 }
+      ,{ "slug": "coolant-canister", "name": "Reactor Coolant Canister", "priceCredits": 530, "itemSlug": "reactor-coolant", "quantity": 2 }
+      ,{ "slug": "sealant-kit", "name": "Sealant Foam Kit", "priceCredits": 420, "itemSlug": "sealant-foam", "quantity": 5 }
+      ,{ "slug": "ration-case", "name": "Ration Case", "priceCredits": 150, "itemSlug": "ration-pack", "quantity": 12 }
+      ,{ "slug": "water-case", "name": "Water Cartridge Case", "priceCredits": 100, "itemSlug": "water-cartridge", "quantity": 10 }
       ,{ "slug": "polymer-bale", "name": "Industrial Polymer Bale", "priceCredits": 120, "itemSlug": "polymer", "quantity": 6 }
-      ,{ "slug": "medical-crate", "name": "Medical Supply Crate", "priceCredits": 260, "itemSlug": "medical-supplies", "quantity": 4 }
+      ,{ "slug": "medical-crate", "name": "Medical Supply Crate", "priceCredits": 1440, "itemSlug": "medical-supplies", "quantity": 4 }
     ],
-    "sellPrices": { "scrap": 4, "electronics": 35, "fuel": 45, "alloys": 50, "research-data": 140, "unknown-relic": 300 }
+    "sellPrices": { "scrap": 2, "electronics": 25, "fuel": 36, "alloys": 28, "research-data": 77, "unknown-relic": 198, "reactor-coolant": 121, "power-core": 418, "sealant-foam": 39, "hull-plate": 77, "medical-supplies": 165, "ration-pack": 6, "water-cartridge": 4, "nutrient-paste": 5, "biofiber": 47, "polymer": 8, "chemical-gel": 52, "ice-crystal": 6, "copper-coil": 39, "plasma-conduit": 151, "sensor-lens": 63, "drone-chassis": 385, "navigation-chart": 336, "algae-culture": 17, "grid-relay": 743 }
   },
   "crafting": {
-    "fuel-cell": { "name": "Fuel Cells", "durationSeconds": 30, "inputs": { "reactor-coolant": 1, "electronics": 2 }, "outputs": { "fuel": 2 }, "stationModule": "refinery" },
+    "refined-alloys": { "name": "Refined Alloys", "durationSeconds": 20, "inputs": { "scrap": 10 }, "outputs": { "alloys": 1 }, "stationModule": "refinery" },
+    "fuel-cell": { "name": "Fuel Cells", "durationSeconds": 30, "inputs": { "reactor-coolant": 1, "electronics": 1 }, "outputs": { "fuel": 5 }, "stationModule": "refinery" },
     "coolant": { "name": "Reactor Coolant", "durationSeconds": 20, "inputs": { "chemical-gel": 2, "ice-crystal": 1 }, "outputs": { "reactor-coolant": 1 }, "stationModule": "refinery" },
     "sealant": { "name": "Sealant Foam", "durationSeconds": 12, "inputs": { "polymer": 2, "chemical-gel": 1 }, "outputs": { "sealant-foam": 2 }, "stationModule": "refinery" },
     "hull-plate": { "name": "Hull Plate", "durationSeconds": 25, "inputs": { "scrap": 5, "alloys": 2 }, "outputs": { "hull-plate": 1 }, "stationModule": "refinery" },
@@ -79,7 +90,9 @@
     "plasma-conduit": { "name": "Plasma Conduit", "durationSeconds": 35, "inputs": { "alloys": 3, "electronics": 2 }, "outputs": { "plasma-conduit": 1 }, "stationModule": "research-lab" },
     "power-core": { "name": "Power Core", "durationSeconds": 45, "inputs": { "electronics": 4, "copper-coil": 3, "plasma-conduit": 1 }, "outputs": { "power-core": 1 }, "stationModule": "research-lab" },
     "sensor-lens": { "name": "Sensor Lens", "durationSeconds": 25, "inputs": { "electronics": 2, "ice-crystal": 1 }, "outputs": { "sensor-lens": 1 }, "stationModule": "research-lab" },
-    "navigation-chart": { "name": "Navigation Chart", "durationSeconds": 35, "inputs": { "research-data": 3, "sensor-lens": 1 }, "outputs": { "navigation-chart": 1 }, "stationModule": "research-lab" }
+    "navigation-chart": { "name": "Navigation Chart", "durationSeconds": 35, "inputs": { "research-data": 3, "sensor-lens": 1 }, "outputs": { "navigation-chart": 1 }, "stationModule": "research-lab" },
+    "drone-chassis": { "name": "Drone Chassis", "durationSeconds": 55, "inputs": { "hull-plate": 3, "electronics": 2, "sensor-lens": 1 }, "outputs": { "drone-chassis": 1 }, "stationModule": "shipyard" },
+    "grid-relay": { "name": "Grid Relay", "durationSeconds": 60, "inputs": { "copper-coil": 2, "electronics": 3, "power-core": 1 }, "outputs": { "grid-relay": 1 }, "stationModule": "research-lab" }
   },
   "quarters": {
     "width": 8,

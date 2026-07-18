@@ -29,7 +29,7 @@ const environmentSchema = z.object({
   STREAMELEMENTS_API_BASE: z.string().url().default('https://api.streamelements.com/kappa/v2'),
   FEATURE_POINTS_ACTIONS: z.enum(['true', 'false']).default('false'),
   LOG_LEVEL: z.string().default('info'),
-  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(1200),
   RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(60)
 }).superRefine((values, context) => {
   if (values.NODE_ENV === 'production') {

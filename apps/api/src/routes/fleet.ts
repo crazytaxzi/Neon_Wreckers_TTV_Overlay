@@ -7,6 +7,7 @@ import type { ApiContext } from '../types.js';
 import { acquireTransactionLock } from '../lib/database.js';
 import { requireUser } from '../services/auth.js';
 import { stationDto } from '../services/station.js';
+import { enforceDurableCooldown } from '../services/actions.js';
 
 const idSchema = z.object({ id: z.string().min(1) });
 
@@ -35,6 +36,26 @@ export async function registerFleetRoutes(app: FastifyInstance, context: ApiCont
     return { data: ship, requestId: request.id };
   });
 
+  app.post('/api/v1/ships/:id/rename', async request => {
+    const user = await requireUser(context.prisma, request);
+    const { id } = idSchema.parse(request.params);
+    const { name } = z.object({ name: z.string().trim().min(2).max(40) }).parse(request.body);
+    const result = await context.prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
+      await acquireTransactionLock(transaction, `player:${user.player.id}:fleet`);
+      const target = await transaction.ship.findFirstOrThrow({ where: { id, playerId: user.player.id } });
+      if (await transaction.expedition.findFirst({ where: { shipId: id, status: 'active' } })) throw new GameRuleError('SHIP_BUSY', 'Wait for this ship to return before renaming it.');
+      if (target.name === name) throw new GameRuleError('SHIP_NAME_UNCHANGED', 'Choose a different ship name.');
+      const charged = await transaction.player.updateMany({ where: { id: user.player.id, credits: { gte: shipRules.renameCredits } }, data: { credits: { decrement: shipRules.renameCredits } } });
+      if (!charged.count) throw new GameRuleError('NOT_ENOUGH_CREDITS', `Renaming a ship costs ${shipRules.renameCredits} credits.`);
+      const ship = await transaction.ship.update({ where: { id }, data: { name } });
+      const station = await transaction.station.findUniqueOrThrow({ where: { slug: 'station-zero' } });
+      const history = await transaction.historyEntry.create({ data: { stationId: station.id, playerId: user.player.id, category: 'fleet', title: 'Ship renamed', body: `${user.displayName} renamed ${target.name} to ${name} for ${shipRules.renameCredits.toLocaleString()} credits.`, actorDisplayName: user.displayName, details: { operation: 'ship-rename', shipId: id, oldName: target.name, newName: name, credits: shipRules.renameCredits } } });
+      return { ship, history, creditsSpent: shipRules.renameCredits };
+    });
+    context.realtime.broadcast({ type: 'history.added', entry: result.history });
+    return { data: result, requestId: request.id };
+  });
+
   app.post('/api/v1/ships/:id/refuel', async request => {
     const user = await requireUser(context.prisma, request);
     const { id } = idSchema.parse(request.params);
@@ -49,6 +70,34 @@ export async function registerFleetRoutes(app: FastifyInstance, context: ApiCont
     return { data: ship, requestId: request.id };
   });
 
+  app.post('/api/v1/ships/:id/skin', async request => {
+    const user = await requireUser(context.prisma, request);
+    const { id } = idSchema.parse(request.params);
+    const { skinSlug } = z.object({ skinSlug: z.string().min(1) }).parse(request.body);
+    const skin = shipRules.skins.find((candidate: { slug: string; classSlug: string; name: string; credits: number; cargoBonus?: number }) => candidate.slug === skinSlug);
+    if (!skin) throw new GameRuleError('SKIN_NOT_FOUND', 'That ship skin is not available.');
+    const result = await context.prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
+      await acquireTransactionLock(transaction, `player:${user.player.id}:fleet`);
+      const target = await transaction.ship.findFirstOrThrow({ where: { id, playerId: user.player.id } });
+      if (target.classSlug !== skin.classSlug) throw new GameRuleError('SKIN_CLASS_MISMATCH', 'That skin does not fit this ship class.');
+      if (target.activeSkin === skin.slug) throw new GameRuleError('SKIN_ACTIVE', 'That skin is already active.');
+      if (await transaction.expedition.findFirst({ where: { shipId: id, status: 'active' } })) throw new GameRuleError('SHIP_BUSY', 'Wait for this ship to return before changing its frame.');
+      await enforceDurableCooldown(transaction, user.player.id, `ship-skin:${id}`, shipRules.skinCooldownSeconds);
+      const owned = target.ownedSkins.includes(skin.slug);
+      if (!owned) {
+        const charged = await transaction.player.updateMany({ where: { id: user.player.id, credits: { gte: skin.credits } }, data: { credits: { decrement: skin.credits } } });
+        if (!charged.count) throw new GameRuleError('NOT_ENOUGH_CREDITS', `This premium skin license costs ${skin.credits.toLocaleString()} credits.`);
+      }
+      const previous = shipRules.skins.find((candidate: { slug: string; cargoBonus?: number }) => candidate.slug === target.activeSkin);
+      const ship = await transaction.ship.update({ where: { id }, data: { activeSkin: skin.slug, ...(!owned ? { ownedSkins: { push: skin.slug } } : {}), visualKey: `ship-${skin.slug}`, cargoCapacity: Math.max(1, target.cargoCapacity - Number(previous?.cargoBonus ?? 0) + Number(skin.cargoBonus ?? 0)) } });
+      const station = await transaction.station.findUniqueOrThrow({ where: { slug: 'station-zero' } });
+      const history = await transaction.historyEntry.create({ data: { stationId: station.id, playerId: user.player.id, category: 'fleet', title: owned ? 'Ship skin equipped' : 'Premium ship skin licensed', body: `${user.displayName} ${owned ? 'equipped' : `licensed for ${skin.credits.toLocaleString()} credits and equipped`} the ${skin.name} frame on ${target.name}. The 30-day refit cooldown is now active.`, actorDisplayName: user.displayName, details: { operation: owned ? 'ship-skin-equip' : 'ship-skin-purchase', shipId: id, shipName: target.name, skinSlug: skin.slug, skinName: skin.name, credits: owned ? 0 : skin.credits, cooldownSeconds: shipRules.skinCooldownSeconds } } });
+      return { ship, history, purchased: !owned };
+    });
+    context.realtime.broadcast({ type: 'history.added', entry: result.history });
+    return { data: result, requestId: request.id };
+  });
+
   app.post('/api/v1/ships/:id/repair', async request => {
     const user = await requireUser(context.prisma, request);
     const { id } = idSchema.parse(request.params);
@@ -56,13 +105,17 @@ export async function registerFleetRoutes(app: FastifyInstance, context: ApiCont
     const station = await stationDto(context.prisma);
     const shipyard = station.modules.find(module => module.slug === 'shipyard');
     const shipyardMultiplier = shipyard?.state === 'active' ? 1 - Number(shipyard.effects.shipRepairDiscount ?? 0) : 1;
-    const multiplier = Number(careerRules[user.player.career]?.repairCostMultiplier ?? 1) * shipyardMultiplier;
-    const credits = Math.ceil(amount * shipRules.repair.creditsPerCondition * multiplier);
-    const alloys = Math.ceil(amount / 20) * shipRules.repair.alloysPerTwentyCondition;
     const ship = await context.prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
       await acquireTransactionLock(transaction, `player:${user.player.id}:fleet`);
       const target = await transaction.ship.findFirstOrThrow({ where: { id, playerId: user.player.id } });
       if (await transaction.expedition.findFirst({ where: { shipId: id, status: 'active' } })) throw new GameRuleError('SHIP_BUSY', 'This ship is away on expedition.');
+      const hullUpgrade = shipRules.upgrades.find((candidate: { slug: string; repairDiscount?: number }) => candidate.slug === 'reinforced-hull');
+      const upgradeMultiplier = target.upgrades.includes('reinforced-hull') ? 1 - Number(hullUpgrade?.repairDiscount ?? 0) : 1;
+      const skin = shipRules.skins.find((candidate: { slug: string; repairDiscount?: number }) => candidate.slug === target.activeSkin);
+      const skinMultiplier = 1 - Number(skin?.repairDiscount ?? 0);
+      const multiplier = Number(careerRules[user.player.career]?.repairCostMultiplier ?? 1) * shipyardMultiplier * upgradeMultiplier * skinMultiplier;
+      const credits = Math.ceil(amount * shipRules.repair.creditsPerCondition * multiplier);
+      const alloys = Math.ceil(amount / 20) * shipRules.repair.alloysPerTwentyCondition;
       const charged = await transaction.player.updateMany({ where: { id: user.player.id, credits: { gte: credits } }, data: { credits: { decrement: credits } } });
       if (!charged.count) throw new GameRuleError('NOT_ENOUGH_CREDITS', 'Not enough credits for repairs.');
       if (alloys) {
@@ -113,12 +166,15 @@ export async function registerFleetRoutes(app: FastifyInstance, context: ApiCont
   app.post('/api/v1/crew/:id/train', async request => {
     const user = await requireUser(context.prisma, request);
     const { id } = idSchema.parse(request.params);
+    const { focus } = z.object({ focus: z.enum(['job', 'talent']) }).parse(request.body);
     const crew = await context.prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
       const member = await transaction.crewMember.findFirstOrThrow({ where: { id, playerId: user.player.id } });
+      if (await transaction.expedition.findFirst({ where: { crewIds: { has: id }, status: 'active' } })) throw new GameRuleError('CREW_BUSY', 'Crew cannot train while deployed.');
+      if ((focus === 'job' ? member.jobStars : member.talentStars) >= 5) throw new GameRuleError('TRAINING_MAXED', `${focus === 'job' ? 'Job' : 'Talent'} training is already five stars.`);
       const credits = member.level * crewRules.trainCreditsPerLevel;
       const charged = await transaction.player.updateMany({ where: { id: user.player.id, credits: { gte: credits } }, data: { credits: { decrement: credits } } });
       if (!charged.count) throw new GameRuleError('NOT_ENOUGH_CREDITS', 'Not enough credits for training.');
-      return transaction.crewMember.update({ where: { id }, data: { level: { increment: 1 }, morale: Math.min(100, member.morale + 5) } });
+      return transaction.crewMember.update({ where: { id }, data: { level: { increment: 1 }, ...(focus === 'job' ? { jobStars: { increment: 1 } } : { talentStars: { increment: 1 } }), morale: Math.min(100, member.morale + 5) } });
     });
     return { data: crew, requestId: request.id };
   });

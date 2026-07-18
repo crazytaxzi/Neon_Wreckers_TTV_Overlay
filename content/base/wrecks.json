@@ -83,5 +83,82 @@
       85,
       120
     ]
+  },
+  {
+    "slug": "kestrel-medical-frigate",
+    "name": "Kestrel Medical Frigate",
+    "risk": "moderate",
+    "visualKey": "wreck-helios-courier",
+    "description": "A quarantined relief ship with sealed surgical stores and a failing containment beacon.",
+    "lootTable": "medical-salvage",
+    "lifecycle": "active",
+    "integrityRange": [48, 72],
+    "lootBudgetRange": [48, 72]
+  },
+  {
+    "slug": "cinder-refinery-hulk",
+    "name": "Cinder Refinery Hulk",
+    "risk": "high",
+    "visualKey": "wreck-orpheus-barge",
+    "description": "An orbital refinery whose molten processing spine never received the shutdown order.",
+    "lootTable": "industrial-salvage",
+    "lifecycle": "active",
+    "integrityRange": [52, 78],
+    "lootBudgetRange": [65, 92]
+  },
+  {
+    "slug": "pilgrim-habitat-ark",
+    "name": "Pilgrim Habitat Ark",
+    "risk": "moderate",
+    "visualKey": "wreck-morrowline-freighter",
+    "description": "A silent colony ark with intact hydroponics decks and decades of unopened supply lockers.",
+    "lootTable": "colony-salvage",
+    "lifecycle": "active",
+    "integrityRange": [62, 88],
+    "lootBudgetRange": [54, 80]
+  },
+  {
+    "slug": "null-signal-probe",
+    "name": "Null-Signal Deep Probe",
+    "risk": "extreme",
+    "visualKey": "wreck-research-skiff",
+    "description": "An experimental probe wrapped in sensor ghosts, exotic radiation, and extremely valuable questions.",
+    "lootTable": "research-salvage",
+    "lifecycle": "active",
+    "integrityRange": [28, 48],
+    "lootBudgetRange": [92, 128]
+  },
+  {
+    "slug": "atlas-fuel-tanker",
+    "name": "Atlas Fuel Tanker",
+    "risk": "low",
+    "visualKey": "wreck-morrowline-freighter",
+    "description": "A slow tanker with stable outer tanks, unstable inner tanks, and enough warning labels to wallpaper a moon.",
+    "lootTable": "fuel-salvage",
+    "lifecycle": "active",
+    "integrityRange": [72, 96],
+    "lootBudgetRange": [36, 56]
+  },
+  {
+    "slug": "revenant-drone-carrier",
+    "name": "Revenant Drone Carrier",
+    "risk": "high",
+    "visualKey": "wreck-ashfall-cutter",
+    "description": "A compact carrier whose autonomous repair swarm has reclassified visitors as spare parts.",
+    "lootTable": "combat-salvage",
+    "lifecycle": "active",
+    "integrityRange": [44, 66],
+    "lootBudgetRange": [70, 98]
+  },
+  {
+    "slug": "frostline-cryo-tug",
+    "name": "Frostline Cryo Tug",
+    "risk": "moderate",
+    "visualKey": "wreck-helios-courier",
+    "description": "A refrigeration tug trailing frozen cargo pods and a glittering cloud of coolant crystals.",
+    "lootTable": "cryo-salvage",
+    "lifecycle": "active",
+    "integrityRange": [58, 82],
+    "lootBudgetRange": [46, 70]
   }
 ]

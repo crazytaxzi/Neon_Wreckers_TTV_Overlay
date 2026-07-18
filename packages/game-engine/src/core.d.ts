@@ -102,6 +102,7 @@ export function createRng(seed?: string): () => number;
 export function clamp(value: number, minimum: number, maximum: number): number;
 export function nowIso(clock?: () => Date): string;
 export function newId(prefix?: string): string;
+export function lootWeightForRarity(rarity: string): number;
 export function discoverWreck(args: {
   station: Pick<StationState, 'id' | 'threatLevel'>;
   playerId: string;
@@ -114,6 +115,7 @@ export function salvageWreck(args: {
   items: Readonly<Record<string, ItemDefinition>>;
   careerBonus?: number;
   rareDiscoveryBonus?: number;
+  cargoYieldBonus?: number;
   seed?: string;
   mode?: SalvageMode;
   now?: string;
@@ -126,6 +128,7 @@ export function salvageWreck(args: {
   integrityLoss: number;
   wreck: WreckState;
 };
+export function salvageWreckProfile(args: { wreck: WreckState; careerBonus?: number; rareDiscoveryBonus?: number }): Record<'cutters' | 'cargo', { successChance: number; scrapRange: number[]; electronicsChance: number; fuelChance: number; relicChance: number; wreckLootRolls: number; wreckLootChancePerRoll: number; wreckLootPool: string[] }>;
 export function contributeConstruction(args: {
   station: StationState;
   moduleSlug?: string;
@@ -155,6 +158,8 @@ export function resolveExpedition(args: {
   expedition: ExpeditionState;
   expeditionDefinition: ExpeditionDefinition;
   items: Readonly<Record<string, ItemDefinition>>;
+  lootRollBonus?: number;
+  successBonus?: number;
   seed?: string;
   now?: string;
 }): ExpeditionState;

@@ -2,12 +2,12 @@ import type { FastifyInstance } from 'fastify';
 import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { GameRuleError } from '@neon-wreckers/game-engine';
-import { careerRules, craftingRules, items, itemsBySlug, marketplaceRules, progressionRules, quartersRules } from '@neon-wreckers/content';
+import { careerRules, craftingRules, items, itemsBySlug, marketplaceRules, modulesBySlug, progressionRules, quartersRules, shipRules } from '@neon-wreckers/content';
 import type { ApiContext } from '../types.js';
 import { requireUser } from '../services/auth.js';
 import { stationDto } from '../services/station.js';
 import { acquireTransactionLock } from '../lib/database.js';
-import { enforceDurableCooldown } from '../services/actions.js';
+import { enforceDurableCooldown, levelForXp } from '../services/actions.js';
 
 const marketSchema = z.object({ slug: z.string().min(1), quantity: z.number().int().positive().default(1) });
 const sellSchema = z.object({ itemSlug: z.string().min(1), quantity: z.number().int().positive() });
@@ -27,6 +27,7 @@ export async function registerPlayerRoutes(app: FastifyInstance, context: ApiCon
     data: items.map(item => ({
       ...item,
       valueCredits: item.valueCredits || marketplaceRules.sellPrices[item.slug] || 0,
+      vendorSellCredits: marketplaceRules.sellPrices[item.slug] ?? 0,
       sellable: marketplaceRules.sellPrices[item.slug] != null
     })),
     requestId: request.id
@@ -35,35 +36,36 @@ export async function registerPlayerRoutes(app: FastifyInstance, context: ApiCon
   app.get('/api/v1/crafting/recipes', async request => {
     await requireUser(context.prisma, request);
     const station = await stationDto(context.prisma);
-    return { data: Object.entries(craftingRules).map(([slug, recipe]) => ({ slug, ...recipe, unlocked: station.modules.find(module => module.slug === recipe.stationModule)?.state === 'active' })), requestId: request.id };
+    return { data: Object.entries(craftingRules).map(([slug, recipe]) => {
+      const module = station.modules.find(candidate => candidate.slug === recipe.stationModule);
+      const speedBonus = Math.min(0.4, Number(module?.effects.craftingSpeedBonus ?? 0));
+      const inputValue = Object.entries(recipe.inputs).reduce((total, [itemSlug, quantity]) => total + itemsBySlug[itemSlug].valueCredits * quantity, 0);
+      const outputValue = Object.entries(recipe.outputs).reduce((total, [itemSlug, quantity]) => total + itemsBySlug[itemSlug].valueCredits * quantity, 0);
+      return { slug, ...recipe, baseDurationSeconds: recipe.durationSeconds, durationSeconds: Math.max(1, Math.ceil(recipe.durationSeconds * (1 - speedBonus))), inputValue, outputValue, valueAdded: outputValue - inputValue, efficiency: inputValue ? outputValue / inputValue : 0, unlocked: module?.state === 'active' };
+    }), requestId: request.id };
   });
 
   app.post('/api/v1/crafting/craft', async request => {
     const user = await requireUser(context.prisma, request);
-    const body = z.object({ recipeSlug: z.string().min(1), quantity: z.number().int().positive().max(5).default(1) }).parse(request.body);
+    const body = z.object({ recipeSlug: z.string().min(1), quantity: z.number().int().positive().max(10).default(1) }).parse(request.body);
     const recipe = craftingRules[body.recipeSlug];
     if (!recipe) throw new GameRuleError('RECIPE_NOT_FOUND', 'Unknown crafting recipe.');
     const station = await stationDto(context.prisma);
-    if (station.modules.find(module => module.slug === recipe.stationModule)?.state !== 'active') throw new GameRuleError('CRAFTING_STATION_OFFLINE', `Requires the active ${recipe.stationModule.replaceAll('-', ' ')} module.`);
+    const craftingModule = station.modules.find(module => module.slug === recipe.stationModule);
+    if (craftingModule?.state !== 'active') throw new GameRuleError('CRAFTING_STATION_OFFLINE', `Requires the active ${recipe.stationModule.replaceAll('-', ' ')} module.`);
+    const durationSeconds = Math.max(1, Math.ceil(recipe.durationSeconds * (1 - Math.min(0.4, Number(craftingModule.effects.craftingSpeedBonus ?? 0))))) * body.quantity;
     const result = await context.prisma.$transaction(async transaction => {
-      const cooldownEndsAt = await enforceDurableCooldown(transaction, user.player.id, `craft:${body.recipeSlug}`, recipe.durationSeconds * body.quantity);
+      const cooldownEndsAt = await enforceDurableCooldown(transaction, user.player.id, `craft:${body.recipeSlug}`, durationSeconds);
       await acquireTransactionLock(transaction, `player:${user.player.id}:crafting`);
       for (const [itemSlug, amount] of Object.entries(recipe.inputs)) {
         const required = amount * body.quantity;
         const removed = await transaction.inventoryStack.updateMany({ where: { playerId: user.player.id, itemSlug, quantity: { gte: required } }, data: { quantity: { decrement: required } } });
         if (!removed.count) throw new GameRuleError('NOT_ENOUGH_MATERIALS', `Requires ${required} × ${itemsBySlug[itemSlug].name}.`);
       }
-      const received: Array<{ itemSlug: string; name: string; quantity: number }> = [];
-      for (const [itemSlug, amount] of Object.entries(recipe.outputs)) {
-        const item = itemsBySlug[itemSlug];
-        const quantity = amount * body.quantity;
-        await transaction.inventoryStack.upsert({ where: { playerId_itemSlug: { playerId: user.player.id, itemSlug } }, update: { quantity: { increment: quantity } }, create: { playerId: user.player.id, itemSlug, name: item.name, quantity, rarity: item.rarity, visualKey: item.visualKey } });
-        received.push({ itemSlug, name: item.name, quantity });
-      }
-      const summary = received.map(item => `${item.quantity} × ${item.name}`).join(', ');
-      await transaction.notification.create({ data: { playerId: user.player.id, type: 'crafting', title: `${recipe.name} crafted`, body: `Received ${summary}.` } });
-      return { received, quantity: body.quantity, cooldownEndsAt: cooldownEndsAt.toISOString() };
+      const job = await transaction.craftingJob.create({ data: { playerId: user.player.id, recipeSlug: body.recipeSlug, quantity: body.quantity, resolvesAt: cooldownEndsAt } });
+      return { jobId: job.id, quantity: body.quantity, cooldownEndsAt: cooldownEndsAt.toISOString() };
     });
+    await context.gameQueue.add('resolve-crafting', { craftingJobId: result.jobId }, { jobId: `craft-${result.jobId}`, delay: Math.max(0, Date.parse(result.cooldownEndsAt) - Date.now()), attempts: 5, backoff: { type: 'exponential', delay: 5_000 }, removeOnComplete: 100, removeOnFail: 500 });
     return { data: result, requestId: request.id };
   });
 
@@ -75,6 +77,7 @@ export async function registerPlayerRoutes(app: FastifyInstance, context: ApiCon
     return {
       data: {
         unlocked,
+        ships: { purchases: shipRules.purchases, upgrades: shipRules.upgrades, skins: shipRules.skins, skinCooldownSeconds: shipRules.skinCooldownSeconds, repair: shipRules.repair, crewPerShip: shipRules.crewPerShip, renameCredits: shipRules.renameCredits },
         listings: unlocked
           ? [
               ...marketplaceRules.listings
@@ -205,7 +208,8 @@ export async function registerPlayerRoutes(app: FastifyInstance, context: ApiCon
     const station = await stationDto(context.prisma);
     if (station.modules.find(module => module.slug === 'marketplace')?.state !== 'active') throw new GameRuleError('MARKET_LOCKED', 'The Marketplace module is offline.');
     const careerMultiplier = Number(careerRules[user.player.career]?.marketSpreadMultiplier ?? 1);
-    const credits = Math.floor(unit * body.quantity / careerMultiplier);
+    const marketBonus = Number(station.modules.find(module => module.slug === 'marketplace')?.effects.marketSellBonus ?? 0);
+    const credits = Math.floor(unit * body.quantity / careerMultiplier * (1 + marketBonus));
     await context.prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
       await acquireTransactionLock(transaction, `player:${user.player.id}:market`);
       const removed = await transaction.inventoryStack.updateMany({ where: { playerId: user.player.id, itemSlug: body.itemSlug, quantity: { gte: body.quantity } }, data: { quantity: { decrement: body.quantity } } });
@@ -218,21 +222,42 @@ export async function registerPlayerRoutes(app: FastifyInstance, context: ApiCon
 
   app.post('/api/v1/museum/donate', async request => {
     const user = await requireUser(context.prisma, request);
-    const body = z.object({ itemSlug: z.string().min(1) }).parse(request.body);
+    const body = z.object({ itemSlug: z.string().min(1), quantity: z.number().int().positive().max(10).default(1) }).parse(request.body);
     const item = itemsBySlug[body.itemSlug];
     if (!item?.tags.includes('museum')) throw new GameRuleError('ITEM_NOT_EXHIBITABLE', 'Only museum artifacts can be donated.');
     const station = await context.prisma.station.findUniqueOrThrow({ where: { slug: 'station-zero' } });
     const museum = await context.prisma.stationModule.findUnique({ where: { stationId_slug: { stationId: station.id, slug: 'museum' } } });
     if (museum?.state !== 'active') throw new GameRuleError('MUSEUM_LOCKED', 'Complete the Museum before donating artifacts.');
-    const exhibit = await context.prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
-      const removed = await transaction.inventoryStack.updateMany({ where: { playerId: user.player.id, itemSlug: body.itemSlug, quantity: { gte: 1 } }, data: { quantity: { decrement: 1 } } });
+    const baseReward = body.itemSlug === 'quantum-key'
+      ? { credits: 1500, xp: 100, reputation: 5, morale: 2 }
+      : { credits: 450, xp: 25, reputation: 1, morale: 1 };
+    const rewardMultiplier = 1 + Number(modulesBySlug.museum.effects.donationRewardBonus ?? 0) * museum.level;
+    const reward = {
+      credits: Math.floor(baseReward.credits * body.quantity * rewardMultiplier),
+      xp: Math.floor(baseReward.xp * body.quantity * rewardMultiplier),
+      reputation: baseReward.reputation * body.quantity,
+      morale: baseReward.morale * body.quantity
+    };
+    const dayStart = new Date();
+    dayStart.setUTCHours(0, 0, 0, 0);
+    const result = await context.prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
+      await acquireTransactionLock(transaction, 'station-zero:museum-intake');
+      const donatedToday = (await transaction.museumExhibit.aggregate({ where: { donatedAt: { gte: dayStart } }, _sum: { quantity: true } }))._sum.quantity ?? 0;
+      const dailyCapacity = Number(modulesBySlug.museum.effects.artifactDailyIntake ?? 0) * museum.level;
+      if (donatedToday + body.quantity > dailyCapacity) throw new GameRuleError('MUSEUM_INTAKE_FULL', `The museum can process ${Math.max(0, dailyCapacity - donatedToday)} more artifacts today.`);
+      const removed = await transaction.inventoryStack.updateMany({ where: { playerId: user.player.id, itemSlug: body.itemSlug, quantity: { gte: body.quantity } }, data: { quantity: { decrement: body.quantity } } });
       if (!removed.count) throw new GameRuleError('ITEM_NOT_OWNED', 'You do not own this artifact.');
-      const created = await transaction.museumExhibit.create({ data: { playerId: user.player.id, itemSlug: item.slug, name: item.name } });
-      await transaction.plaque.create({ data: { moduleId: museum.id, title: `${item.name} donated`, body: `${user.displayName} placed this artifact in the Station Zero collection.`, playerName: user.displayName } });
-      await transaction.historyEntry.create({ data: { stationId: station.id, playerId: user.player.id, category: 'museum', title: 'Museum collection expanded', body: `${user.displayName} donated ${item.name}.`, actorDisplayName: user.displayName } });
-      return created;
+      const currentPlayer = await transaction.player.findUniqueOrThrow({ where: { id: user.player.id } });
+      await transaction.player.update({ where: { id: user.player.id }, data: { credits: { increment: reward.credits }, xp: { increment: reward.xp }, level: levelForXp(currentPlayer.xp + reward.xp, progressionRules.levelXp), reputation: { increment: reward.reputation } } });
+      await transaction.station.update({ where: { id: station.id }, data: { morale: Math.min(100, station.morale + reward.morale) } });
+      const exhibit = await transaction.museumExhibit.create({ data: { playerId: user.player.id, itemSlug: item.slug, name: item.name, quantity: body.quantity } });
+      if (body.itemSlug === 'quantum-key') await transaction.plaque.create({ data: { moduleId: museum.id, title: `${item.name} archived`, body: `${user.displayName} surrendered ${body.quantity} legendary key${body.quantity === 1 ? '' : 's'} for public study.`, playerName: user.displayName } });
+      const history = await transaction.historyEntry.create({ data: { stationId: station.id, playerId: user.player.id, category: 'museum', title: 'Museum collection expanded', body: `${user.displayName} donated ${body.quantity} × ${item.name} and earned ${reward.credits.toLocaleString()} credits.`, actorDisplayName: user.displayName } });
+      return { exhibit, history, reward, donatedToday: donatedToday + body.quantity, dailyCapacity };
     });
-    return { data: exhibit, requestId: request.id };
+    context.realtime.broadcast({ type: 'history.added', entry: result.history });
+    context.realtime.broadcast({ type: 'station.updated', station: await stationDto(context.prisma) });
+    return { data: result, requestId: request.id };
   });
 
   app.post('/api/v1/player/career', async request => {

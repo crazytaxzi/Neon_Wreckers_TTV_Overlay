@@ -2,23 +2,26 @@
   {
     "slug": "command-pod",
     "name": "Command Pod",
+    "description": "Coordinates scans and salvage trajectories. Each level adds 2.5 percentage points to salvage success.",
     "visualKey": "module-command-pod",
     "maxLevel": 5,
     "prerequisites": [],
     "construction": {
       "resources": {
-        "scrap": 0
+        "scrap": 80,
+        "electronics": 6
       },
       "baseProgressUnits": 1
     },
     "effects": {
-      "scanBonus": 0.08
+      "scanBonus": 0.025
     },
     "lifecycle": "active"
   },
   {
     "slug": "cargo-bay",
     "name": "Cargo Bay",
+    "description": "Expands logistics. Each level adds 750 station storage and 5% more Cargo-mode scrap, credits, and electronics.",
     "visualKey": "module-cargo-bay",
     "maxLevel": 5,
     "prerequisites": [
@@ -32,13 +35,15 @@
       "baseProgressUnits": 100
     },
     "effects": {
-      "storage": 3000
+      "storage": 750,
+      "cargoYieldBonus": 0.05
     },
     "lifecycle": "active"
   },
   {
     "slug": "refinery",
     "name": "Refinery",
+    "description": "Runs industrial fabrication. Each level shortens Refinery recipe timers by 6%.",
     "visualKey": "module-refinery",
     "maxLevel": 5,
     "prerequisites": [
@@ -52,13 +57,14 @@
       "baseProgressUnits": 100
     },
     "effects": {
-      "scrapToAlloyRate": 0.12
+      "craftingSpeedBonus": 0.06
     },
     "lifecycle": "active"
   },
   {
     "slug": "habitat-ring",
     "name": "Habitat Ring Beta",
+    "description": "Provides safe living space. Each level supports 150 additional residents.",
     "visualKey": "module-habitat-ring",
     "maxLevel": 4,
     "prerequisites": [
@@ -74,7 +80,7 @@
       "baseProgressUnits": 100
     },
     "effects": {
-      "populationUnlock": 80,
+      "populationCapacity": 150,
       "quarters": true
     },
     "lifecycle": "active"
@@ -82,6 +88,7 @@
   {
     "slug": "medical-bay",
     "name": "Medical Bay",
+    "description": "Treats expedition injuries. Each level shortens recovery time by 12%.",
     "visualKey": "module-medical-bay",
     "maxLevel": 4,
     "prerequisites": [
@@ -96,13 +103,14 @@
       "baseProgressUnits": 100
     },
     "effects": {
-      "injuryRecoveryBonus": 0.2
+      "injuryRecoveryBonus": 0.12
     },
     "lifecycle": "active"
   },
   {
     "slug": "research-lab",
     "name": "Research Lab",
+    "description": "Analyzes anomalous salvage. Each level adds 2.5 percentage points to rare relic discovery.",
     "visualKey": "module-research-lab",
     "maxLevel": 4,
     "prerequisites": [
@@ -117,13 +125,14 @@
       "baseProgressUnits": 100
     },
     "effects": {
-      "rareDiscoveryBonus": 0.05
+      "rareDiscoveryBonus": 0.025
     },
     "lifecycle": "active"
   },
   {
     "slug": "museum",
     "name": "Museum",
+    "description": "Consumes donated artifacts for cultural rewards. Each level adds 10% donation rewards and 10 daily artifact intake.",
     "visualKey": "module-museum",
     "maxLevel": 4,
     "prerequisites": [
@@ -138,7 +147,8 @@
       "baseProgressUnits": 100
     },
     "effects": {
-      "artifactCapacity": 40,
+      "artifactDailyIntake": 10,
+      "donationRewardBonus": 0.1,
       "historyPlaques": true
     },
     "lifecycle": "active"
@@ -146,6 +156,7 @@
   {
     "slug": "marketplace",
     "name": "Marketplace",
+    "description": "Connects station traders. Each level adds 3% to fixed-vendor sale proceeds.",
     "visualKey": "module-marketplace",
     "maxLevel": 4,
     "prerequisites": [
@@ -160,13 +171,15 @@
       "baseProgressUnits": 100
     },
     "effects": {
-      "tradeEnabled": true
+      "tradeEnabled": true,
+      "marketSellBonus": 0.03
     },
     "lifecycle": "active"
   },
   {
     "slug": "shipyard",
     "name": "Shipyard",
+    "description": "Maintains registered ships. Each level reduces credit repair costs by 5%.",
     "visualKey": "module-shipyard",
     "maxLevel": 5,
     "prerequisites": [
@@ -181,7 +194,7 @@
       "baseProgressUnits": 100
     },
     "effects": {
-      "shipRepairDiscount": 0.1
+      "shipRepairDiscount": 0.05
     },
     "lifecycle": "active"
   }

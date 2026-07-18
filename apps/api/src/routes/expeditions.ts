@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
-import { GameRuleError, launchExpedition, resolveExpedition } from '@neon-wreckers/game-engine';
-import { expeditionDefinitions, itemsBySlug, progressionRules } from '@neon-wreckers/content';
+import { GameRuleError, launchExpedition, lootWeightForRarity, resolveExpedition } from '@neon-wreckers/game-engine';
+import { expeditionDefinitions, itemsBySlug, progressionRules, shipRules } from '@neon-wreckers/content';
 import type { ApiContext } from '../types.js';
 import { requireAdmin, requireUser } from '../services/auth.js';
 import { acquireTransactionLock } from '../lib/database.js';
@@ -18,7 +18,9 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
   app.get('/api/v1/expeditions/definitions', async request => {
     await requireUser(context.prisma, request);
     return {
-      data: Object.values(expeditionDefinitions).map(definition => ({
+      data: Object.values(expeditionDefinitions).map(definition => {
+        const totalWeight = definition.lootPool.reduce((sum, itemSlug) => sum + lootWeightForRarity(itemsBySlug[itemSlug].rarity), 0);
+        return ({
         slug: definition.slug,
         name: definition.name,
         description: definition.description,
@@ -26,12 +28,17 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
         fuelCost: definition.fuelCost,
         minCrew: definition.minCrew,
         durationMinutes: definition.durationMinutes,
+        lootRolls: definition.lootRolls,
+        successChance: 1 - ({ low: .03, moderate: .1, high: .2, extreme: .34 }[definition.risk] ?? .1),
+        rewardQuantity: [1, 3],
+        baseRewards: { success: '10–28 scrap + 90–280 credits', failure: '2–8 scrap' },
         lootPool: definition.lootPool.map(itemSlug => ({
           slug: itemSlug,
           name: itemsBySlug[itemSlug].name,
-          rarity: itemsBySlug[itemSlug].rarity
+          rarity: itemsBySlug[itemSlug].rarity,
+          chancePerRoll: lootWeightForRarity(itemsBySlug[itemSlug].rarity) / totalWeight
         }))
-      })),
+      }); }),
       requestId: request.id
     };
   });
@@ -68,11 +75,16 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
       take: 4
     });
     if (crew.some(member => member.injuredUntil && member.injuredUntil > new Date())) throw new GameRuleError('CREW_INJURED', 'An assigned crew member is still recovering.');
+    const driveUpgrade = shipRules.upgrades.find((candidate: { slug: string; fuelDiscount?: number }) => candidate.slug === 'efficient-drive');
+    const skin = shipRules.skins.find((candidate: { slug: string; fuelDiscount?: number; successBonus?: number }) => candidate.slug === ship.activeSkin);
+    const engineerFuelDiscount = crew.some(member => member.role === 'engineer' && member.jobStars >= 3) ? 1 : 0;
+    const fuelDiscount = (ship.upgrades.includes('efficient-drive') ? Number(driveUpgrade?.fuelDiscount ?? 0) : 0) + Number(skin?.fuelDiscount ?? 0) + engineerFuelDiscount;
+    const effectiveDefinition = { ...definition, fuelCost: Math.max(1, definition.fuelCost - fuelDiscount) };
     const launched = launchExpedition({
       player: user.player,
       ship,
       crew,
-      expeditionDefinition: definition
+      expeditionDefinition: effectiveDefinition
     });
     const expedition = await context.prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
       await acquireTransactionLock(transaction, `player:${playerId}:expedition`);
@@ -80,7 +92,7 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
       const active = await transaction.expedition.findMany({ where: { playerId, status: 'active' }, select: { crewIds: true } });
       const busyCrew = new Set(active.flatMap(candidate => candidate.crewIds));
       if (crew.some(member => busyCrew.has(member.id))) throw new GameRuleError('CREW_BUSY', 'An assigned crew member is already away.');
-      const consumed = await transaction.ship.updateMany({ where: { id: ship.id, playerId, fuel: { gte: definition.fuelCost }, condition: { gt: 0 } }, data: { fuel: { decrement: definition.fuelCost } } });
+      const consumed = await transaction.ship.updateMany({ where: { id: ship.id, playerId, fuel: { gte: effectiveDefinition.fuelCost }, condition: { gt: 0 } }, data: { fuel: { decrement: effectiveDefinition.fuelCost } } });
       if (!consumed.count) throw new GameRuleError('NO_FUEL', 'The selected ship is unavailable or lacks fuel.');
       return transaction.expedition.create({
         data: {
@@ -117,8 +129,9 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
         playerId,
         category: 'expedition',
         title: 'Expedition launched',
-        body: `${user.displayName} launched ${expedition.name}.`,
-        actorDisplayName: user.displayName
+        body: `${user.displayName} launched ${expedition.name} aboard ${ship.name} with ${crew.map(member => member.name).join(', ')}.`,
+        actorDisplayName: user.displayName,
+        details: { operation: 'expedition-launch', expeditionId: expedition.id, expeditionName: expedition.name, definition: expedition.definition, shipId: ship.id, shipName: ship.name, crew: crew.map(member => ({ id: member.id, name: member.name, role: member.role })), fuelCost: effectiveDefinition.fuelCost, risk: expedition.risk }
       }
     });
     context.realtime.broadcast({ type: 'history.added', entry: history });
@@ -128,7 +141,11 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
   app.post('/api/v1/expeditions/:id/resolve-now', async request => {
     await requireAdmin(context.prisma, request);
     const id = String((request.params as { id: string }).id);
-    const expedition = await context.prisma.expedition.findUniqueOrThrow({ where: { id } });
+    const expedition = await context.prisma.expedition.findUniqueOrThrow({ where: { id }, include: { ship: true } });
+    const expeditionSkin = shipRules.skins.find((skin: { slug: string; successBonus?: number; lootRollBonus?: number }) => skin.slug === expedition.ship?.activeSkin);
+    const expeditionCrew = await context.prisma.crewMember.findMany({ where: { id: { in: expedition.crewIds } } });
+    const crewSuccessBonus = expeditionCrew.reduce((total, member) => total + (member.role === 'pilot' ? member.jobStars * .01 + member.talentStars * .004 : member.role === 'scout' ? member.jobStars * .006 + member.talentStars * .008 : member.talentStars * .002), 0);
+    const crewLootBonus = expeditionCrew.some(member => member.role === 'quartermaster' && member.jobStars >= 4) ? 1 : 0;
     const resolved = resolveExpedition({
       expedition: {
         ...expedition,
@@ -137,6 +154,8 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
       },
       expeditionDefinition: expeditionDefinitions[expedition.definition],
       items: itemsBySlug,
+      lootRollBonus: (expedition.ship?.upgrades.includes('expanded-hold') ? Number(shipRules.upgrades.find((upgrade: { slug: string; lootRollBonus?: number }) => upgrade.slug === 'expanded-hold')?.lootRollBonus ?? 0) : 0) + Number(expeditionSkin?.lootRollBonus ?? 0) + crewLootBonus,
+      successBonus: Number(expeditionSkin?.successBonus ?? 0) + crewSuccessBonus,
       now: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
     });
     const resolvedStatus =
@@ -218,8 +237,9 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
           playerId,
           category: 'expedition',
           title: 'Expedition rewards claimed',
-          body: `${user.displayName} recovered rewards from ${expedition.name}.`,
-          actorDisplayName: user.displayName
+          body: `${user.displayName} claimed ${rewards.map(reward => `${reward.quantity} × ${reward.name}`).join(', ') || 'no items'} from ${expedition.name}.`,
+          actorDisplayName: user.displayName,
+          details: { operation: 'expedition', expeditionId: expedition.id, expeditionName: expedition.name, definition: expedition.definition, shipId: expedition.shipId, risk: expedition.risk, status: expedition.status, items: rewards }
         }
       });
     });

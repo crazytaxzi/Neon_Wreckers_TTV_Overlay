@@ -46,11 +46,16 @@ function weightedPick(items, rng, weight) {
 }
 function intBetween(min, max, rng) { return Math.floor(min + rng() * (max - min + 1)); }
 
-export function salvageWreck({ wreck, player, items, careerBonus = 0, rareDiscoveryBonus = 0, seed, mode = 'cutters', now = nowIso() }) {
+export function lootWeightForRarity(rarity) {
+  return { common: 100, uncommon: 55, rare: 22, epic: 7, legendary: 2 }[rarity] ?? 10;
+}
+
+export function salvageWreck({ wreck, player, items, careerBonus = 0, rareDiscoveryBonus = 0, cargoYieldBonus = 0, seed, mode = 'cutters', now = nowIso() }) {
   if (!wreck || wreck.depleted || wreck.integrity <= 4) throw new GameRuleError('WRECK_DEPLETED', 'The wreck is exhausted. Run another scan.');
   const rng = createRng(seed ?? `${wreck.id}:${player.id}:${mode}:${now}`);
   const riskFactor = { low:1, moderate:1.18, high:1.45, extreme:1.85 }[wreck.risk] ?? 1;
   const modeFactor = { cutters:1, cargo:1.55, override:2.6 }[mode] ?? 1;
+  const rewardFactor = modeFactor * (mode === 'cargo' ? 1 + cargoYieldBonus : 1);
   const integrityLoss = Math.ceil((4 + rng()*8) * riskFactor * (mode === 'override' ? 1.75 : 1));
   const successChance = clamp(0.86 - ({low:.02,moderate:.08,high:.17,extreme:.29}[wreck.risk] ?? .1) + careerBonus - (mode === 'cargo' ? .08 : 0) - (mode === 'override' ? .24 : 0), .08, .96);
   const success = rng() <= successChance;
@@ -59,10 +64,10 @@ export function salvageWreck({ wreck, player, items, careerBonus = 0, rareDiscov
   const stationDamage = { power: 0, integrity: 0 };
 
   if (success) {
-    const scrap = Math.max(1, Math.floor((5 + rng()*13) * modeFactor));
+    const scrap = Math.max(1, Math.floor((5 + rng()*13) * rewardFactor));
     rewards.push(stack(requiredItem(items, 'scrap'), scrap));
-    credits = Math.floor((22 + scrap * 4 + rng()*90) * modeFactor);
-    if (rng() < .42 * modeFactor) rewards.push(stack(requiredItem(items, 'electronics'), Math.ceil(rng()*3*modeFactor)));
+    credits = Math.floor((22 + scrap * 4 + rng()*90) * rewardFactor);
+    if (rng() < .42 * modeFactor) rewards.push(stack(requiredItem(items, 'electronics'), Math.ceil(rng()*3*rewardFactor)));
     if (mode === 'cargo' && rng() < .24) rewards.push(stack(requiredItem(items, 'alloys'), 1 + Math.floor(rng()*3)));
     if (rng() < .18 * modeFactor) rewards.push(stack(requiredItem(items, 'fuel'), 1 + Math.floor(rng()*2)));
     if (rng() < (.055 + rareDiscoveryBonus) * modeFactor) rewards.push(stack(requiredItem(items, 'unknown-relic'), 1));
@@ -96,13 +101,37 @@ export function salvageWreck({ wreck, player, items, careerBonus = 0, rareDiscov
   return { success, mode, rewards, credits, stationDamage, integrityLoss, wreck: nextWreck };
 }
 
+export function salvageWreckProfile({ wreck, careerBonus = 0, rareDiscoveryBonus = 0 }) {
+  const riskPenalty = ({ low:.02, moderate:.08, high:.17, extreme:.29 }[wreck.risk] ?? .1);
+  return Object.fromEntries(['cutters', 'cargo'].map(mode => {
+    const modeFactor = mode === 'cargo' ? 1.55 : 1;
+    return [mode, {
+      successChance: clamp(0.86 - riskPenalty + careerBonus - (mode === 'cargo' ? .08 : 0), .08, .96),
+      scrapRange: [Math.max(1, Math.floor(5 * modeFactor)), Math.max(1, Math.floor(18 * modeFactor))],
+      electronicsChance: Math.min(1, .42 * modeFactor),
+      fuelChance: Math.min(1, .18 * modeFactor),
+      relicChance: Math.min(1, (.055 + rareDiscoveryBonus) * modeFactor),
+      wreckLootRolls: mode === 'cargo' ? 2 : 1,
+      wreckLootChancePerRoll: mode === 'cargo' ? .68 : .38,
+      wreckLootPool: wreckLootPool(wreck.archetype, mode)
+    }];
+  }));
+}
+
 function wreckLootPool(archetype, mode) {
   const pools = {
     'helios-courier': ['electronics', 'sensor-lens', 'copper-coil', 'navigation-chart', 'medical-supplies'],
     'orpheus-barge': ['ice-crystal', 'polymer', 'hull-plate', 'sealant-foam', 'copper-coil'],
     'ashfall-cutter': ['plasma-conduit', 'power-core', 'grid-relay', 'drone-chassis', 'hull-plate'],
     'morrowline-freighter': ['ration-pack', 'water-cartridge', 'nutrient-paste', 'algae-culture', 'medical-supplies', 'reactor-coolant'],
-    'research-skiff': ['research-data', 'chemical-gel', 'biofiber', 'sensor-lens', 'quantum-key', 'plasma-conduit']
+    'research-skiff': ['research-data', 'chemical-gel', 'biofiber', 'sensor-lens', 'quantum-key', 'plasma-conduit'],
+    'kestrel-medical-frigate': ['medical-supplies', 'biofiber', 'chemical-gel', 'water-cartridge', 'sensor-lens'],
+    'cinder-refinery-hulk': ['alloys', 'hull-plate', 'plasma-conduit', 'reactor-coolant', 'power-core'],
+    'pilgrim-habitat-ark': ['ration-pack', 'water-cartridge', 'nutrient-paste', 'algae-culture', 'biofiber', 'medical-supplies'],
+    'null-signal-probe': ['research-data', 'sensor-lens', 'quantum-key', 'grid-relay', 'plasma-conduit', 'power-core'],
+    'atlas-fuel-tanker': ['fuel', 'reactor-coolant', 'sealant-foam', 'hull-plate', 'copper-coil'],
+    'revenant-drone-carrier': ['drone-chassis', 'electronics', 'grid-relay', 'power-core', 'hull-plate'],
+    'frostline-cryo-tug': ['ice-crystal', 'reactor-coolant', 'chemical-gel', 'sealant-foam', 'water-cartridge']
   };
   const pool = pools[archetype] ?? ['ice-crystal', 'polymer', 'algae-culture', 'research-data'];
   return mode === 'cargo' ? pool : pool.filter(slug => !['quantum-key', 'power-core', 'grid-relay'].includes(slug));
@@ -163,19 +192,19 @@ export function launchExpedition({ player, ship, crew, expeditionDefinition, see
   };
 }
 
-export function resolveExpedition({ expedition, expeditionDefinition, items, seed, now = nowIso() }) {
+export function resolveExpedition({ expedition, expeditionDefinition, items, lootRollBonus = 0, successBonus = 0, seed, now = nowIso() }) {
   if (expedition.status !== 'active') throw new GameRuleError('EXPEDITION_NOT_ACTIVE','This expedition is not active.');
   if (Date.parse(now) < Date.parse(expedition.resolvesAt)) throw new GameRuleError('EXPEDITION_NOT_READY','Crew is still out past the local beacon line.');
   const rng = createRng(seed ?? `${expedition.id}:${now}`);
   const riskPenalty = { low:.03, moderate:.1, high:.2, extreme:.34 }[expedition.risk] ?? .1;
-  const success = rng() > riskPenalty;
+  const success = rng() > Math.max(.02, riskPenalty - successBonus);
   const rewards = success
     ? [stack(requiredItem(items, 'scrap'), intBetween(10,28,rng)), stack(requiredItem(items, 'credits'), intBetween(90,280,rng))]
     : [stack(requiredItem(items, 'scrap'), intBetween(2,8,rng))];
   if (success && rng() < .16) rewards.push(stack(requiredItem(items, 'research-data'), 1));
   if (success) {
-    for (let roll = 0; roll < expeditionDefinition.lootRolls; roll += 1) {
-      const slug = expeditionDefinition.lootPool[Math.floor(rng() * expeditionDefinition.lootPool.length)];
+    for (let roll = 0; roll < expeditionDefinition.lootRolls + lootRollBonus; roll += 1) {
+      const slug = weightedPick(expeditionDefinition.lootPool, rng, candidate => lootWeightForRarity(requiredItem(items, candidate).rarity));
       rewards.push(stack(requiredItem(items, slug), 1 + Math.floor(rng() * 3)));
     }
   }

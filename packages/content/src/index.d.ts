@@ -31,6 +31,7 @@ export interface WreckArchetype {
 export interface ModuleDefinition {
   slug: string;
   name: string;
+  description: string;
   visualKey: string;
   maxLevel: number;
   prerequisites: string[];
@@ -42,10 +43,13 @@ export interface ModuleDefinition {
   careers: Record<string, Record<string, number>>;
   ships: {
     crewPerShip: number;
+    renameCredits: number;
+    skinCooldownSeconds: number;
+    skins: Array<{ slug: string; classSlug: string; name: string; description: string; credits: number; cargoBonus?: number; fuelDiscount?: number; repairDiscount?: number; lootRollBonus?: number; successBonus?: number }>;
     purchases: Array<{ slug: string; name: string; credits: number; cargoCapacity: number; fuel: number; visualKey: string }>;
     refuel: { fuelPerCell: number };
     repair: { creditsPerCondition: number; alloysPerTwentyCondition: number };
-    upgrades: Array<{ slug: string; name: string; credits: number; alloys?: number; electronics?: number; conditionBonus?: number; cargoBonus?: number; fuelDiscount?: number }>;
+    upgrades: Array<{ slug: string; name: string; description: string; credits: number; alloys?: number; electronics?: number; conditionBonus?: number; cargoBonus?: number; fuelDiscount?: number; repairDiscount?: number; lootRollBonus?: number }>;
   };
   crew: { recruitCredits: number; trainCreditsPerLevel: number; maxRoster: number; injuryMinutes: readonly [number, number] };
   marketplace: { sellMultiplier: number; listings: Array<{ slug: string; name: string; priceCredits: number; itemSlug: string; quantity: number }>; sellPrices: Record<string, number> };
