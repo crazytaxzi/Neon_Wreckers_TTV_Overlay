@@ -12,7 +12,7 @@ test('player admin and overlay load one synchronized graphics system', async () 
     read('apps/overlay/src/overlay.css')
   ]);
 
-  for (const layer of ['graphics.css', 'illustration.css', 'brand-art.css', 'accessibility-polish.css', 'showcase-graphics.css']) {
+  for (const layer of ['graphics.css', 'illustration.css', 'brand-art.css', 'accessibility-polish.css', 'showcase-graphics.css', 'viewer-event.css']) {
     assert.match(index, new RegExp(`import './${layer.replace('.', '\\.')}'`));
     assert.match(bundle, new RegExp(`@import './${layer.replace('.', '\\.')}'`));
   }
@@ -58,23 +58,25 @@ test('core game vocabulary uses native Neon Wreckers SVG glyphs', async () => {
 });
 
 test('illustrated layers retain accessibility and low-effects fallbacks', async () => {
-  const [illustration, brand, accessibility, admin, overlay] = await Promise.all([
+  const [illustration, brand, accessibility, admin, overlay, viewerEvent] = await Promise.all([
     read('packages/ui/src/illustration.css'),
     read('packages/ui/src/brand-art.css'),
     read('packages/ui/src/accessibility-polish.css'),
     read('apps/admin/src/admin-graphics.css'),
-    read('apps/overlay/src/overlay-graphics.css')
+    read('apps/overlay/src/overlay-graphics.css'),
+    read('packages/ui/src/viewer-event.css')
   ]);
 
-  for (const css of [illustration, brand, admin, overlay]) {
+  for (const css of [illustration, brand, admin, overlay, viewerEvent]) {
     assert.match(css, /forced-colors: active/);
   }
-  for (const css of [illustration, admin, overlay]) {
+  for (const css of [illustration, admin, overlay, viewerEvent]) {
     assert.match(css, /data-low-effects="true"/);
   }
   assert.match(accessibility, /:focus-visible/);
   assert.match(accessibility, /@supports not selector\(:focus-visible\)/);
   assert.match(overlay, /pointer-events free|pointer-events/i);
+  assert.match(viewerEvent, /prefers-reduced-motion: reduce/);
 });
 
 test('admin UI Library documents graphic language and rarity hardware', async () => {
@@ -91,6 +93,21 @@ test('admin UI Library documents graphic language and rarity hardware', async ()
   assert.match(showcaseCss, /\.nw-rarity-demo/);
 });
 
+test('viewer event popups use real classified overlay history', async () => {
+  const [overlaySource, viewerCss] = await Promise.all([
+    read('apps/overlay/src/main.tsx'),
+    read('packages/ui/src/viewer-event.css')
+  ]);
+
+  assert.match(overlaySource, /OverlayEventPopup/);
+  assert.match(overlaySource, /current\.severity === 'viewer'/);
+  assert.match(overlaySource, /className="viewer-event-region"/);
+  assert.match(overlaySource, /presence\.updated/);
+  assert.match(overlaySource, /history\.added/);
+  assert.match(viewerCss, /\.viewer-event-region/);
+  assert.match(viewerCss, /pointer-events: none/);
+});
+
 test('visual proof responsibilities are separated without fake production APIs', async () => {
   const [playerProof, surfaceProof] = await Promise.all([
     read('.github/workflows/ui-visual-proof.yml'),
@@ -99,8 +116,13 @@ test('visual proof responsibilities are separated without fake production APIs',
 
   assert.match(playerProof, /Build deterministic player preview/);
   assert.doesNotMatch(playerProof, /Inject deterministic admin and overlay preview data/);
-  assert.match(surfaceProof, /Inject preview-only fixtures/);
+  assert.match(surfaceProof, /Capture real built admin and overlay surfaces/);
+  assert.match(surfaceProof, /page\.route/);
   assert.match(surfaceProof, /JSON\.stringify\(\{ data:/);
   assert.match(surfaceProof, /admin-overlay-visual-proof/);
-  assert.match(surfaceProof, /3840,2160/);
+  assert.match(surfaceProof, /width:\s*3840,\s*height:\s*2160/);
+  assert.match(surfaceProof, /viewer-event-1080p/);
+  assert.match(surfaceProof, /Graphic Language/);
+  assert.match(surfaceProof, /contents: read/);
+  assert.doesNotMatch(surfaceProof, /contents: write/);
 });
