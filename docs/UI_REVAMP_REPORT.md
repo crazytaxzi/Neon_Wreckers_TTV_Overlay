@@ -5,7 +5,7 @@
 - Branch: `ui/concept-driven-revamp`
 - Pull request: `#1`
 - Target: `main`
-- Merge state: draft until verification succeeds and visual viewport checks are completed
+- Merge state: draft until manual browser and OBS viewport validation is completed
 
 ## Files changed
 
@@ -13,18 +13,26 @@
 
 - `packages/ui/src/theme.ts`
 - `packages/ui/src/components.tsx`
-- `packages/ui/src/styles.css` through the unchanged base layer
 - `packages/ui/src/revamp.css`
 - `packages/ui/src/bundle.css`
 - `packages/ui/src/index.ts`
 - `packages/ui/src/showcase.tsx`
 - `packages/ui/package.json`
-- `packages/ui/tsconfig.json`
 
-### Tests and CI
+### Player artwork delivery
+
+- `apps/web/src/components/GameArtwork.tsx`
+- `apps/web/src/main.tsx`
+- 30 `-360w.webp` project artwork variants
+- 30 `-600w.webp` project artwork variants
+
+### Tests, build plumbing, and CI
 
 - `tools/test/ui-revamp.test.mjs`
+- `tools/test/api-routes.test.mjs`
+- `tools/test/database.test.mjs`
 - `.github/workflows/ui-revamp-verify.yml`
+- `package.json` deterministic Prisma generation before database compilation
 
 ### Documentation
 
@@ -32,6 +40,7 @@
 - `docs/UI_COMPONENT_MATRIX.md`
 - `docs/UI_RESPONSIVE_MATRIX.md`
 - `docs/UI_PERFORMANCE.md`
+- `docs/UI_ASSET_AUDIT.md`
 - `docs/UI_REVAMP_REPORT.md`
 
 ## Architecture decisions
@@ -46,6 +55,8 @@
 8. The overlay remains a lightweight transparent surface using existing real API and WebSocket data.
 9. Visual effects are progressive enhancements and degrade through user settings and media preferences.
 10. No gameplay calculations or business rules were moved into browser presentation code.
+11. Project artwork is served through responsive variants rather than downloading desktop originals for compact mobile cards.
+12. Fresh builds generate Prisma client types before compiling database seed code; no schema or migration behavior changed.
 
 ## Current mechanics preserved
 
@@ -74,9 +85,10 @@
 
 ## Responsive validation
 
-Source contracts and automated architecture checks are included for:
+Automated source and build contracts pass for:
 
 - five-item mobile navigation
+- Station and Profile secondary sheets
 - safe-area insets
 - landscape-phone compaction
 - narrow-screen data-grid conversion
@@ -84,31 +96,41 @@ Source contracts and automated architecture checks are included for:
 - reduced-data mode
 - forced colors and high contrast
 - touch-safe control sizing
+- responsive project artwork counts and loading behavior
 - overlay transparency and pointer-event behavior
 
-The complete viewport matrix remains marked as visual-run pending until CI artifacts are available and the branch is exercised in real browsers and OBS. No unchecked viewport is reported as passed.
+The complete viewport matrix remains marked as visual-run pending until the branch is exercised in iPhone Safari, Android Chrome, desktop browsers, and OBS. No unchecked viewport is reported as passed.
 
-## Performance before and after
+## Performance results
 
-The branch does not invent bundle numbers. CI generates a `ui-build-sizes` artifact after production builds. Actual baseline/final numbers must be copied into `docs/UI_PERFORMANCE.md` before the PR leaves draft state.
+### Production branch bundles
 
-The implementation itself avoids adding:
+Raw generated file sizes before HTTP compression:
 
-- font downloads
-- canvas or WebGL
-- full-screen JavaScript animation
-- large mandatory raster frames
-- concept screenshots as UI surfaces
-- a second icon library
-- new runtime API calls
+| Surface | JavaScript | CSS | Complete output |
+| --- | ---: | ---: | ---: |
+| Player | 313,571 bytes | 84,519 bytes | 4.5 MiB including all artwork variants |
+| Admin | 278,126 bytes | 65,899 bytes | 352 KiB |
+| Overlay | 240,043 bytes | 73,387 bytes | 324 KiB |
+
+A pre-change `main` production build was not measured in the same environment, so this report does not claim a fabricated JavaScript before-and-after delta.
+
+### Project artwork
+
+| Artwork set | Total size | Reduction from canonical set |
+| --- | ---: | ---: |
+| 1200px canonical sources | 3,148,872 bytes | Baseline |
+| 600px responsive variants | 610,102 bytes | 80.6% smaller |
+| 360px responsive variants | 246,412 bytes | 92.2% smaller |
 
 ## Tests and builds
 
-The branch CI runs:
+GitHub Actions completed successfully on a clean runner:
 
 ```text
 pnpm install --frozen-lockfile
-pnpm run test:repository
+node --test tools/test/ui-revamp.test.mjs
+node --test tools/test/repository.test.mjs
 pnpm --filter @neon-wreckers/ui run build
 pnpm --filter @neon-wreckers/web run build
 pnpm --filter @neon-wreckers/admin run build
@@ -117,12 +139,12 @@ pnpm test
 pnpm verify
 ```
 
-At the time this report was created, the workflow had been queued but had not yet produced a conclusion. The pull request remains draft and unmerged.
+The complete repository test suite includes 21 repository/source-contract tests in addition to engine, API, content, and dependency validation.
 
 ## Remaining risks
 
 - The player `main.tsx` remains monolithic and is the largest structural debt left by this foundation branch.
 - Full visual validation still requires the documented viewport matrix and OBS canvases.
 - Effects using `clip-path`, `color-mix`, and blur require browser checks, although core layout and semantic communication do not depend on them.
-- Bundle-size comparison requires the CI artifact.
-- Any CI failure must be corrected before merge. The draft status is intentional protection, not decoration.
+- Compressed transfer, runtime interaction timing, and OBS CPU/memory measurements are not yet recorded.
+- The pull request remains draft intentionally. Green CI proves the code compiles and tests; it does not replace visual review.
