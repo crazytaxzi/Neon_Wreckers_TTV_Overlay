@@ -67,24 +67,7 @@ jobs:
       - name: Build overlay app
         run: pnpm --filter @neon-wreckers/overlay run build
 
-      - name: Run complete test suite
-        run: |
-          set -o pipefail
-          pnpm test 2>&1 | tee complete-test.log
-
-      - name: Upload complete test diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: complete-test-log
-          path: complete-test.log
-          retention-days: 14
-
-      - name: Run repository verification
-        run: pnpm verify
-
       - name: Record frontend bundle sizes
-        if: always()
         run: |
           {
             echo '# UI build output sizes'
@@ -102,9 +85,34 @@ jobs:
           } > ui-build-sizes.txt
 
       - name: Upload size report
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ui-build-sizes
           path: ui-build-sizes.txt
+          retention-days: 14
+
+      - name: Run complete test suite
+        run: |
+          set -o pipefail
+          pnpm test 2>&1 | tee complete-test.log
+
+      - name: Upload complete test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: complete-test-log
+          path: complete-test.log
+          retention-days: 14
+
+      - name: Run repository verification
+        run: |
+          set -o pipefail
+          pnpm verify 2>&1 | tee verify.log
+
+      - name: Upload verification diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-log
+          path: verify.log
           retention-days: 14
