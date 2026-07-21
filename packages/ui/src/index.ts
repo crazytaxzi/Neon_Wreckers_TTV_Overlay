@@ -4,6 +4,7 @@ import './graphics.css';
 import './illustration.css';
 import './brand-art.css';
 import './accessibility-polish.css';
+import './showcase-graphics.css';
 
 export * from './theme.js';
 export * from './icons.js';
