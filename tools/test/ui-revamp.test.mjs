@@ -1,8 +1,20 @@
 import assert from 'node:assert/strict';
+import { readdirSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import test from 'node:test';
 
-const read = path => readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
+const read = file => readFile(new URL(`../../${file}`, import.meta.url), 'utf8');
+const repositoryRoot = new URL('../../', import.meta.url);
+
+function filesBelow(relativeDirectory) {
+  const root = new URL(`${relativeDirectory}/`, repositoryRoot);
+  const walk = directory => readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
+    const child = path.join(directory, entry.name);
+    return entry.isDirectory() ? walk(child) : child;
+  });
+  return walk(root).map(file => path.relative(root.pathname, file).replaceAll(path.sep, '/'));
+}
 
 test('shared UI loads the canonical revamp stylesheet and stream theme', async () => {
   const [index, theme] = await Promise.all([
@@ -54,6 +66,33 @@ test('shared component contract includes player, admin, and overlay primitives',
   ]) {
     assert.match(source, new RegExp(`export function ${component}`));
   }
+});
+
+test('player artwork uses responsive project assets instead of concept screenshots', async () => {
+  const [component, player] = await Promise.all([
+    read('apps/web/src/components/GameArtwork.tsx'),
+    read('apps/web/src/main.tsx')
+  ]);
+  const assets = [
+    ...filesBelow('apps/web/public/station'),
+    ...filesBelow('apps/web/public/wrecks'),
+    ...filesBelow('apps/web/public/ships')
+  ].filter(file => file.endsWith('.webp'));
+  const originals = assets.filter(file => !/-\d+w\.webp$/.test(file));
+  const mobile = assets.filter(file => file.endsWith('-360w.webp'));
+  const tablet = assets.filter(file => file.endsWith('-600w.webp'));
+
+  assert.equal(originals.length, 30, 'Expected the 30 canonical project artwork sources.');
+  assert.equal(mobile.length, 30, 'Every canonical artwork source needs a 360px mobile variant.');
+  assert.equal(tablet.length, 30, 'Every canonical artwork source needs a 600px tablet variant.');
+  assert.match(component, /srcSet=/);
+  assert.match(component, /width=\{1200\}/);
+  assert.match(component, /height=\{675\}/);
+  assert.match(component, /loading=\{eager \? 'eager' : 'lazy'\}/);
+  assert.match(component, /decoding="async"/);
+  assert.match(player, /import \{ GameArtwork \}/);
+  assert.match(player, /<GameArtwork/);
+  assert.doesNotMatch(player, /<img[^>]+src=\{?`?\/?(?:station|wrecks|ships)\//);
 });
 
 test('overlay safety behavior remains present', async () => {
