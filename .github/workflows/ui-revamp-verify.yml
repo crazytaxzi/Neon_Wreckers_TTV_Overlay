@@ -1,0 +1,118 @@
+name: UI Revamp Verify
+
+on:
+  push:
+    branches:
+      - ui/concept-driven-revamp
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'apps/admin/**'
+      - 'apps/overlay/**'
+      - 'packages/ui/**'
+      - 'tools/test/ui-revamp.test.mjs'
+      - 'docs/UI_*.md'
+      - '.github/workflows/ui-revamp-verify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: pnpm
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run revamp contract tests
+        run: node --test tools/test/ui-revamp.test.mjs
+
+      - name: Run existing repository guardrails
+        run: node --test tools/test/repository.test.mjs
+
+      - name: Build shared UI
+        run: pnpm --filter @neon-wreckers/ui run build
+
+      - name: Build player app
+        run: |
+          set -o pipefail
+          pnpm --filter @neon-wreckers/web run build 2>&1 | tee web-build.log
+
+      - name: Upload player build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build-log
+          path: web-build.log
+          retention-days: 14
+
+      - name: Build admin app
+        run: pnpm --filter @neon-wreckers/admin run build
+
+      - name: Build overlay app
+        run: pnpm --filter @neon-wreckers/overlay run build
+
+      - name: Record frontend bundle sizes
+        run: |
+          {
+            echo '# UI build output sizes'
+            echo
+            for directory in apps/web/dist apps/admin/dist apps/overlay/dist packages/ui/dist; do
+              echo "## ${directory}"
+              if [ -d "${directory}" ]; then
+                find "${directory}" -type f -printf '%s %p\n' | sort -nr
+                du -sh "${directory}"
+              else
+                echo 'build output unavailable'
+              fi
+              echo
+            done
+          } > ui-build-sizes.txt
+
+      - name: Upload size report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-build-sizes
+          path: ui-build-sizes.txt
+          retention-days: 14
+
+      - name: Run complete test suite
+        run: |
+          set -o pipefail
+          pnpm test 2>&1 | tee complete-test.log
+
+      - name: Upload complete test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: complete-test-log
+          path: complete-test.log
+          retention-days: 14
+
+      - name: Run repository verification
+        run: |
+          set -o pipefail
+          pnpm verify 2>&1 | tee verify.log
+
+      - name: Upload verification diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-log
+          path: verify.log
+          retention-days: 14
