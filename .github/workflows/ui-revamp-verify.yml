@@ -1,0 +1,87 @@
+name: UI Revamp Verify
+
+on:
+  push:
+    branches:
+      - ui/concept-driven-revamp
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'apps/admin/**'
+      - 'apps/overlay/**'
+      - 'packages/ui/**'
+      - 'tools/test/ui-revamp.test.mjs'
+      - 'docs/UI_*.md'
+      - '.github/workflows/ui-revamp-verify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: pnpm
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run UI contract tests
+        run: pnpm run test:repository
+
+      - name: Build shared UI
+        run: pnpm --filter @neon-wreckers/ui run build
+
+      - name: Build player app
+        run: pnpm --filter @neon-wreckers/web run build
+
+      - name: Build admin app
+        run: pnpm --filter @neon-wreckers/admin run build
+
+      - name: Build overlay app
+        run: pnpm --filter @neon-wreckers/overlay run build
+
+      - name: Run complete test suite
+        run: pnpm test
+
+      - name: Run repository verification
+        run: pnpm verify
+
+      - name: Record frontend bundle sizes
+        if: always()
+        run: |
+          {
+            echo '# UI build output sizes'
+            echo
+            for directory in apps/web/dist apps/admin/dist apps/overlay/dist packages/ui/dist; do
+              echo "## ${directory}"
+              if [ -d "${directory}" ]; then
+                find "${directory}" -type f -printf '%s %p\n' | sort -nr
+                du -sh "${directory}"
+              else
+                echo 'build output unavailable'
+              fi
+              echo
+            done
+          } > ui-build-sizes.txt
+
+      - name: Upload size report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-build-sizes
+          path: ui-build-sizes.txt
+          retention-days: 14
