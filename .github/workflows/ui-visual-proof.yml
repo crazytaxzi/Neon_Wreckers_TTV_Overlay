@@ -15,7 +15,7 @@ permissions:
 jobs:
   screenshots:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -57,28 +57,61 @@ jobs:
           cat /tmp/neon-preview.log
           exit 1
 
-      - name: Capture real built application
+      - name: Capture every player destination
         run: |
           mkdir -p ui-visual-proof/mobile ui-visual-proof/tablet ui-visual-proof/desktop ui-visual-proof/audit
 
-          pnpm dlx playwright@1.55.0 screenshot --browser chromium --viewport-size "390,844" --wait-for-timeout 1800 "http://127.0.0.1:4173/?view=station" ui-visual-proof/mobile/home.png
-          pnpm dlx playwright@1.55.0 screenshot --browser chromium --viewport-size "390,844" --wait-for-timeout 1800 "http://127.0.0.1:4173/?view=salvage" ui-visual-proof/mobile/salvage.png
-          pnpm dlx playwright@1.55.0 screenshot --browser chromium --viewport-size "390,844" --wait-for-timeout 1800 "http://127.0.0.1:4173/?view=market" ui-visual-proof/mobile/market.png
+          views="station salvage construction inventory crafting market crew ships expeditions museum history notifications quarters profile settings guide"
 
-          pnpm dlx playwright@1.55.0 screenshot --browser chromium --viewport-size "1024,768" --wait-for-timeout 1800 "http://127.0.0.1:4173/?view=station" ui-visual-proof/tablet/home.png
-          pnpm dlx playwright@1.55.0 screenshot --browser chromium --viewport-size "1024,768" --wait-for-timeout 1800 "http://127.0.0.1:4173/?view=market" ui-visual-proof/tablet/market.png
+          for view in $views; do
+            name="$view"
+            if [ "$view" = "station" ]; then name="home"; fi
 
-          pnpm dlx playwright@1.55.0 screenshot --browser chromium --viewport-size "1920,1080" --wait-for-timeout 1800 "http://127.0.0.1:4173/?view=station" ui-visual-proof/desktop/home.png
-          pnpm dlx playwright@1.55.0 screenshot --browser chromium --viewport-size "1920,1080" --wait-for-timeout 1800 "http://127.0.0.1:4173/?view=salvage" ui-visual-proof/desktop/salvage.png
-          pnpm dlx playwright@1.55.0 screenshot --browser chromium --viewport-size "1920,1080" --wait-for-timeout 1800 "http://127.0.0.1:4173/?view=market" ui-visual-proof/desktop/market.png
+            pnpm dlx playwright@1.55.0 screenshot \
+              --browser chromium \
+              --viewport-size "390,844" \
+              --wait-for-timeout 1200 \
+              "http://127.0.0.1:4173/?view=$view" \
+              "ui-visual-proof/mobile/$name.png"
 
-          pnpm dlx playwright@1.55.0 screenshot --browser chromium --viewport-size "390,844" --full-page --wait-for-timeout 1800 "http://127.0.0.1:4173/?view=station" ui-visual-proof/audit/mobile-home-full.png
-          pnpm dlx playwright@1.55.0 screenshot --browser chromium --viewport-size "1024,768" --full-page --wait-for-timeout 1800 "http://127.0.0.1:4173/?view=station" ui-visual-proof/audit/tablet-home-full.png
+            pnpm dlx playwright@1.55.0 screenshot \
+              --browser chromium \
+              --viewport-size "1920,1080" \
+              --wait-for-timeout 1200 \
+              "http://127.0.0.1:4173/?view=$view" \
+              "ui-visual-proof/desktop/$name.png"
+          done
+
+          for view in station salvage construction market profile; do
+            name="$view"
+            if [ "$view" = "station" ]; then name="home"; fi
+
+            pnpm dlx playwright@1.55.0 screenshot \
+              --browser chromium \
+              --viewport-size "1024,768" \
+              --wait-for-timeout 1200 \
+              "http://127.0.0.1:4173/?view=$view" \
+              "ui-visual-proof/tablet/$name.png"
+          done
+
+          for view in station salvage market; do
+            name="$view"
+            if [ "$view" = "station" ]; then name="home"; fi
+
+            pnpm dlx playwright@1.55.0 screenshot \
+              --browser chromium \
+              --viewport-size "390,844" \
+              --full-page \
+              --wait-for-timeout 1200 \
+              "http://127.0.0.1:4173/?view=$view" \
+              "ui-visual-proof/audit/mobile-$name-full.png"
+          done
 
           cat > ui-visual-proof/README.txt <<'MANIFEST'
           These PNGs are screenshots of the production-built React application.
-          Mobile, tablet, and desktop folders contain true viewport captures.
-          The audit folder contains full-page overflow checks.
+          Mobile and desktop folders contain every existing player destination.
+          Tablet captures cover the five primary information-architecture destinations.
+          The audit folder contains full-page overflow checks for Home, Salvage, and Market.
           The build used VITE_VISUAL_PREVIEW=1 only to provide deterministic fixture data.
           Production builds without that flag continue to use the real API/WebSocket data layer.
           MANIFEST
