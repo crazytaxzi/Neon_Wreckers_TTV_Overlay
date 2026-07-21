@@ -45,7 +45,6 @@ jobs:
           sed -i '/^  Tooltip$/d' apps/web/src/pages/community.tsx
           sed -i '/^  Card,$/d' apps/web/src/pages/logistics.tsx
           sed -i 's/icon="relic"/icon="museum"/g' apps/web/src/pages/logistics.tsx
-          rm -rf .github/ui-pass2
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -90,11 +89,9 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          rm -f .github/workflows/apply-ui-pass2.yml .github/ui-build-error.log
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add \
-            .github/workflows/ui-visual-proof.yml \
             apps/web/src/app.tsx \
             apps/web/src/pages/community.tsx \
             apps/web/src/pages/logistics.tsx \
@@ -102,6 +99,5 @@ jobs:
             apps/web/src/styles.css \
             apps/web/src/visual-preview.ts \
             tools/test/ui-revamp.test.mjs
-          git add -u .github
           git commit -m 'feat(ui): rebuild market, logistics, and fleet surfaces'
           git push origin HEAD:agent/concept-faithful-ui-rebuild
