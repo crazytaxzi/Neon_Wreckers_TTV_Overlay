@@ -29,13 +29,21 @@ Every canonical source now has:
 
 The `GameArtwork` component supplies `srcset`, `sizes`, intrinsic width and height, async decoding, and lazy loading. The station command-center hero and current wreck hero may load eagerly because they are primary visible content. Secondary modules, ships, and skin previews load lazily.
 
-Representative transfer reductions from the generated variants:
+Measured totals for all 30 assets:
+
+| Variant set | Total transfer size | Reduction from originals |
+| --- | ---: | ---: |
+| 1200px canonical sources | 3,148,872 bytes (3.00 MiB) | Baseline |
+| 600px variants | 610,102 bytes (595.8 KiB) | 80.6% smaller |
+| 360px variants | 246,412 bytes (240.6 KiB) | 92.2% smaller |
+
+Representative measured files:
 
 | Asset | Original | 600px | 360px |
 | --- | ---: | ---: | ---: |
-| Station Zero | 139,520 bytes | 29,166 bytes | 11,274 bytes |
-| Orpheus Barge | 116,012 bytes | 24,856 bytes | 9,624 bytes |
-| Cargo Hauler Leviathan | 139,806 bytes | 31,050 bytes | 12,116 bytes |
+| Station Zero | 139,520 bytes | 25,760 bytes | 10,062 bytes |
+| Orpheus Barge | 116,012 bytes | 21,574 bytes | 8,418 bytes |
+| Cargo Hauler Leviathan | 139,806 bytes | 27,662 bytes | 10,786 bytes |
 
 Actual browser transfer depends on viewport, device pixel ratio, cache state, and the rendered `sizes` value. The smaller variants prevent ordinary phones from downloading the 1200-pixel originals for compact cards.
 
