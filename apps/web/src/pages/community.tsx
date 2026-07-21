@@ -21,7 +21,6 @@ import {
   SplitLayout,
   StatusDisplay,
   ToggleSwitch,
-  Tooltip
 } from '@neon-wreckers/ui';
 import type { ActionHandler, AuctionListing, CurrentUser, GameData, InventoryItem, ItemDefinition, Marketplace, PlayerNotification, Quarters, QuartersObject, UiPreferences } from '../model.js';
 import { formatCountdown, notificationTone, quartersObjectIcon, rarityTone, itemIcon } from '../page-utils.js';
@@ -81,31 +80,190 @@ export function NotificationsPage({ notifications, action }: { notifications: Pl
 }
 
 export function MarketPage({ marketplace, credits, inventory, catalog, auctions, action }: { marketplace: Marketplace | null; credits: number; inventory: InventoryItem[]; catalog: ItemDefinition[]; auctions: AuctionListing[]; action: ActionHandler }) {
+  const [view, setView] = useState<'marketplace' | 'auctions' | 'mine' | 'sell'>('marketplace');
   const [sellItem, setSellItem] = useState(inventory.find(item => item.quantity > 0)?.itemSlug ?? '');
   const [sellQuantity, setSellQuantity] = useState(1);
   const [sellPrice, setSellPrice] = useState(100);
   const [auctionDuration, setAuctionDuration] = useState(48);
   const [cancelListing, setCancelListing] = useState<AuctionListing | null>(null);
   const [now, setNow] = useState(Date.now());
-  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const guideValue = (slug: string) => catalog.find(item => item.slug === slug)?.valueCredits ?? 0;
+  const sellableInventory = inventory.filter(item => item.quantity > 0 && catalog.find(entry => entry.slug === item.itemSlug)?.sellable);
+  const ownAuctions = auctions.filter(listing => listing.ownListing);
+  const publicAuctions = auctions.filter(listing => !listing.ownListing);
+  const featured = publicAuctions[0] ?? auctions[0] ?? null;
+  const marketListings = marketplace?.listings ?? [];
+  const selectedDefinition = catalog.find(item => item.slug === sellItem);
+  const selectedHeld = inventory.find(item => item.itemSlug === sellItem)?.quantity ?? 0;
+
+  const tabs: Array<{ id: typeof view; label: string; count?: number }> = [
+    { id: 'marketplace', label: 'Marketplace', count: marketListings.length },
+    { id: 'auctions', label: 'Live Auctions', count: publicAuctions.length },
+    { id: 'mine', label: 'My Auctions', count: ownAuctions.length },
+    { id: 'sell', label: 'Sell From Hold' }
+  ];
+
   return (
-    <div className="page-stack">
-      <SectionTitle eyebrow="COMMERCE NETWORK" title="Marketplace" description="Live marketplace availability and server-provided listings." icon="trade" action={<Badge tone={marketplace?.unlocked ? 'success' : 'warning'}>{marketplace?.unlocked ? 'ONLINE' : 'LOCKED'}</Badge>} />
-      <ResponsiveGrid min="13rem"><StatusDisplay label="Available Credits" value={credits.toLocaleString()} unit=" cr" icon="credits" tone="success" /><StatusDisplay label="Market State" value={marketplace?.unlocked ? 'ACTIVE' : 'OFFLINE'} icon="market" tone={marketplace?.unlocked ? 'success' : 'warning'} /><StatusDisplay label="Listings" value={marketplace?.listings.length ?? 0} icon="inventory" tone="info" /></ResponsiveGrid>
-      {marketplace?.unlocked ? (marketplace.listings.length ? <Panel><DataGrid caption="Current station marketplace listings" rows={marketplace.listings} getRowKey={listing => listing.slug} columns={[
-        { key: 'item', header: 'Listing', render: listing => <span className="market-listing"><NWIcon name={itemIcon(listing.itemSlug)} size={17} /><strong>{listing.name}</strong></span> },
-        { key: 'quantity', header: 'Quantity', align: 'right', render: listing => <span className="nw-numeric">{listing.quantity}</span> },
-        { key: 'price', header: 'Price', align: 'right', render: listing => <span className="nw-numeric">{listing.priceCredits.toLocaleString()} cr</span> },
-        { key: 'buy', header: 'Command', align: 'right', render: listing => <Button size="sm" disabled={credits < listing.priceCredits} onClick={() => void action('/api/v1/marketplace/buy', { slug: listing.slug, quantity: 1 }, 'Purchase complete')}>Buy</Button> }
-      ]} /></Panel> : <Notification title="No listings transmitted" tone="info">The marketplace module is active, but the server returned no current listings.</Notification>) : <Panel className="locked-system"><div className="locked-system__glyph"><NWIcon name="market" size={58} /></div><Badge tone="warning">MODULE OFFLINE</Badge><h2>Marketplace access unavailable</h2><p>The server reports that the marketplace module is not active. The interface cannot bypass that station state.</p><ProgressBar value={0} label="Network availability" tone="warning" /></Panel>}
-      {marketplace?.unlocked && <><Panel><SectionTitle eyebrow="PLAYER MARKET" title="Auction House" description="Player listings run for 6 to 72 hours. The shown price is for the full stack." icon="trade" /><DataGrid caption="Active player auctions" rows={auctions} getRowKey={listing => listing.id} empty="No active player auctions." columns={[
-        { key: 'item', header: 'Item', render: listing => <Tooltip content={catalog.find(item => item.slug === listing.itemSlug)?.description ?? listing.itemName}><strong>{listing.quantity} × {listing.itemName}</strong></Tooltip> },
-        { key: 'seller', header: 'Seller', render: listing => listing.sellerName },
-        { key: 'value', header: 'Guide value', align: 'right', render: listing => <span className="nw-numeric">{((catalog.find(item => item.slug === listing.itemSlug)?.valueCredits ?? 0) * listing.quantity).toLocaleString()} cr</span> },
-        { key: 'price', header: 'Auction price', align: 'right', render: listing => <span className="nw-numeric">{listing.priceCredits.toLocaleString()} cr</span> },
-        { key: 'time', header: 'Ends', render: listing => <span className="nw-numeric">{formatCountdown(Date.parse(listing.expiresAt) - now)}</span> },
-        { key: 'buy', header: 'Command', align: 'right', render: listing => listing.ownListing ? <Button size="sm" variant="warning" disabled={credits < listing.cancellationFee} onClick={() => setCancelListing(listing)}>Cancel · {listing.cancellationFee} cr</Button> : <Button size="sm" disabled={credits < listing.priceCredits} onClick={() => void action(`/api/v1/auction/${listing.id}/buy`, undefined, 'Auction purchase complete')}>Buy stack</Button> }
-      ]} /></Panel><Panel><SectionTitle eyebrow="CREATE LISTING" title="Auction Your Items" icon="inventory" /><ResponsiveGrid min="12rem"><Field label="Item"><Select value={sellItem} onChange={event => setSellItem(event.target.value)}>{inventory.filter(item => item.quantity > 0 && item.itemSlug !== 'credits').map(item => <option key={item.itemSlug} value={item.itemSlug}>{item.name} ({item.quantity})</option>)}</Select></Field><Field label="Quantity"><Input type="number" min={1} value={sellQuantity} onChange={event => setSellQuantity(Number(event.target.value))} /></Field><Field label="Full stack price (credits)"><Input type="number" min={1} value={sellPrice} onChange={event => setSellPrice(Number(event.target.value))} /></Field><Field label="Auction duration"><Select value={auctionDuration} onChange={event => setAuctionDuration(Number(event.target.value))}><option value={6}>6 hours</option><option value={12}>12 hours</option><option value={24}>24 hours</option><option value={48}>48 hours</option><option value={72}>72 hours</option></Select></Field></ResponsiveGrid><p>Guide value: {((catalog.find(item => item.slug === sellItem)?.valueCredits ?? 0) * sellQuantity).toLocaleString()} cr</p><Button disabled={!sellItem || sellQuantity < 1 || sellPrice < 1} onClick={() => void action('/api/v1/auction/list', { itemSlug: sellItem, quantity: sellQuantity, priceCredits: sellPrice, durationHours: auctionDuration }, 'Auction created')}>List for {auctionDuration} hours</Button></Panel><Panel><SectionTitle eyebrow="SELL INVENTORY" title="Station Buyback" icon="trade" /><ResponsiveGrid min="14rem">{inventory.filter(item => item.quantity > 0 && catalog.find(entry => entry.slug === item.itemSlug)?.sellable).map(item => { const value = catalog.find(entry => entry.slug === item.itemSlug)?.valueCredits ?? 0; return <Tooltip key={item.itemSlug} content={`Guide value ${value} credits. Station buyback may pay a different amount based on career and spread.`}><Card><strong>{item.name}</strong><p>{item.quantity} available · {value.toLocaleString()} cr guide value each</p><Button size="sm" variant="ghost" onClick={() => void action('/api/v1/marketplace/sell', { itemSlug: item.itemSlug, quantity: 1 }, 'Item sold')}>Sell one</Button></Card></Tooltip>; })}</ResponsiveGrid></Panel><ConfirmWindow open={Boolean(cancelListing)} onClose={() => setCancelListing(null)} onConfirm={() => { if (cancelListing) void action(`/api/v1/auction/${cancelListing.id}/cancel`, undefined, 'Auction cancelled'); setCancelListing(null); }} title="Cancel this auction?" confirmLabel={`Pay ${cancelListing?.cancellationFee ?? 0} credits`} tone="warning"><p>The full item stack will return to your hold. The cancellation fee is 2% of the asking price, with a 10-credit minimum and 250-credit cap.</p></ConfirmWindow></>}
+    <div className="page-stack market-console">
+      <section className="market-console__masthead">
+        <div>
+          <span className="nw-eyebrow">VOID EXCHANGE // COMMERCE NETWORK</span>
+          <h2>Market / Auction</h2>
+          <p>Buy station stock, secure player listings, or turn recovered salvage into working capital.</p>
+        </div>
+        <div className="market-credit-bank">
+          <span>Your Credits</span>
+          <strong className="nw-numeric"><NWIcon name="credits" size={24} />{credits.toLocaleString()}</strong>
+          <Badge tone={marketplace?.unlocked ? 'success' : 'warning'}>{marketplace?.unlocked ? 'MARKET ONLINE' : 'MARKET LOCKED'}</Badge>
+        </div>
+      </section>
+
+      <nav className="market-console__tabs" aria-label="Market sections">
+        {tabs.map(tab => (
+          <button key={tab.id} type="button" className={view === tab.id ? 'is-active' : ''} onClick={() => setView(tab.id)}>
+            <NWIcon name={tab.id === 'marketplace' ? 'market' : tab.id === 'sell' ? 'inventory' : 'trade'} size={18} />
+            <span>{tab.label}</span>
+            {typeof tab.count === 'number' && <small>{tab.count}</small>}
+          </button>
+        ))}
+      </nav>
+
+      {!marketplace?.unlocked && (
+        <Panel className="locked-system market-console__locked">
+          <div className="locked-system__glyph"><NWIcon name="market" size={58} /></div>
+          <Badge tone="warning">MODULE OFFLINE</Badge>
+          <h2>Marketplace access unavailable</h2>
+          <p>The server reports that the marketplace module is not active. The interface cannot bypass that station state.</p>
+          <ProgressBar value={0} label="Network availability" tone="warning" />
+        </Panel>
+      )}
+
+      {marketplace?.unlocked && featured && view !== 'sell' && (
+        <Panel tone="purple" depth="high" className="market-featured">
+          <div className="market-featured__art" aria-hidden="true">
+            <span><NWIcon name={itemIcon(featured.itemSlug)} size={76} /></span>
+            <i /><i /><i />
+          </div>
+          <div className="market-featured__copy">
+            <span className="nw-eyebrow">Featured Listing</span>
+            <h3>{featured.itemName}</h3>
+            <p>{catalog.find(item => item.slug === featured.itemSlug)?.description ?? `${featured.quantity} unit player listing from ${featured.sellerName}.`}</p>
+            <div className="trait-list">
+              <Badge tone={rarityTone(catalog.find(item => item.slug === featured.itemSlug)?.rarity ?? 'common')}>{catalog.find(item => item.slug === featured.itemSlug)?.rarity ?? 'salvage'}</Badge>
+              <Pill tone="neutral">{featured.quantity} unit{featured.quantity === 1 ? '' : 's'}</Pill>
+              <Pill tone="purple">Ends {formatCountdown(Date.parse(featured.expiresAt) - now)}</Pill>
+            </div>
+          </div>
+          <div className="market-featured__price">
+            <span>Market Price</span>
+            <strong className="nw-numeric"><NWIcon name="credits" size={22} />{featured.priceCredits.toLocaleString()}</strong>
+            <small>Guide value {(guideValue(featured.itemSlug) * featured.quantity).toLocaleString()} cr</small>
+            {featured.ownListing ? (
+              <Button variant="warning" disabled={credits < featured.cancellationFee} onClick={() => setCancelListing(featured)}>Cancel Listing</Button>
+            ) : (
+              <Button disabled={credits < featured.priceCredits} onClick={() => void action(`/api/v1/auction/${featured.id}/buy`, undefined, 'Auction purchase complete')}>Secure Listing</Button>
+            )}
+          </div>
+        </Panel>
+      )}
+
+      {marketplace?.unlocked && view === 'marketplace' && (
+        <Panel className="market-browse-panel">
+          <SectionTitle eyebrow="STATION INVENTORY" title="Browse Market" description="Fixed station stock with server-authoritative prices and availability." icon="market" action={<Badge tone="success">{marketListings.length} listings</Badge>} />
+          {marketListings.length ? (
+            <div className="market-product-grid">
+              {marketListings.map(listing => {
+                const definition = catalog.find(item => item.slug === listing.itemSlug);
+                return (
+                  <article key={listing.slug} className={`market-product nw-rarity--${definition?.rarity ?? 'common'}`}>
+                    <div className="market-product__icon"><NWIcon name={itemIcon(listing.itemSlug)} size={36} /></div>
+                    <div className="market-product__copy">
+                      <span>{definition?.rarity ?? 'station stock'}</span>
+                      <h3>{listing.name}</h3>
+                      <p>{definition?.description ?? `${listing.quantity} units available through station commerce.`}</p>
+                    </div>
+                    <div className="market-product__numbers">
+                      <small>Quantity</small><strong className="nw-numeric">{listing.quantity}</strong>
+                      <small>Price</small><strong className="nw-numeric">{listing.priceCredits.toLocaleString()} cr</strong>
+                    </div>
+                    <Button disabled={credits < listing.priceCredits} onClick={() => void action('/api/v1/marketplace/buy', { slug: listing.slug, quantity: 1 }, 'Purchase complete')}>Buy Item</Button>
+                  </article>
+                );
+              })}
+            </div>
+          ) : <Notification title="No listings transmitted" tone="info">The marketplace module is active, but the server returned no current listings.</Notification>}
+        </Panel>
+      )}
+
+      {marketplace?.unlocked && view === 'auctions' && (
+        <Panel className="market-auction-panel">
+          <SectionTitle eyebrow="PLAYER MARKET" title="Live Auctions" description="The shown price is for the full stack. Auctions resolve through the existing server transaction routes." icon="trade" action={<Badge tone="purple">{publicAuctions.length} live</Badge>} />
+          {publicAuctions.length ? <div className="market-auction-list">{publicAuctions.map(listing => (
+            <article key={listing.id} className="market-auction-row">
+              <div className="market-auction-row__icon"><NWIcon name={itemIcon(listing.itemSlug)} size={32} /></div>
+              <div><span className="nw-eyebrow">{catalog.find(item => item.slug === listing.itemSlug)?.rarity ?? 'player listing'}</span><h3>{listing.itemName}</h3><p>{listing.quantity} × item stack · Seller {listing.sellerName}</p></div>
+              <div><small>Guide Value</small><strong className="nw-numeric">{(guideValue(listing.itemSlug) * listing.quantity).toLocaleString()} cr</strong></div>
+              <div><small>Buy Now</small><strong className="nw-numeric">{listing.priceCredits.toLocaleString()} cr</strong></div>
+              <div><small>Time Remaining</small><strong className="nw-numeric">{formatCountdown(Date.parse(listing.expiresAt) - now)}</strong></div>
+              <Button disabled={credits < listing.priceCredits} onClick={() => void action(`/api/v1/auction/${listing.id}/buy`, undefined, 'Auction purchase complete')}>Buy Stack</Button>
+            </article>
+          ))}</div> : <Notification title="No active auctions" tone="info">The player exchange is waiting for new listings.</Notification>}
+        </Panel>
+      )}
+
+      {marketplace?.unlocked && view === 'mine' && (
+        <Panel className="market-auction-panel">
+          <SectionTitle eyebrow="MY EXCHANGE RECORDS" title="Active Listings" description="Cancel a listing to return the full item stack to your hold. The server calculates and charges the cancellation fee." icon="archive" action={<Badge tone="info">{ownAuctions.length} owned</Badge>} />
+          {ownAuctions.length ? <div className="market-auction-list">{ownAuctions.map(listing => (
+            <article key={listing.id} className="market-auction-row market-auction-row--owned">
+              <div className="market-auction-row__icon"><NWIcon name={itemIcon(listing.itemSlug)} size={32} /></div>
+              <div><span className="nw-eyebrow">Your Listing</span><h3>{listing.itemName}</h3><p>{listing.quantity} × item stack · {listing.sellerName}</p></div>
+              <div><small>Asking Price</small><strong className="nw-numeric">{listing.priceCredits.toLocaleString()} cr</strong></div>
+              <div><small>Cancellation Fee</small><strong className="nw-numeric">{listing.cancellationFee.toLocaleString()} cr</strong></div>
+              <div><small>Time Remaining</small><strong className="nw-numeric">{formatCountdown(Date.parse(listing.expiresAt) - now)}</strong></div>
+              <Button variant="warning" disabled={credits < listing.cancellationFee} onClick={() => setCancelListing(listing)}>Cancel</Button>
+            </article>
+          ))}</div> : <Notification title="No personal listings" tone="info">Items you auction will appear here until purchased, expired, or cancelled.</Notification>}
+        </Panel>
+      )}
+
+      {marketplace?.unlocked && view === 'sell' && (
+        <div className="market-sell-layout">
+          <Panel className="market-sell-panel">
+            <SectionTitle eyebrow="CREATE LISTING" title="Auction Your Salvage" description="List a held stack for 6 to 72 hours. The route, validation, and transfer remain server-authoritative." icon="trade" />
+            <div className="market-sell-form">
+              <Field label="Item"><Select value={sellItem} onChange={event => { setSellItem(event.target.value); setSellQuantity(1); }}>{inventory.filter(item => item.quantity > 0 && item.itemSlug !== 'credits').map(item => <option key={item.itemSlug} value={item.itemSlug}>{item.name} ({item.quantity})</option>)}</Select></Field>
+              <Field label="Quantity"><Input type="number" min={1} max={selectedHeld} value={sellQuantity} onChange={event => setSellQuantity(Number(event.target.value))} /></Field>
+              <Field label="Full stack price"><Input type="number" min={1} value={sellPrice} onChange={event => setSellPrice(Number(event.target.value))} /></Field>
+              <Field label="Auction duration"><Select value={auctionDuration} onChange={event => setAuctionDuration(Number(event.target.value))}><option value={6}>6 hours</option><option value={12}>12 hours</option><option value={24}>24 hours</option><option value={48}>48 hours</option><option value={72}>72 hours</option></Select></Field>
+            </div>
+            <div className="market-listing-preview">
+              <div className="market-listing-preview__icon"><NWIcon name={itemIcon(sellItem)} size={42} /></div>
+              <div><span className="nw-eyebrow">Listing Preview</span><h3>{selectedDefinition?.name ?? 'Choose an item'}</h3><p>{sellQuantity} of {selectedHeld} held · guide value {(guideValue(sellItem) * sellQuantity).toLocaleString()} cr</p></div>
+              <strong className="nw-numeric">{sellPrice.toLocaleString()} cr</strong>
+            </div>
+            <Button fullWidth disabled={!sellItem || sellQuantity < 1 || sellQuantity > selectedHeld || sellPrice < 1} onClick={() => void action('/api/v1/auction/list', { itemSlug: sellItem, quantity: sellQuantity, priceCredits: sellPrice, durationHours: auctionDuration }, 'Auction created')}>List for {auctionDuration} Hours</Button>
+          </Panel>
+
+          <Panel className="market-buyback-panel">
+            <SectionTitle eyebrow="STATION BUYBACK" title="Quick Sell" description="Sell one item at a time through the existing station buyback route." icon="inventory" />
+            <div className="market-sell-grid">{sellableInventory.map(item => {
+              const definition = catalog.find(entry => entry.slug === item.itemSlug);
+              return <article key={item.itemSlug} className={`market-sell-tile nw-rarity--${item.rarity}`}><div><NWIcon name={itemIcon(item.itemSlug)} size={28} /></div><span>{item.name}</span><small>{item.quantity.toLocaleString()} held</small><strong className="nw-numeric">{(definition?.vendorSellCredits ?? definition?.valueCredits ?? 0).toLocaleString()} cr</strong><Button size="sm" variant="ghost" onClick={() => void action('/api/v1/marketplace/sell', { itemSlug: item.itemSlug, quantity: 1 }, 'Item sold')}>Sell One</Button></article>;
+            })}</div>
+          </Panel>
+        </div>
+      )}
+
+      <ConfirmWindow open={Boolean(cancelListing)} onClose={() => setCancelListing(null)} onConfirm={() => { if (cancelListing) void action(`/api/v1/auction/${cancelListing.id}/cancel`, undefined, 'Auction cancelled'); setCancelListing(null); }} title="Cancel this auction?" confirmLabel={`Pay ${cancelListing?.cancellationFee ?? 0} credits`} tone="warning">
+        <p>The full item stack will return to your hold. The cancellation fee is 2% of the asking price, with a 10-credit minimum and 250-credit cap.</p>
+      </ConfirmWindow>
     </div>
   );
 }

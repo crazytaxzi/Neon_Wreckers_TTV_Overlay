@@ -14,6 +14,7 @@ import {
 } from '@neon-wreckers/ui';
 import { PlayerHeader } from './components/PlayerHeader.js';
 import { useGameData } from './game-data.js';
+import { useVisualGameData } from './visual-preview.js';
 import type { GameData, UiPreferences } from './model.js';
 import { GuidePage, StationPage, SalvagePage, ConstructionPage } from './pages/station.js';
 import { InventoryPage, CraftingPage } from './pages/logistics.js';
@@ -77,9 +78,11 @@ export function Root() {
   );
 }
 
+const useRuntimeGameData = import.meta.env.VITE_VISUAL_PREVIEW === '1' ? useVisualGameData : useGameData;
+
 function GameApp({ preferences, updatePreferences }: { preferences: UiPreferences; updatePreferences: (patch: Partial<UiPreferences>) => void }) {
-  const game = useGameData();
-  const [tab, setTab] = useState('station');
+  const game = useRuntimeGameData();
+  const [tab, setTab] = useState(() => new URLSearchParams(window.location.search).get('view') ?? 'station');
 
   if (game.me === undefined) {
     return <LoadingScreen label="Synchronizing Station Zero" detail="Negotiating identity, telemetry, wreck state, and community systems." />;
