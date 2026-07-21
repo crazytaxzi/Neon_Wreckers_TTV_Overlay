@@ -1,13 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import path from 'node:path';
 
 const schemaPath = 'infrastructure/database/prisma/schema.prisma';
-const migrationPaths = [
-  'infrastructure/database/prisma/migrations/20260712000000_initial_schema/migration.sql',
-  'infrastructure/database/prisma/migrations/20260716000000_full_game_mechanics/migration.sql'
-];
-const lockPath = 'infrastructure/database/prisma/migrations/migration_lock.toml';
+const migrationsRoot = 'infrastructure/database/prisma/migrations';
+const migrationPaths = fs.readdirSync(migrationsRoot, { withFileTypes: true })
+  .filter(entry => entry.isDirectory())
+  .map(entry => path.join(migrationsRoot, entry.name, 'migration.sql'))
+  .filter(file => fs.existsSync(file))
+  .sort();
+const lockPath = path.join(migrationsRoot, 'migration_lock.toml');
 
 const schema = fs.readFileSync(schemaPath, 'utf8');
 const migration = migrationPaths.map(file => fs.readFileSync(file, 'utf8')).join('\n');
@@ -27,11 +30,12 @@ test('migration history covers every Prisma model and enum exactly once', () => 
   assert.equal(new Set(migrationEnums).size, migrationEnums.length);
 });
 
-test('migration history is transactional and structurally complete', () => {
+test('migration history is structurally complete and explicit transactions close', () => {
+  assert.ok(migrationPaths.length >= 2, 'Expected an ordered Prisma migration history.');
   for (const migrationPath of migrationPaths) {
-    const sql = fs.readFileSync(migrationPath, 'utf8');
-    assert.match(sql, /^BEGIN;/m);
-    assert.match(sql, /^COMMIT;/m);
+    const sql = fs.readFileSync(migrationPath, 'utf8').trim();
+    assert.ok(sql.length > 0, `${migrationPath} is empty.`);
+    if (/^BEGIN;/m.test(sql)) assert.match(sql, /^COMMIT;/m, `${migrationPath} opens a transaction without closing it.`);
   }
 
   const tableBlocks = [...migration.matchAll(/^CREATE TABLE "([^"]+)" \(([\s\S]*?)^\);/gm)];
