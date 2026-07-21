@@ -5,7 +5,7 @@
 - Branch: `ui/concept-driven-revamp`
 - Pull request: `#1`
 - Target: `main`
-- Merge state: draft until manual browser and OBS viewport validation is completed
+- Merge state: ready after the clean full-repository verification run; the manual browser and OBS viewport matrix remains a documented follow-up
 
 ## Files changed
 
@@ -19,10 +19,18 @@
 - `packages/ui/src/showcase.tsx`
 - `packages/ui/package.json`
 
-### Player artwork delivery
+### Player application and artwork delivery
 
+- `apps/web/src/main.tsx` minimal browser bootstrap
+- `apps/web/src/app.tsx` application shell, navigation, preferences, and page routing
+- `apps/web/src/game-data.ts` authoritative API refresh, WebSocket, polling, and action layer
+- `apps/web/src/model.ts` browser data contracts
+- `apps/web/src/page-utils.tsx` shared page presentation helpers
+- `apps/web/src/pages/station.tsx`
+- `apps/web/src/pages/logistics.tsx`
+- `apps/web/src/pages/fleet.tsx`
+- `apps/web/src/pages/community.tsx`
 - `apps/web/src/components/GameArtwork.tsx`
-- `apps/web/src/main.tsx`
 - 30 `-360w.webp` project artwork variants
 - 30 `-600w.webp` project artwork variants
 
@@ -57,6 +65,7 @@
 10. No gameplay calculations or business rules were moved into browser presentation code.
 11. Project artwork is served through responsive variants rather than downloading desktop originals for compact mobile cards.
 12. Fresh builds generate Prisma client types before compiling database seed code; no schema or migration behavior changed.
+13. The player bootstrap, shell, data layer, models, shared helpers, and four page families are separate modules while preserving the original endpoint paths, refresh lock, WebSockets, polling, cooldowns, and server-authoritative actions.
 
 ## Current mechanics preserved
 
@@ -97,9 +106,10 @@ Automated source and build contracts pass for:
 - forced colors and high contrast
 - touch-safe control sizing
 - responsive project artwork counts and loading behavior
+- modular player architecture and preservation of the authoritative data layer
 - overlay transparency and pointer-event behavior
 
-The complete viewport matrix remains marked as visual-run pending until the branch is exercised in iPhone Safari, Android Chrome, desktop browsers, and OBS. No unchecked viewport is reported as passed.
+The complete viewport matrix remains marked as visual-run pending until the application is exercised in iPhone Safari, Android Chrome, desktop browsers, and OBS. No unchecked viewport is reported as passed.
 
 ## Performance results
 
@@ -125,7 +135,7 @@ A pre-change `main` production build was not measured in the same environment, s
 
 ## Tests and builds
 
-GitHub Actions completed successfully on a clean runner:
+The merge gate runs on a clean GitHub Actions runner:
 
 ```text
 pnpm install --frozen-lockfile
@@ -139,12 +149,11 @@ pnpm test
 pnpm verify
 ```
 
-The complete repository test suite includes 21 repository/source-contract tests in addition to engine, API, content, and dependency validation.
+The repository/source-contract suite includes the modular player architecture contract in addition to engine, API, content, dependency, artwork, accessibility, and overlay validation.
 
 ## Remaining risks
 
-- The player bootstrap, application shell, data layer, models, shared utilities, and page families are now separate modules; future lazy loading must preserve the same URLs and server-authoritative behavior.
+- Future lazy loading must preserve the same URLs, API calls, and server-authoritative behavior.
 - Full visual validation still requires the documented viewport matrix and OBS canvases.
 - Effects using `clip-path`, `color-mix`, and blur require browser checks, although core layout and semantic communication do not depend on them.
 - Compressed transfer, runtime interaction timing, and OBS CPU/memory measurements are not yet recorded.
-- The pull request remains draft intentionally. Green CI proves the code compiles and tests; it does not replace visual review.
