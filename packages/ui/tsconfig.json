@@ -8,7 +8,6 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "noUnusedParameters": false,
     "types": [
       "react",
       "react-dom"
