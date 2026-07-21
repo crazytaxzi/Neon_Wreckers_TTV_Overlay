@@ -90,37 +90,37 @@ export type ThemeOverrides = {
   animation?: Partial<ThemeDefinition['animation']>;
 };
 
-export const defaultTheme: ThemeDefinition = {
-  id: 'station-zero',
+const baseTheme: ThemeDefinition = {
+  id: 'neon-wreckers-stream',
   colors: {
-    void: '#020408',
-    canvas: '#070a0f',
-    surface: '#0d1218',
-    surfaceRaised: '#131b24',
-    glass: 'rgba(12, 19, 25, 0.76)',
-    glassStrong: 'rgba(10, 16, 22, 0.92)',
-    text: '#edf7f3',
-    textMuted: '#9aaba8',
-    textDim: '#61716f',
-    green: '#8dff5a',
-    purple: '#ae5cff',
-    cyan: '#58e6ff',
-    orange: '#ff9d43',
-    red: '#ff4d67',
-    line: 'rgba(174, 255, 226, 0.13)',
-    lineStrong: 'rgba(174, 255, 226, 0.28)'
+    void: '#010204',
+    canvas: '#05070b',
+    surface: '#0a0e14',
+    surfaceRaised: '#111821',
+    glass: 'rgba(8, 13, 18, 0.78)',
+    glassStrong: 'rgba(6, 10, 15, 0.94)',
+    text: '#f2f7f4',
+    textMuted: '#a4b0ad',
+    textDim: '#66716f',
+    green: '#9cff16',
+    purple: '#bb4dff',
+    cyan: '#54ddff',
+    orange: '#ff9b42',
+    red: '#ff405c',
+    line: 'rgba(201, 222, 216, 0.14)',
+    lineStrong: 'rgba(210, 232, 226, 0.30)'
   },
   fonts: {
-    display: 'Bahnschrift, "DIN Alternate", "Arial Narrow", sans-serif',
-    body: 'Inter, "Segoe UI Variable", "Segoe UI", sans-serif',
-    mono: '"Cascadia Mono", "JetBrains Mono", "SFMono-Regular", Consolas, monospace'
+    display: 'Bahnschrift, "DIN Alternate", "Arial Narrow", "Segoe UI", sans-serif',
+    body: '"Segoe UI Variable", "Segoe UI", Inter, system-ui, sans-serif',
+    mono: '"Cascadia Mono", "SFMono-Regular", Consolas, monospace'
   },
   typography: {
-    display: 'clamp(1.75rem, 2.5vw, 3.25rem)',
-    title: 'clamp(1.25rem, 1.5vw, 2rem)',
-    section: 'clamp(1rem, 0.75vw + 0.75rem, 1.3rem)',
-    panelHeader: '0.9rem',
-    body: 'clamp(0.94rem, 0.35vw + 0.82rem, 1.08rem)',
+    display: 'clamp(1.65rem, 2.2vw, 3.1rem)',
+    title: 'clamp(1.2rem, 1.35vw, 1.9rem)',
+    section: 'clamp(1rem, 0.65vw + 0.76rem, 1.3rem)',
+    panelHeader: '0.86rem',
+    body: 'clamp(0.94rem, 0.28vw + 0.84rem, 1.06rem)',
     small: '0.78rem',
     caption: '0.68rem',
     status: '0.72rem',
@@ -140,8 +140,8 @@ export const defaultTheme: ThemeDefinition = {
   },
   radius: {
     sharp: '0.125rem',
-    control: '0.375rem',
-    panel: '0.625rem',
+    control: '0.28rem',
+    panel: '0.42rem',
     pill: '999rem'
   },
   border: {
@@ -149,62 +149,76 @@ export const defaultTheme: ThemeDefinition = {
     strong: '2px'
   },
   blur: {
-    glass: '14px',
-    deep: '24px'
+    glass: '10px',
+    deep: '18px'
   },
   transparency: {
-    panel: '0.82',
-    raised: '0.94',
-    overlay: '0.72'
+    panel: '0.88',
+    raised: '0.96',
+    overlay: '0.76'
   },
   glow: {
-    soft: '0 0 18px rgba(var(--nw-color-green-rgb), 0.10)',
-    active: '0 0 24px rgba(var(--nw-color-green-rgb), 0.22)',
-    warning: '0 0 22px rgba(var(--nw-color-orange-rgb), 0.20)',
-    danger: '0 0 24px rgba(var(--nw-color-red-rgb), 0.22)'
+    soft: '0 0 16px rgba(var(--nw-color-green-rgb), 0.10)',
+    active: '0 0 22px rgba(var(--nw-color-green-rgb), 0.24)',
+    warning: '0 0 20px rgba(var(--nw-color-orange-rgb), 0.22)',
+    danger: '0 0 22px rgba(var(--nw-color-red-rgb), 0.24)'
   },
   depth: {
-    low: '0 8px 24px rgba(var(--nw-color-void-rgb), 0.20)',
-    medium: '0 14px 34px rgba(var(--nw-color-void-rgb), 0.28)',
-    high: '0 18px 48px rgba(var(--nw-color-void-rgb), 0.36)'
+    low: '0 8px 22px rgba(var(--nw-color-void-rgb), 0.28)',
+    medium: '0 14px 34px rgba(var(--nw-color-void-rgb), 0.38)',
+    high: '0 20px 52px rgba(var(--nw-color-void-rgb), 0.48)'
   },
   animation: {
-    fast: '120ms',
-    normal: '220ms',
-    slow: '480ms',
+    fast: '110ms',
+    normal: '210ms',
+    slow: '420ms',
     easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)'
   }
 };
 
 export function createTheme(id: string, overrides: ThemeOverrides = {}): ThemeDefinition {
   return {
-    ...defaultTheme,
+    ...baseTheme,
     ...overrides,
     id,
-    colors: { ...defaultTheme.colors, ...overrides.colors },
-    fonts: { ...defaultTheme.fonts, ...overrides.fonts },
-    typography: { ...defaultTheme.typography, ...overrides.typography },
-    spacing: { ...defaultTheme.spacing, ...overrides.spacing },
-    radius: { ...defaultTheme.radius, ...overrides.radius },
-    border: { ...defaultTheme.border, ...overrides.border },
-    blur: { ...defaultTheme.blur, ...overrides.blur },
-    transparency: { ...defaultTheme.transparency, ...overrides.transparency },
-    glow: { ...defaultTheme.glow, ...overrides.glow },
-    depth: { ...defaultTheme.depth, ...overrides.depth },
-    animation: { ...defaultTheme.animation, ...overrides.animation }
+    colors: { ...baseTheme.colors, ...overrides.colors },
+    fonts: { ...baseTheme.fonts, ...overrides.fonts },
+    typography: { ...baseTheme.typography, ...overrides.typography },
+    spacing: { ...baseTheme.spacing, ...overrides.spacing },
+    radius: { ...baseTheme.radius, ...overrides.radius },
+    border: { ...baseTheme.border, ...overrides.border },
+    blur: { ...baseTheme.blur, ...overrides.blur },
+    transparency: { ...baseTheme.transparency, ...overrides.transparency },
+    glow: { ...baseTheme.glow, ...overrides.glow },
+    depth: { ...baseTheme.depth, ...overrides.depth },
+    animation: { ...baseTheme.animation, ...overrides.animation }
   };
 }
 
-export const highContrastTheme = createTheme('station-zero-high-contrast', {
+/** Canonical production theme shared by the player, admin, and OBS surfaces. */
+export const streamTheme = createTheme('neon-wreckers-stream');
+
+/** Compatibility export retained for existing applications and seasonal extensions. */
+export const defaultTheme = streamTheme;
+
+export const highContrastTheme = createTheme('neon-wreckers-stream-high-contrast', {
   colors: {
-    canvas: '#020304',
-    surface: '#080d10',
-    surfaceRaised: '#10191d',
+    void: '#000000',
+    canvas: '#010203',
+    surface: '#05080a',
+    surfaceRaised: '#0b1115',
     text: '#ffffff',
-    textMuted: '#c8d8d4',
-    line: 'rgba(229, 255, 247, 0.30)',
-    lineStrong: 'rgba(229, 255, 247, 0.58)'
-  }
+    textMuted: '#d4dfdc',
+    textDim: '#a8b4b1',
+    green: '#b8ff3d',
+    purple: '#d174ff',
+    cyan: '#79e8ff',
+    orange: '#ffb367',
+    red: '#ff6278',
+    line: 'rgba(255, 255, 255, 0.32)',
+    lineStrong: 'rgba(255, 255, 255, 0.62)'
+  },
+  blur: { glass: '0px', deep: '0px' }
 });
 
 const colorVarNames: Record<keyof ThemeDefinition['colors'], string> = {
@@ -264,13 +278,11 @@ export function themeToCssVariables(theme: ThemeDefinition): Record<string, stri
 export function applyTheme(theme: ThemeDefinition, target?: HTMLElement): void {
   if (typeof document === 'undefined') return;
   const root = target ?? document.documentElement;
-  for (const [property, value] of Object.entries(themeToCssVariables(theme))) {
-    root.style.setProperty(property, value);
-  }
+  for (const [property, value] of Object.entries(themeToCssVariables(theme))) root.style.setProperty(property, value);
   root.dataset.nwTheme = theme.id;
 }
 
-export function ThemeProvider({ theme = defaultTheme, children }: PropsWithChildren<{ theme?: ThemeDefinition }>): ReactElement {
+export function ThemeProvider({ theme = streamTheme, children }: PropsWithChildren<{ theme?: ThemeDefinition }>): ReactElement {
   useLayoutEffect(() => applyTheme(theme), [theme]);
   return children as ReactElement;
 }
