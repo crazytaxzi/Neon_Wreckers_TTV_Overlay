@@ -66,8 +66,12 @@ jobs:
         run: |
           set -o pipefail
           if ! pnpm --filter @neon-wreckers/web run build > /tmp/web-build.log 2>&1; then
-            echo '--- PLAYER BUILD ERROR ---'
-            tail -120 /tmp/web-build.log
+            cp /tmp/web-build.log .github/ui-build-error.log
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add .github/ui-build-error.log
+            git commit -m 'chore: capture UI compiler diagnostics'
+            git push origin HEAD:agent/concept-faithful-ui-rebuild
             exit 1
           fi
           tail -30 /tmp/web-build.log
@@ -79,7 +83,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          rm -f .github/workflows/apply-ui-pass2.yml
+          rm -f .github/workflows/apply-ui-pass2.yml .github/ui-build-error.log
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add \
