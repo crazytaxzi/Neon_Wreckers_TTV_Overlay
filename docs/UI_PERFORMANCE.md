@@ -2,7 +2,7 @@
 
 ## Measurement policy
 
-Performance numbers must come from a production build, not from estimates or development-server output.
+Performance numbers must come from production builds and generated assets, not estimates or development-server output.
 
 Record for each frontend:
 
@@ -14,17 +14,28 @@ Record for each frontend:
 - first render and interaction timing on a representative older phone and laptop
 - OBS browser-source CPU and memory behavior at 720p, 1080p, 1440p, and 4K
 
-## Baseline status
+## Bundle baseline status
 
-The connector-only implementation environment could inspect repository source but could not execute the repository checkout. Therefore this branch does not invent baseline or final bundle numbers.
+The GitHub connector implementation environment can run branch builds through CI but does not have a measured pre-change production build for `main`. This document does not invent a before-and-after JavaScript comparison.
 
-Before merge, run the production builds and add the generated values to the table below.
+| Surface | Baseline JS | Branch JS | Baseline CSS | Branch CSS | Notes |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Player | Not measured | CI size artifact pending final green run | Not measured | CI size artifact pending final green run | Existing monolithic entry remains the main code-splitting risk |
+| Admin | Not measured | CI size artifact pending final green run | Not measured | CI size artifact pending final green run | UI Library intentionally demonstrates the complete shared contract |
+| Overlay | Not measured | CI size artifact pending final green run | Not measured | CI size artifact pending final green run | No large raster frame dependency added |
+| Shared UI package | Not measured | 196 KiB TypeScript build output including maps and declarations | Not measured | Bundled through consumers | This is package build output, not browser transfer size |
 
-| Surface | Baseline JS | Final JS | Baseline CSS | Final CSS | Initial image transfer | Notes |
-| --- | ---: | ---: | ---: | ---: | ---: | --- |
-| Player | Pending measured build | Pending measured build | Pending measured build | Pending measured build | Pending | Existing monolithic entry remains the main code-splitting risk |
-| Admin | Pending measured build | Pending measured build | Pending measured build | Pending measured build | Pending | Shared UI Library adds test-only component examples to the admin bundle |
-| Overlay | Pending measured build | Pending measured build | Pending measured build | Pending measured build | Pending | No large raster frame dependency added |
+## Measured artwork results
+
+The repository contains 30 canonical 1200 by 675 WebP game illustrations. The branch adds a 360-pixel and 600-pixel WebP variant for every source and selects them through `srcset` and `sizes`.
+
+| Artwork set | Total size | Reduction from canonical set |
+| --- | ---: | ---: |
+| 1200px canonical sources | 3,148,872 bytes (3.00 MiB) | Baseline |
+| 600px responsive variants | 610,102 bytes (595.8 KiB) | 80.6% smaller |
+| 360px responsive variants | 246,412 bytes (240.6 KiB) | 92.2% smaller |
+
+This is a library-total comparison, not a claim that every route loads every image. Secondary images are lazy-loaded, while only the visible command-center and current-wreck hero can request eager loading.
 
 ## Effects tiers
 
@@ -66,6 +77,9 @@ Activated by the existing low-effects preference, reduced-motion preference, red
 - No downloaded font binaries or external font requests.
 - No large concept screenshots used as interface surfaces.
 - Existing WebP game artwork remains the image source.
+- Every canonical game illustration has responsive mobile and tablet variants.
+- Responsive images reserve intrinsic dimensions to reduce layout shift.
+- Secondary artwork uses lazy loading and async decoding.
 - CSS/SVG/icon framing is used for panels and controls.
 - Full-screen blur is avoided.
 - Continuous JavaScript layout measurement is not introduced.
@@ -99,4 +113,4 @@ pnpm test
 pnpm verify
 ```
 
-After the commands pass, capture `dist` file sizes and update this document with the actual baseline/final comparison.
+The pull request remains draft until the final CI run passes and the manual browser and OBS validation matrix is completed.
