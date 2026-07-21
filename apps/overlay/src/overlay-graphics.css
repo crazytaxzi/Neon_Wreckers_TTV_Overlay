@@ -1,0 +1,352 @@
+/* Broadcast-specific graphics. The overlay remains transparent and pointer-events free. */
+
+.broadcast-canvas {
+  --overlay-frame: rgba(var(--nw-color-text-rgb), 0.16);
+  --overlay-metal: rgba(5, 8, 12, 0.94);
+  --overlay-metal-raised: rgba(14, 19, 27, 0.92);
+}
+
+.broadcast-canvas.preview-background {
+  background:
+    radial-gradient(circle at 50% 35%, rgba(var(--nw-color-purple-rgb), 0.11), transparent 32%),
+    linear-gradient(rgba(var(--nw-color-green-rgb), 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--nw-color-green-rgb), 0.025) 1px, transparent 1px),
+    radial-gradient(circle at 50% 42%, #161d27, #06080d 62%, #010204);
+  background-size: auto, 4rem 4rem, 4rem 4rem, auto;
+}
+
+.telemetry-panel {
+  overflow: visible;
+  border: 1px solid rgba(var(--nw-tone-rgb), 0.58);
+  background:
+    linear-gradient(135deg, rgba(var(--nw-tone-rgb), 0.13), transparent 32%),
+    repeating-linear-gradient(135deg, transparent 0 10px, rgba(var(--nw-color-text-rgb), 0.015) 10px 11px),
+    linear-gradient(180deg, var(--overlay-metal-raised), var(--overlay-metal));
+  box-shadow:
+    inset 0 1px rgba(var(--nw-color-text-rgb), 0.1),
+    inset 0 -0.35rem rgba(var(--nw-color-void-rgb), 0.42),
+    0 0 0 1px rgba(var(--nw-color-void-rgb), 0.9),
+    0 0 24px rgba(var(--nw-tone-rgb), 0.18),
+    0 1.1rem 2.8rem rgba(var(--nw-color-void-rgb), 0.58);
+}
+
+.telemetry-panel::before {
+  position: absolute;
+  inset: -0.38rem;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  border: 1px solid rgba(var(--nw-tone-rgb), 0.2);
+  clip-path: polygon(0 0, calc(100% - 1.65rem) 0, 100% 1.65rem, 100% 100%, 1.35rem 100%, 0 calc(100% - 1.35rem));
+  background:
+    linear-gradient(90deg, var(--nw-tone) 0 4.2rem, transparent 4.2rem),
+    linear-gradient(180deg, rgba(var(--nw-color-text-rgb), 0.06), rgba(var(--nw-color-void-rgb), 0.42));
+  opacity: 0.85;
+}
+
+.telemetry-panel::after {
+  position: absolute;
+  inset: 0.34rem;
+  z-index: 0;
+  content: "";
+  pointer-events: none;
+  border: 1px solid rgba(var(--nw-tone-rgb), 0.12);
+  clip-path: inherit;
+  background:
+    linear-gradient(90deg, rgba(var(--nw-tone-rgb), 0.16) 0 3.4rem, transparent 3.4rem) top left / 100% 2px no-repeat,
+    linear-gradient(90deg, transparent, rgba(var(--nw-tone-rgb), 0.2) 72%, var(--nw-tone)) bottom right / 45% 2px no-repeat;
+}
+
+.telemetry-panel > * {
+  position: relative;
+  z-index: 2;
+}
+
+.telemetry-panel .nw-panel__corner {
+  width: 4.6rem;
+  height: 3px;
+  background: linear-gradient(90deg, var(--nw-tone) 0 45%, rgba(var(--nw-tone-rgb), 0.12) 45% 62%, transparent 62%);
+}
+
+.telemetry-panel .nw-panel__corner--top {
+  inset-inline-start: 0.9rem;
+}
+
+.telemetry-panel .nw-panel__corner--bottom {
+  inset-inline-end: 0.9rem;
+}
+
+.station-panel::selection,
+.wreck-telemetry::selection {
+  background: rgba(var(--nw-tone-rgb), 0.35);
+}
+
+.telemetry-header {
+  min-height: 3.25rem;
+  padding-block-end: 0.68rem;
+  border-block-end: 1px solid rgba(var(--nw-tone-rgb), 0.24);
+}
+
+.telemetry-header::after {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-end: -1px;
+  width: 42%;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, transparent, var(--nw-tone));
+  box-shadow: 0 0 10px rgba(var(--nw-tone-rgb), 0.45);
+}
+
+.telemetry-ident {
+  align-self: center;
+}
+
+.telemetry-icon {
+  width: 2.85rem;
+  height: 2.85rem;
+  border: 1px solid rgba(var(--nw-tone-rgb), 0.52);
+  border-inline-start: 3px solid var(--nw-tone);
+  clip-path: polygon(0.55rem 0, 100% 0, 100% calc(100% - 0.55rem), calc(100% - 0.55rem) 100%, 0 100%, 0 0.55rem);
+  background:
+    radial-gradient(circle, rgba(var(--nw-tone-rgb), 0.24), transparent 62%),
+    rgba(var(--nw-color-void-rgb), 0.78);
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--nw-color-text-rgb), 0.045),
+    0 0 14px rgba(var(--nw-tone-rgb), 0.2);
+}
+
+.telemetry-header h1,
+.telemetry-header h2 {
+  text-shadow: 0 0 14px rgba(var(--nw-tone-rgb), 0.2);
+}
+
+.telemetry-meta {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(var(--nw-tone-rgb), 0.12);
+  background:
+    linear-gradient(90deg, rgba(var(--nw-tone-rgb), 0.075), transparent 68%),
+    rgba(var(--nw-color-void-rgb), 0.42);
+  clip-path: polygon(0.35rem 0, 100% 0, 100% calc(100% - 0.35rem), calc(100% - 0.35rem) 100%, 0 100%, 0 0.35rem);
+}
+
+.telemetry-panel .nw-meter {
+  padding: 0.44rem 0.48rem;
+  border: 1px solid rgba(var(--nw-tone-rgb), 0.13);
+  background: rgba(var(--nw-color-void-rgb), 0.42);
+  clip-path: polygon(0.3rem 0, 100% 0, 100% calc(100% - 0.3rem), calc(100% - 0.3rem) 100%, 0 100%, 0 0.3rem);
+}
+
+.telemetry-panel .nw-meter__label strong {
+  color: var(--nw-tone);
+  font-family: var(--nw-font-display);
+  font-size: 0.68rem;
+  text-shadow: 0 0 8px rgba(var(--nw-tone-rgb), 0.35);
+}
+
+.telemetry-panel .nw-meter__segments i {
+  border: 1px solid rgba(var(--nw-tone-rgb), 0.14);
+  background: rgba(var(--nw-color-text-rgb), 0.045);
+}
+
+.telemetry-panel .nw-meter__segments i.is-active {
+  border-color: rgba(var(--nw-tone-rgb), 0.55);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--nw-tone) 78%, white), var(--nw-tone));
+  box-shadow: 0 0 7px rgba(var(--nw-tone-rgb), 0.45);
+}
+
+.resource-strip {
+  position: relative;
+  padding: 0.72rem 0.62rem 0;
+  border-top-color: rgba(var(--nw-tone-rgb), 0.24);
+  background: linear-gradient(90deg, rgba(var(--nw-tone-rgb), 0.055), transparent 70%);
+}
+
+.resource-strip::before {
+  position: absolute;
+  inset-block-start: -2px;
+  inset-inline-start: 0;
+  width: 28%;
+  height: 2px;
+  content: "";
+  background: var(--nw-tone);
+  box-shadow: 0 0 10px rgba(var(--nw-tone-rgb), 0.45);
+}
+
+.resource-strip div {
+  padding-inline: 0.45rem;
+}
+
+.resource-strip strong {
+  color: var(--nw-tone);
+  text-shadow: 0 0 9px rgba(var(--nw-tone-rgb), 0.25);
+}
+
+.wreck-schematic {
+  border: 1px solid rgba(var(--nw-tone-rgb), 0.16);
+  background:
+    radial-gradient(circle, rgba(var(--nw-tone-rgb), 0.1), transparent 54%),
+    rgba(var(--nw-color-void-rgb), 0.42);
+  clip-path: polygon(0.5rem 0, 100% 0, 100% calc(100% - 0.5rem), calc(100% - 0.5rem) 100%, 0 100%, 0 0.5rem);
+}
+
+.wreck-schematic::before,
+.wreck-schematic::after {
+  position: absolute;
+  content: "";
+  pointer-events: none;
+}
+
+.wreck-schematic::before {
+  inset: 0.45rem;
+  border: 1px solid rgba(var(--nw-tone-rgb), 0.11);
+  clip-path: inherit;
+}
+
+.wreck-schematic::after {
+  inset-block-end: 0.32rem;
+  inset-inline: 18%;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, var(--nw-tone) 0 7%, transparent 7% 10%);
+  opacity: 0.6;
+}
+
+.wreck-footer {
+  padding: 0.52rem 0.58rem 0;
+  background: linear-gradient(90deg, rgba(var(--nw-tone-rgb), 0.05), transparent 70%);
+}
+
+.dispatch-rail {
+  overflow: visible;
+  border: 1px solid rgba(var(--nw-tone-rgb), 0.62);
+  border-inline-start: 4px solid var(--nw-tone);
+  background:
+    linear-gradient(90deg, rgba(var(--nw-tone-rgb), 0.19), transparent 19%),
+    repeating-linear-gradient(135deg, transparent 0 12px, rgba(var(--nw-color-text-rgb), 0.014) 12px 13px),
+    linear-gradient(180deg, rgba(var(--nw-color-surface-raised-rgb), 0.96), rgba(var(--nw-color-void-rgb), 0.96));
+  box-shadow:
+    inset 0 1px rgba(var(--nw-color-text-rgb), 0.1),
+    inset 0 -0.35rem rgba(var(--nw-color-void-rgb), 0.46),
+    0 0 0 1px rgba(var(--nw-color-void-rgb), 0.9),
+    0 0 24px rgba(var(--nw-tone-rgb), 0.17),
+    0 1.2rem 3rem rgba(var(--nw-color-void-rgb), 0.62);
+}
+
+.dispatch-rail::before {
+  top: -0.32rem;
+  left: 1rem;
+  width: 42%;
+  height: 3px;
+  background: linear-gradient(90deg, var(--nw-tone) 0 28%, rgba(var(--nw-tone-rgb), 0.2) 28% 45%, transparent 45%);
+}
+
+.dispatch-rail::after {
+  inset: 0.28rem;
+  opacity: 1;
+  border: 1px solid rgba(var(--nw-tone-rgb), 0.11);
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 5px, rgba(var(--nw-color-text-rgb), 0.025) 5px 6px),
+    linear-gradient(90deg, transparent, rgba(var(--nw-tone-rgb), 0.045));
+  clip-path: inherit;
+}
+
+.rail-cap {
+  background: rgba(var(--nw-color-void-rgb), 0.36);
+}
+
+.left-cap {
+  border-inline-end-color: rgba(var(--nw-tone-rgb), 0.24);
+}
+
+.left-cap::after {
+  position: absolute;
+  inset-block: 0.75rem;
+  inset-inline-end: -2px;
+  width: 3px;
+  content: "";
+  background: var(--nw-tone);
+  box-shadow: 0 0 9px rgba(var(--nw-tone-rgb), 0.46);
+}
+
+.right-cap {
+  border-inline-start-color: rgba(var(--nw-tone-rgb), 0.24);
+  background:
+    repeating-linear-gradient(135deg, rgba(var(--nw-tone-rgb), 0.08) 0 5px, transparent 5px 10px),
+    rgba(var(--nw-color-void-rgb), 0.42);
+}
+
+.headline-title {
+  text-shadow: 0 0 18px rgba(var(--nw-tone-rgb), 0.34);
+}
+
+.breaking-ribbon {
+  top: -0.72rem;
+  right: 8.2rem;
+  padding: 0.32rem 1.1rem;
+  border: 1px solid rgba(var(--nw-color-red-rgb), 0.9);
+  clip-path: polygon(0.45rem 0, 100% 0, 100% calc(100% - 0.45rem), calc(100% - 0.45rem) 100%, 0 100%, 0 0.45rem);
+  background:
+    repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.22) 0 5px, transparent 5px 10px),
+    var(--nw-color-red);
+}
+
+.dispatch-rail.breaking {
+  border-color: rgba(var(--nw-color-red-rgb), 0.78);
+}
+
+.dispatch-rail.breaking::before {
+  background: repeating-linear-gradient(135deg, var(--nw-color-red) 0 9px, #ffd04a 9px 18px);
+}
+
+.feed-indicator {
+  padding: 0.36rem 0.58rem;
+  border: 1px solid rgba(var(--nw-color-green-rgb), 0.18);
+  background: rgba(var(--nw-color-void-rgb), 0.68);
+  clip-path: polygon(0.3rem 0, 100% 0, 100% calc(100% - 0.3rem), calc(100% - 0.3rem) 100%, 0 100%, 0 0.3rem);
+}
+
+.broadcast-canvas.with-scanlines::after {
+  opacity: 0.055;
+}
+
+html[data-low-effects="true"] .telemetry-panel,
+html[data-low-effects="true"] .dispatch-rail,
+html[data-reduced-motion="true"] .telemetry-panel,
+html[data-reduced-motion="true"] .dispatch-rail {
+  box-shadow: 0 0 0 1px rgba(var(--nw-tone-rgb), 0.28);
+}
+
+html[data-low-effects="true"] .telemetry-panel::before,
+html[data-low-effects="true"] .dispatch-rail::after,
+html[data-reduced-motion="true"] .telemetry-panel::before {
+  opacity: 0.25;
+}
+
+@media (min-width: 3000px) {
+  .telemetry-panel { width: min(34rem, calc(50vw - 5rem)); padding: 1.35rem 1.45rem 1.2rem; }
+  .telemetry-header h1, .telemetry-header h2 { font-size: 1.3rem; }
+  .dispatch-rail { min-height: 8rem; grid-template-columns: 22rem minmax(0, 1fr) 9rem; }
+  .headline-title { font-size: 1.75rem; }
+  .headline-body { font-size: 1rem; }
+}
+
+@media (max-width: 1280px), (max-height: 720px) {
+  .telemetry-panel { padding: 0.72rem 0.8rem 0.65rem; }
+  .telemetry-header { min-height: 2.7rem; padding-block-end: 0.48rem; }
+  .telemetry-icon { width: 2.2rem; height: 2.2rem; }
+  .telemetry-meta { margin-block: 0.55rem; }
+  .telemetry-meters { gap: 0.44rem; }
+  .wreck-schematic { height: 4rem; }
+  .dispatch-rail { min-height: 4.8rem; }
+}
+
+@media (forced-colors: active) {
+  .telemetry-panel,
+  .dispatch-rail,
+  .feed-indicator { border: 2px solid CanvasText; background: Canvas; }
+  .telemetry-panel::before,
+  .telemetry-panel::after,
+  .dispatch-rail::before,
+  .dispatch-rail::after,
+  .wreck-schematic::after { display: none; }
+}
