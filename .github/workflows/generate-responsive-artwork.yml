@@ -6,6 +6,9 @@ on:
       - ui/concept-driven-revamp
     paths:
       - '.github/workflows/generate-responsive-artwork.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/generate-responsive-artwork.yml'
 
 permissions:
   contents: write
@@ -44,9 +47,23 @@ jobs:
         run: |
           test "$(find apps/web/public/station apps/web/public/wrecks apps/web/public/ships -type f -name '*-360w.webp' | wc -l)" -eq 30
           test "$(find apps/web/public/station apps/web/public/wrecks apps/web/public/ships -type f -name '*-600w.webp' | wc -l)" -eq 30
-          find apps/web/public/station apps/web/public/wrecks apps/web/public/ships -type f -name '*-360w.webp' -o -name '*-600w.webp' | sort | xargs identify >/dev/null
+          find apps/web/public/station apps/web/public/wrecks apps/web/public/ships -type f \( -name '*-360w.webp' -o -name '*-600w.webp' \) -print0 | xargs -0 identify >/dev/null
+
+      - name: Upload responsive artwork diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: responsive-game-artwork
+          path: |
+            apps/web/public/station/**/*-360w.webp
+            apps/web/public/station/**/*-600w.webp
+            apps/web/public/wrecks/**/*-360w.webp
+            apps/web/public/wrecks/**/*-600w.webp
+            apps/web/public/ships/**/*-360w.webp
+            apps/web/public/ships/**/*-600w.webp
+          retention-days: 1
 
       - name: Commit responsive variants
+        if: github.event_name == 'push'
         run: |
           if git diff --quiet; then
             exit 0
