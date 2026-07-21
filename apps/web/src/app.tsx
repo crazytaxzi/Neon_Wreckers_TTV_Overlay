@@ -1,21 +1,18 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   AppShell,
-  Badge,
   Button,
-  CommandHeader,
   CommandNavigation,
   LoadingScreen,
   NWIcon,
   Panel,
-  ProfileChip,
   ThemeProvider,
   ToastProvider,
-  Tooltip,
   defaultTheme,
   highContrastTheme,
   type TabItem
 } from '@neon-wreckers/ui';
+import { PlayerHeader } from './components/PlayerHeader.js';
 import { useGameData } from './game-data.js';
 import type { GameData, UiPreferences } from './model.js';
 import { GuidePage, StationPage, SalvagePage, ConstructionPage } from './pages/station.js';
@@ -30,6 +27,7 @@ const defaultPreferences: UiPreferences = {
   largeText: false,
   glowIntensity: 72
 };
+
 function loadPreferences(): UiPreferences {
   try {
     const stored = JSON.parse(localStorage.getItem('nw-ui-preferences') ?? '{}') as Partial<UiPreferences>;
@@ -38,24 +36,26 @@ function loadPreferences(): UiPreferences {
     return defaultPreferences;
   }
 }
+
 const navigation: TabItem[] = [
+  { id: 'station', label: 'Home', description: 'Command Center', icon: 'station', primary: true },
+  { id: 'salvage', label: 'Salvage', description: 'Wreck Operations', icon: 'salvage', primary: true },
+  { id: 'construction', label: 'Station', description: 'Build & Manage', icon: 'construction', primary: true },
+  { id: 'market', label: 'Market', description: 'Trade & Auctions', icon: 'trade', primary: true },
+  { id: 'profile', label: 'Profile', description: 'Identity & Career', icon: 'twitch', primary: true },
   { id: 'guide', label: 'How to Play', icon: 'data' },
-  { id: 'station', label: 'Station', icon: 'station' },
-  { id: 'salvage', label: 'Salvage', icon: 'salvage' },
-  { id: 'inventory', label: 'Hold', icon: 'inventory' },
-  { id: 'crafting', label: 'Craft', icon: 'resources' },
-  { id: 'construction', label: 'Build', icon: 'construction' },
+  { id: 'inventory', label: 'Cargo Hold', icon: 'inventory' },
+  { id: 'crafting', label: 'Crafting', icon: 'resources' },
   { id: 'crew', label: 'Crew', icon: 'crew' },
   { id: 'ships', label: 'Ships', icon: 'expedition' },
   { id: 'expeditions', label: 'Expeditions', icon: 'scanner' },
   { id: 'museum', label: 'Museum', icon: 'museum' },
   { id: 'history', label: 'History', icon: 'archive' },
   { id: 'notifications', label: 'Alerts', icon: 'notifications' },
-  { id: 'market', label: 'Trade', icon: 'trade' },
   { id: 'quarters', label: 'Quarters', icon: 'module' },
-  { id: 'profile', label: 'Profile', icon: 'twitch' },
   { id: 'settings', label: 'Settings', icon: 'settings' }
 ];
+
 export function Root() {
   const [preferences, setPreferences] = useState<UiPreferences>(loadPreferences);
   useEffect(() => {
@@ -93,7 +93,7 @@ function GameApp({ preferences, updatePreferences }: { preferences: UiPreference
   const pageProps: GameData = { ...game, me };
   const pages: Record<string, ReactNode> = {
     guide: <GuidePage />,
-    station: <StationPage {...pageProps} />,
+    station: <StationPage {...pageProps} onNavigate={setTab} />,
     salvage: <SalvagePage {...pageProps} />,
     inventory: <InventoryPage {...pageProps} />,
     crafting: <CraftingPage recipes={game.recipes} inventory={game.inventory} catalog={game.catalog} cooldowns={game.cooldowns} action={game.action} />,
@@ -110,18 +110,22 @@ function GameApp({ preferences, updatePreferences }: { preferences: UiPreference
     settings: <SettingsPage preferences={preferences} updatePreferences={updatePreferences} />
   };
 
+  const signOut = () => void game.action('/api/v1/auth/logout', undefined, 'Signed out').then(() => { window.location.href = '/'; });
+
   return (
     <AppShell
-      header={<CommandHeader
-        title="Station Zero Command Mesh"
-        subtitle="Community salvage and orbital reconstruction network"
-        status={<Badge tone="success" icon="network">LIVE LINK</Badge>}
-        actions={<div className="inline-actions"><Tooltip content="Refresh station telemetry"><Button variant="ghost" size="sm" icon={<NWIcon name="diagnostics" size={15} />} onClick={() => void game.refresh()}>Resync</Button></Tooltip><Button variant="ghost" size="sm" onClick={() => void game.action('/api/v1/auth/logout', undefined, 'Signed out').then(() => { window.location.href = '/'; })}>Sign out</Button></div>}
-        profile={<ProfileChip name={me.displayName} detail={`Rank ${me.player?.level ?? 1} · ${me.player?.title ?? 'Wrecker'}`} avatarUrl={me.avatarUrl || undefined} />}
+      className="player-shell"
+      header={<PlayerHeader
+        me={me}
+        inventory={game.inventory}
+        notifications={game.notifications}
+        onNavigate={setTab}
+        onRefresh={() => void game.refresh()}
+        onSignOut={signOut}
       />}
       navigation={<CommandNavigation items={navigation} value={tab} onChange={setTab} />}
     >
-      <div className="game-page" key={tab}>{pages[tab] ?? pages.station}</div>
+      <div className="game-page" data-page={tab} key={tab}>{pages[tab] ?? pages.station}</div>
     </AppShell>
   );
 }
@@ -136,7 +140,7 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
         <h1>Neon Wreckers</h1>
         <p>Connect a Twitch identity to enter the Station Zero command mesh. Authentication is handled by the existing secure gateway.</p>
         <Button size="lg" variant="primary" icon={<NWIcon name="twitch" size={19} />} onClick={onLogin} fullWidth>Authenticate with Twitch</Button>
-        <div className="login-console__status"><Badge tone="success">Gateway online</Badge><span>Secure Twitch session required for command access.</span></div>
+        <div className="login-console__status"><span className="login-console__signal" />Gateway online · secure Twitch session required</div>
       </Panel>
     </main>
   );
