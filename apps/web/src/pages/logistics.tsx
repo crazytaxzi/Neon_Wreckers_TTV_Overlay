@@ -10,6 +10,7 @@ import {
   Panel,
   Pill,
   ProgressBar,
+  ResponsiveGrid,
   SectionTitle,
   Select,
   StatusDisplay
@@ -104,6 +105,12 @@ export function CraftingPage({ recipes, inventory, catalog, cooldowns, action }:
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
   const held = (slug: string) => inventory.find(item => item.itemSlug === slug)?.quantity ?? 0;
   const nameFor = (slug: string) => catalog.find(item => item.slug === slug)?.name ?? slug;
+  const affordableFor = (recipe: CraftingRecipe) => Math.max(0, Math.min(10, ...Object.entries(recipe.inputs).map(([slug, amount]) => Math.floor(held(slug) / amount))));
+  const unlockedRecipes = recipes.filter(recipe => recipe.unlocked);
+  const readyRecipes = unlockedRecipes.filter(recipe => affordableFor(recipe) > 0);
+  const affordableBatches = unlockedRecipes.reduce((sum, recipe) => sum + affordableFor(recipe), 0);
+  const averageEfficiency = recipes.length ? Math.round(recipes.reduce((sum, recipe) => sum + recipe.efficiency, 0) / recipes.length * 100) : 0;
+  const onlineModules = [...new Set(unlockedRecipes.map(recipe => recipe.stationModule))];
   const craft = async (recipe: CraftingRecipe, quantity: number) => {
     await action('/api/v1/crafting/craft', { recipeSlug: recipe.slug, quantity }, `${quantity} × ${recipe.name} fabrication started`);
   };
@@ -112,12 +119,28 @@ export function CraftingPage({ recipes, inventory, catalog, cooldowns, action }:
     <div className="page-stack fabrication-console">
       <section className="fabrication-console__masthead">
         <div><span className="nw-eyebrow">STATION FABRICATION // INDUSTRIAL BAY</span><h2>Crafting Network</h2><p>Convert recovered salvage into fuel, repair parts, supplies, and advanced station components.</p></div>
-        <div className="fabrication-console__status"><NWIcon name="resources" size={28} /><div><span>Fabricators</span><strong>{recipes.filter(recipe => recipe.unlocked).length} Online</strong></div></div>
+        <div className="fabrication-console__status"><NWIcon name="resources" size={28} /><div><span>Fabricators</span><strong>{unlockedRecipes.length} Online</strong></div></div>
       </section>
+
+      <ResponsiveGrid min="11rem" className="fabrication-summary-grid">
+        <StatusDisplay label="Schematics" value={recipes.length} icon="data" tone="purple" />
+        <StatusDisplay label="Ready Now" value={readyRecipes.length} icon="resources" tone={readyRecipes.length ? 'success' : 'warning'} />
+        <StatusDisplay label="Affordable Batches" value={affordableBatches} icon="cargo" tone="info" />
+        <StatusDisplay label="Mean Efficiency" value={averageEfficiency} unit="%" icon="integrity" tone={averageEfficiency >= 100 ? 'success' : 'warning'} />
+      </ResponsiveGrid>
+
+      <Panel className="fabrication-network-panel">
+        <SectionTitle eyebrow="PRODUCTION BUS" title="Fabricator Readiness" description="Only modules and recipes returned by the live content system are represented here." icon="signal" />
+        <div className="trait-list">
+          {onlineModules.map(module => <Pill key={module} tone="success">{module} online</Pill>)}
+          {!onlineModules.length && <Pill tone="warning">No fabricators online</Pill>}
+          {readyRecipes.map(recipe => <Pill key={recipe.slug} tone="purple">{recipe.name}: {affordableFor(recipe)} batches</Pill>)}
+        </div>
+      </Panel>
 
       <div className="fabrication-grid">
         {recipes.map(recipe => {
-          const maxAffordable = Math.max(0, Math.min(10, ...Object.entries(recipe.inputs).map(([slug, amount]) => Math.floor(held(slug) / amount))));
+          const maxAffordable = affordableFor(recipe);
           const quantity = quantities[recipe.slug] ?? 1;
           const ready = maxAffordable >= quantity;
           const remaining = cooldownRemaining(cooldowns, `craft:${recipe.slug}`, now);
