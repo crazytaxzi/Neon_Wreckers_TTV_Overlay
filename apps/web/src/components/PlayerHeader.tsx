@@ -8,8 +8,17 @@ const resourceDefinitions: Array<{ slug: string; label: string; icon: IconName; 
   { slug: 'fuel', label: 'Fuel', icon: 'fuel', tone: 'orange' }
 ];
 
+const compactNumber = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  maximumFractionDigits: 1
+});
+
 function quantityFor(inventory: InventoryItem[], slug: string) {
   return inventory.find(item => item.itemSlug === slug)?.quantity ?? 0;
+}
+
+function formatHeaderValue(value: number) {
+  return Math.abs(value) >= 10_000 ? compactNumber.format(value) : value.toLocaleString();
 }
 
 export function PlayerHeader({
@@ -40,13 +49,13 @@ export function PlayerHeader({
           <button key={resource.slug} type="button" className={`player-resource player-resource--${resource.tone}`} onClick={() => onNavigate('inventory')}>
             <NWIcon name={resource.icon} size={17} />
             <span>{resource.label}</span>
-            <strong className="nw-numeric">{quantityFor(inventory, resource.slug).toLocaleString()}</strong>
+            <strong className="nw-numeric">{formatHeaderValue(quantityFor(inventory, resource.slug))}</strong>
           </button>
         ))}
         <button type="button" className="player-resource player-resource--purple" onClick={() => onNavigate('market')}>
           <NWIcon name="credits" size={17} />
           <span>Credits</span>
-          <strong className="nw-numeric">{(me.player?.credits ?? 0).toLocaleString()}</strong>
+          <strong className="nw-numeric">{formatHeaderValue(me.player?.credits ?? 0)}</strong>
         </button>
       </div>
 
