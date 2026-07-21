@@ -1,0 +1,192 @@
+/* Final concept-faithful presentation polish for secondary player consoles. */
+
+.player-shell .fabrication-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.player-shell .fabrication-network-panel {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(var(--nw-color-green-rgb), 0.28);
+  background:
+    linear-gradient(90deg, rgba(var(--nw-color-green-rgb), 0.08), transparent 52%),
+    rgba(var(--nw-color-surface-rgb), 0.88);
+}
+
+.player-shell .fabrication-network-panel::after {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: min(28rem, 42%);
+  content: "";
+  pointer-events: none;
+  opacity: 0.22;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 2.8rem, rgba(var(--nw-color-green-rgb), 0.2) 2.8rem calc(2.8rem + 1px)),
+    repeating-linear-gradient(0deg, transparent 0 1.8rem, rgba(var(--nw-color-cyan-rgb), 0.12) 1.8rem calc(1.8rem + 1px));
+  mask-image: linear-gradient(90deg, transparent, black);
+}
+
+.player-shell .expedition-console__masthead {
+  position: relative;
+  overflow: hidden;
+}
+
+.player-shell .expedition-console__masthead::after {
+  position: absolute;
+  inset: -8rem -3rem auto auto;
+  width: 22rem;
+  aspect-ratio: 1;
+  content: "";
+  pointer-events: none;
+  opacity: 0.28;
+  border: 1px solid rgba(var(--nw-color-purple-rgb), 0.38);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 0 28%, rgba(var(--nw-color-purple-rgb), 0.18) 28% 29%, transparent 29% 48%, rgba(var(--nw-color-cyan-rgb), 0.12) 48% 49%, transparent 49%),
+    conic-gradient(from 20deg, transparent 0 16%, rgba(var(--nw-color-green-rgb), 0.2) 16% 18%, transparent 18% 48%, rgba(var(--nw-color-purple-rgb), 0.2) 48% 50%, transparent 50%);
+}
+
+.player-shell .expedition-console__readiness {
+  position: relative;
+  z-index: 1;
+  min-width: 13rem;
+  border-color: rgba(var(--nw-color-purple-rgb), 0.36);
+  background: rgba(var(--nw-color-purple-rgb), 0.08);
+  box-shadow: inset 0.22rem 0 var(--nw-color-purple);
+}
+
+.player-shell .expedition-card-grid > * {
+  min-height: 12rem;
+  background:
+    linear-gradient(145deg, rgba(var(--nw-color-purple-rgb), 0.08), transparent 50%),
+    rgba(var(--nw-color-surface-rgb), 0.9);
+}
+
+.player-shell .expedition-loadout-panel {
+  border-color: rgba(var(--nw-color-green-rgb), 0.3);
+  background:
+    linear-gradient(115deg, rgba(var(--nw-color-green-rgb), 0.08), transparent 46%),
+    rgba(var(--nw-color-surface-rgb), 0.9);
+}
+
+.player-shell .profile-console {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(15rem, 0.62fr) minmax(0, 1.38fr);
+  grid-template-areas:
+    "identity stats"
+    "identity career"
+    "identity signout";
+  gap: 0.9rem 1.1rem;
+  min-height: 22rem;
+  overflow: hidden;
+  border-color: rgba(var(--nw-color-purple-rgb), 0.34);
+  background:
+    radial-gradient(circle at 12% 42%, rgba(var(--nw-color-purple-rgb), 0.15), transparent 18rem),
+    linear-gradient(115deg, rgba(var(--nw-color-green-rgb), 0.05), transparent 44%),
+    rgba(var(--nw-color-surface-rgb), 0.92);
+}
+
+.player-shell .profile-console::after {
+  position: absolute;
+  inset: 12% auto auto 4%;
+  width: 14rem;
+  aspect-ratio: 1;
+  content: "";
+  pointer-events: none;
+  opacity: 0.24;
+  border: 1px solid rgba(var(--nw-color-purple-rgb), 0.38);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1.8rem rgba(var(--nw-color-purple-rgb), 0.035),
+    0 0 0 3.5rem rgba(var(--nw-color-green-rgb), 0.025);
+}
+
+.player-shell .profile-console > .nw-profile-chip {
+  grid-area: identity;
+  position: relative;
+  z-index: 1;
+  align-self: stretch;
+  align-content: center;
+  padding: 1.2rem;
+  border: 1px solid rgba(var(--nw-color-purple-rgb), 0.35);
+  background: rgba(var(--nw-color-void-rgb), 0.58);
+}
+
+.player-shell .profile-console > .nw-responsive-grid {
+  grid-area: stats;
+}
+
+.player-shell .profile-console > .nw-field {
+  grid-area: career;
+  align-self: end;
+}
+
+.player-shell .profile-console > .nw-button {
+  grid-area: signout;
+  justify-self: start;
+}
+
+.player-shell .settings-grid > * {
+  position: relative;
+  min-height: 4.5rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(var(--nw-color-text-rgb), 0.1);
+  background:
+    linear-gradient(90deg, rgba(var(--nw-color-green-rgb), 0.045), transparent 72%),
+    rgba(var(--nw-color-void-rgb), 0.36);
+  clip-path: polygon(0.42rem 0, 100% 0, 100% calc(100% - 0.42rem), calc(100% - 0.42rem) 100%, 0 100%, 0 0.42rem);
+}
+
+.player-shell .settings-grid > *:focus-within {
+  border-color: rgba(var(--nw-color-green-rgb), 0.5);
+  background: rgba(var(--nw-color-green-rgb), 0.06);
+}
+
+@media (max-width: 1100px) {
+  .player-shell .fabrication-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .player-shell .profile-console {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "identity"
+      "stats"
+      "career"
+      "signout";
+  }
+
+  .player-shell .profile-console::after {
+    inset: -5rem -5rem auto auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .player-shell .fabrication-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .player-shell .fabrication-network-panel::after,
+  .player-shell .expedition-console__masthead::after,
+  .player-shell .profile-console::after {
+    display: none;
+  }
+
+  .player-shell .expedition-card-grid > * {
+    min-height: auto;
+  }
+
+  .player-shell .profile-console {
+    min-height: 0;
+  }
+}
+
+html[data-low-effects="true"] .player-shell .fabrication-network-panel::after,
+html[data-low-effects="true"] .player-shell .expedition-console__masthead::after,
+html[data-low-effects="true"] .player-shell .profile-console::after,
+html[data-reduced-motion="true"] .player-shell .fabrication-network-panel::after,
+html[data-reduced-motion="true"] .player-shell .expedition-console__masthead::after,
+html[data-reduced-motion="true"] .player-shell .profile-console::after {
+  opacity: 0.08;
+}
