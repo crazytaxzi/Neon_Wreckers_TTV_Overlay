@@ -4,6 +4,15 @@ on:
   push:
     branches:
       - ui/concept-driven-revamp
+  pull_request:
+    paths:
+      - '.github/workflows/ui-source-snapshot.yml'
+      - 'apps/**'
+      - 'packages/**'
+      - 'content/**'
+      - 'assets/**'
+      - 'docs/**'
+      - 'tools/**'
 
 permissions:
   contents: read
