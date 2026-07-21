@@ -1,0 +1,17 @@
+/* Programmatic focus used by screenshot/browser tooling must not pin the skip
+   link on screen. Keyboard focus remains fully visible. */
+
+.nw-skip-link,
+.nw-skip-link:focus {
+  transform: translateY(calc(-100% - 1rem));
+}
+
+.nw-skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+@supports not selector(:focus-visible) {
+  .nw-skip-link:focus {
+    transform: translateY(0);
+  }
+}
