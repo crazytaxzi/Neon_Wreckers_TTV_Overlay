@@ -32,6 +32,17 @@ jobs:
           end = source.index("\n          PY\n", start)
           script = '\n'.join(line[10:] if line.startswith('          ') else line for line in source[start:end].splitlines())
           exec(compile(script, 'player-refactor.py', 'exec'))
+
+          fleet = Path('apps/web/src/pages/fleet.tsx')
+          fleet.write_text(fleet.read_text().replace(
+              "import type { ExpeditionDefinition, GameData, Ship } from '../model.js';",
+              "import type { ExpeditionDefinition, GameData, Marketplace, Ship } from '../model.js';"
+          ))
+          community = Path('apps/web/src/pages/community.tsx')
+          community.write_text(community.read_text().replace(
+              'PlayerNotification, Quarters, UiPreferences',
+              'PlayerNotification, Quarters, QuartersObject, UiPreferences'
+          ))
           PY
           rm .github/workflows/refactor-player-entry.yml
 
