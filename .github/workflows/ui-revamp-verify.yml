@@ -49,7 +49,17 @@ jobs:
         run: pnpm --filter @neon-wreckers/ui run build
 
       - name: Build player app
-        run: pnpm --filter @neon-wreckers/web run build
+        run: |
+          set -o pipefail
+          pnpm --filter @neon-wreckers/web run build 2>&1 | tee web-build.log
+
+      - name: Upload player build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build-log
+          path: web-build.log
+          retention-days: 14
 
       - name: Build admin app
         run: pnpm --filter @neon-wreckers/admin run build
