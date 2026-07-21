@@ -66,7 +66,7 @@ jobs:
       - name: Commit responsive variants
         if: github.event_name == 'push'
         run: |
-          if git diff --quiet; then
+          if [ -z "$(git status --porcelain apps/web/public/station apps/web/public/wrecks apps/web/public/ships)" ]; then
             exit 0
           fi
           git config user.name 'github-actions[bot]'
