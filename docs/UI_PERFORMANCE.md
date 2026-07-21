@@ -14,16 +14,18 @@ Record for each frontend:
 - first render and interaction timing on a representative older phone and laptop
 - OBS browser-source CPU and memory behavior at 720p, 1080p, 1440p, and 4K
 
-## Bundle baseline status
+## Production build results
 
-The GitHub connector implementation environment can run branch builds through CI but does not have a measured pre-change production build for `main`. This document does not invent a before-and-after JavaScript comparison.
+The branch production builds completed in GitHub Actions. The figures below are raw generated file sizes before HTTP compression. A pre-change `main` build was not captured in the same environment, so this document does not invent a before-and-after JavaScript comparison.
 
-| Surface | Baseline JS | Branch JS | Baseline CSS | Branch CSS | Notes |
-| --- | ---: | ---: | ---: | ---: | --- |
-| Player | Not measured | CI size artifact pending final green run | Not measured | CI size artifact pending final green run | Existing monolithic entry remains the main code-splitting risk |
-| Admin | Not measured | CI size artifact pending final green run | Not measured | CI size artifact pending final green run | UI Library intentionally demonstrates the complete shared contract |
-| Overlay | Not measured | CI size artifact pending final green run | Not measured | CI size artifact pending final green run | No large raster frame dependency added |
-| Shared UI package | Not measured | 196 KiB TypeScript build output including maps and declarations | Not measured | Bundled through consumers | This is package build output, not browser transfer size |
+| Surface | Branch JavaScript | Branch CSS | Complete output | Notes |
+| --- | ---: | ---: | ---: | --- |
+| Player | 313,571 bytes | 84,519 bytes | 4.5 MiB | Complete output includes the canonical and responsive game artwork library |
+| Admin | 278,126 bytes | 65,899 bytes | 352 KiB | Includes the live UI Library contract |
+| Overlay | 240,043 bytes | 73,387 bytes | 324 KiB | Includes overlay configuration; no large raster frame dependency |
+| Shared UI package | 34,088-byte component JS plus build maps/declarations | Bundled through consumers | 196 KiB | Package build output is not browser transfer size |
+
+Compressed JavaScript/CSS transfer, route-level timing, and CPU/memory measurements remain pending browser and OBS validation.
 
 ## Measured artwork results
 
