@@ -6,6 +6,11 @@ on:
       - agent/concept-faithful-ui-rebuild
     paths:
       - '.github/workflows/apply-ui-pass2.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/apply-ui-pass2.yml'
 
 permissions:
   contents: write
