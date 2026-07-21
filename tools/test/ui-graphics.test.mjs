@@ -109,20 +109,24 @@ test('viewer event popups use real classified overlay history', async () => {
 });
 
 test('visual proof responsibilities are separated without fake production APIs', async () => {
-  const [playerProof, surfaceProof] = await Promise.all([
+  const [playerProof, surfaceProof, captureDriver] = await Promise.all([
     read('.github/workflows/ui-visual-proof.yml'),
-    read('.github/workflows/ui-admin-overlay-proof.yml')
+    read('.github/workflows/ui-admin-overlay-proof.yml'),
+    read('tools/visual-proof/capture-admin-overlay.mjs')
   ]);
 
   assert.match(playerProof, /Build deterministic player preview/);
   assert.doesNotMatch(playerProof, /Inject deterministic admin and overlay preview data/);
   assert.match(surfaceProof, /Capture real built admin and overlay surfaces/);
-  assert.match(surfaceProof, /page\.route/);
-  assert.match(surfaceProof, /JSON\.stringify\(\{ data:/);
+  assert.match(surfaceProof, /tools\/visual-proof\/capture-admin-overlay\.mjs/);
   assert.match(surfaceProof, /admin-overlay-visual-proof/);
-  assert.match(surfaceProof, /width:\s*3840,\s*height:\s*2160/);
-  assert.match(surfaceProof, /viewer-event-1080p/);
-  assert.match(surfaceProof, /Graphic Language/);
   assert.match(surfaceProof, /contents: read/);
   assert.doesNotMatch(surfaceProof, /contents: write/);
+
+  assert.match(captureDriver, /page\.route/);
+  assert.match(captureDriver, /JSON\.stringify\(\{ data:/);
+  assert.match(captureDriver, /width:\s*3840,\s*height:\s*2160/);
+  assert.match(captureDriver, /viewer-event-1080p/);
+  assert.match(captureDriver, /Graphic Language/);
+  assert.match(captureDriver, /nw-skip-link\{display:none!important\}/);
 });
