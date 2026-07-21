@@ -1,0 +1,351 @@
+name: Refactor Player Entry
+
+on:
+  push:
+    branches:
+      - ui/concept-driven-revamp
+    paths:
+      - '.github/workflows/refactor-player-entry.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ui/concept-driven-revamp
+          fetch-depth: 0
+
+      - name: Split player application without changing behavior
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          
+          ROOT = Path('apps/web/src')
+          SOURCE_PATH = ROOT / 'main.tsx'
+          source = SOURCE_PATH.read_text()
+          
+          
+          def section(start: str, end: str | None = None) -> str:
+              a = source.index(start)
+              b = source.index(end, a) if end else len(source)
+              return source[a:b].rstrip() + '\n'
+          
+          
+          def export_functions(text: str, names: list[str]) -> str:
+              for name in names:
+                  text = re.sub(rf'(?m)^function {re.escape(name)}\(', f'export function {name}(', text)
+              return text
+          
+          # Types/models
+          models = section('type Player = {', 'type RealtimeMessage =')
+          models = re.sub(r'(?m)^type ', 'export type ', models)
+          (ROOT / 'model.ts').write_text(models)
+          
+          # Data/state hooks. Deliberately preserve the original refresh, WebSocket, polling, and action code.
+          game_data_header = """import { useCallback, useEffect, useRef, useState } from 'react';
+          import { errorMessage, requestApi } from '@neon-wreckers/browser-client';
+          import { useToast } from '@neon-wreckers/ui';
+          import type {
+            ActionCooldown,
+            ActionHandler,
+            AuctionListing,
+            CraftingRecipe,
+            CrewMember,
+            CurrentUser,
+            Expedition,
+            ExpeditionDefinition,
+            GameData,
+            HistoryEntry,
+            InventoryItem,
+            ItemDefinition,
+            Marketplace,
+            PlayerNotification,
+            Quarters,
+            Ship,
+            Station,
+            Wreck
+          } from './model.js';
+          
+          """
+          game_data = (
+              section('type RealtimeMessage =', 'const defaultPreferences:')
+              + section('function parseRealtimeMessage(', 'function loadPreferences(')
+              + section('function actionResultMessage(', 'function HistoryList(')
+              + section('function useGameData(', 'const navigation:')
+          )
+          game_data = re.sub(r'(?m)^function useGameData\(', 'export function useGameData(', game_data)
+          (ROOT / 'game-data.ts').write_text(game_data_header + game_data)
+          
+          # Shared page utilities, excluding actionResultMessage which remains private to game-data.
+          utils_header = """import { Card, Notification, NWIcon, ScrollableList, type IconName, type Tone } from '@neon-wreckers/ui';
+          import type { ActionCooldown, HistoryEntry, PlayerNotification, StationModule } from './model.js';
+          
+          """
+          utils = section('function CommandAction(', 'function actionResultMessage(') + section('function HistoryList(', "createRoot(document.getElementById('root')!)")
+          utils = export_functions(utils, [
+              'CommandAction', 'formatCountdown', 'cooldownRemaining', 'HistoryList', 'notificationTone',
+              'quartersObjectIcon', 'toneForValue', 'riskTone', 'rarityTone', 'rarityRank', 'expeditionTone',
+              'moduleIcon', 'moduleEffectDescription', 'itemIcon'
+          ])
+          (ROOT / 'page-utils.tsx').write_text(utils_header + utils)
+          
+          pages = ROOT / 'pages'
+          pages.mkdir(exist_ok=True)
+          
+          station_header = """import { useEffect, useRef, useState, type CSSProperties } from 'react';
+          import {
+            Badge,
+            Button,
+            Card,
+            ConfirmWindow,
+            Field,
+            HealthBar,
+            InventoryCard,
+            Meter,
+            ModuleCard,
+            Notification,
+            NWIcon,
+            Panel,
+            PopulationDisplay,
+            ProgressBar,
+            ResponsiveGrid,
+            SectionTitle,
+            Select,
+            SplitLayout,
+            StatusDisplay,
+            ToggleSwitch,
+            Tooltip
+          } from '@neon-wreckers/ui';
+          import { GameArtwork } from '../components/GameArtwork.js';
+          import type { GameData, Station, Wreck } from '../model.js';
+          import { CommandAction, formatCountdown, cooldownRemaining, HistoryList, toneForValue, riskTone, moduleIcon, moduleEffectDescription, itemIcon } from '../page-utils.js';
+          
+          """
+          station = section('function GuidePage()', 'function InventoryPage(')
+          station = export_functions(station, ['GuidePage', 'StationPage', 'SalvagePage', 'ConstructionPage'])
+          (pages / 'station.tsx').write_text(station_header + station)
+          
+          logistics_header = """import { useEffect, useState, type ChangeEvent } from 'react';
+          import {
+            Badge,
+            Button,
+            Card,
+            DataGrid,
+            Field,
+            Input,
+            Notification,
+            NWIcon,
+            Panel,
+            ResponsiveGrid,
+            SectionTitle,
+            Select,
+            StatusDisplay
+          } from '@neon-wreckers/ui';
+          import type { CraftingRecipe, GameData } from '../model.js';
+          import { formatCountdown, cooldownRemaining, rarityTone, rarityRank, itemIcon } from '../page-utils.js';
+          
+          """
+          logistics = section('function InventoryPage(', 'function ShipsPage(')
+          logistics = export_functions(logistics, ['InventoryPage', 'CraftingPage'])
+          (pages / 'logistics.tsx').write_text(logistics_header + logistics)
+          
+          fleet_header = """import { useEffect, useState } from 'react';
+          import {
+            Badge,
+            Button,
+            Card,
+            ConfirmWindow,
+            DataGrid,
+            Field,
+            HealthBar,
+            Input,
+            Notification,
+            NWIcon,
+            Panel,
+            Pill,
+            ProgressBar,
+            ResponsiveGrid,
+            SectionTitle,
+            Select,
+            StatusDisplay
+          } from '@neon-wreckers/ui';
+          import { GameArtwork } from '../components/GameArtwork.js';
+          import type { ExpeditionDefinition, GameData, Ship } from '../model.js';
+          import { formatCountdown, cooldownRemaining, toneForValue, riskTone, rarityTone, expeditionTone } from '../page-utils.js';
+          
+          """
+          fleet = section('function ShipsPage(', 'function MuseumPage(')
+          fleet = export_functions(fleet, ['ShipsPage', 'CrewPage', 'ExpeditionPage'])
+          (pages / 'fleet.tsx').write_text(fleet_header + fleet)
+          
+          community_header = """import { useEffect, useState, type CSSProperties } from 'react';
+          import {
+            Badge,
+            Button,
+            Card,
+            ConfirmWindow,
+            DataGrid,
+            Field,
+            Input,
+            Notification,
+            NWIcon,
+            Panel,
+            Pill,
+            ProfileChip,
+            ProgressBar,
+            ResponsiveGrid,
+            ScrollableList,
+            SectionTitle,
+            Select,
+            SliderControl,
+            SplitLayout,
+            StatusDisplay,
+            ToggleSwitch,
+            Tooltip
+          } from '@neon-wreckers/ui';
+          import type { ActionHandler, AuctionListing, CurrentUser, GameData, InventoryItem, ItemDefinition, Marketplace, PlayerNotification, Quarters, UiPreferences } from '../model.js';
+          import { formatCountdown, notificationTone, quartersObjectIcon, rarityTone, itemIcon } from '../page-utils.js';
+          
+          """
+          community = section('function MuseumPage(', 'function CommandAction(')
+          community = export_functions(community, ['MuseumPage', 'HistoryPage', 'NotificationsPage', 'MarketPage', 'QuartersPage', 'ProfilePage', 'SettingsPage'])
+          (pages / 'community.tsx').write_text(community_header + community)
+          
+          app_header = """import { useEffect, useState, type ReactNode } from 'react';
+          import {
+            AppShell,
+            Badge,
+            Button,
+            CommandHeader,
+            CommandNavigation,
+            LoadingScreen,
+            NWIcon,
+            Panel,
+            ProfileChip,
+            ThemeProvider,
+            ToastProvider,
+            Tooltip,
+            defaultTheme,
+            highContrastTheme,
+            type TabItem
+          } from '@neon-wreckers/ui';
+          import { useGameData } from './game-data.js';
+          import type { GameData, UiPreferences } from './model.js';
+          import { GuidePage, StationPage, SalvagePage, ConstructionPage } from './pages/station.js';
+          import { InventoryPage, CraftingPage } from './pages/logistics.js';
+          import { ShipsPage, CrewPage, ExpeditionPage } from './pages/fleet.js';
+          import { MuseumPage, HistoryPage, NotificationsPage, MarketPage, QuartersPage, ProfilePage, SettingsPage } from './pages/community.js';
+          
+          """
+          app = (
+              section('const defaultPreferences:', 'function parseRealtimeMessage(')
+              + section('function loadPreferences(', 'function useGameData(')
+              + section('const navigation:', 'function Root()')
+              + section('function Root()', 'function GuidePage()')
+          )
+          app = re.sub(r'(?m)^function Root\(', 'export function Root(', app)
+          (ROOT / 'app.tsx').write_text(app_header + app)
+          
+          SOURCE_PATH.write_text("""import { createRoot } from 'react-dom/client';
+          import { Root } from './app.js';
+          import './styles.css';
+          
+          createRoot(document.getElementById('root')!).render(<Root />);
+          """)
+          
+          # Update source contracts for the modular player application.
+          test_path = Path('tools/test/ui-revamp.test.mjs')
+          test_source = test_path.read_text()
+          old = "  const [component, player] = await Promise.all([\n    read('apps/web/src/components/GameArtwork.tsx'),\n    read('apps/web/src/main.tsx')\n  ]);"
+          new = "  const [component, entry, stationPages, fleetPages] = await Promise.all([\n    read('apps/web/src/components/GameArtwork.tsx'),\n    read('apps/web/src/main.tsx'),\n    read('apps/web/src/pages/station.tsx'),\n    read('apps/web/src/pages/fleet.tsx')\n  ]);"
+          if old not in test_source:
+              raise SystemExit('Responsive artwork test shape changed unexpectedly.')
+          test_source = test_source.replace(old, new)
+          old_assertions = "  assert.match(player, /import \\{ GameArtwork \\}/);\n  assert.match(player, /<GameArtwork/);\n  assert.doesNotMatch(player, /<img[^>]+src=\\{?`?\\/?(?:station|wrecks|ships)\\//);"
+          new_assertions = "  assert.match(entry, /import \\{ Root \\} from '.\\/app\\.js';/);\n  const artworkPages = `${stationPages}\\n${fleetPages}`;\n  assert.match(artworkPages, /import \\{ GameArtwork \\}/);\n  assert.match(artworkPages, /<GameArtwork/);\n  assert.doesNotMatch(artworkPages, /<img[^>]+src=\\{?`?\\/?(?:station|wrecks|ships)\\//);"
+          if old_assertions not in test_source:
+              raise SystemExit('Responsive artwork assertions changed unexpectedly.')
+          test_source = test_source.replace(old_assertions, new_assertions)
+          architecture_test = '''
+          
+          test('player entry is split into behavior-preserving feature modules', async () => {
+            const [entry, app, data, model, utilities, station, logistics, fleet, community] = await Promise.all([
+              read('apps/web/src/main.tsx'),
+              read('apps/web/src/app.tsx'),
+              read('apps/web/src/game-data.ts'),
+              read('apps/web/src/model.ts'),
+              read('apps/web/src/page-utils.tsx'),
+              read('apps/web/src/pages/station.tsx'),
+              read('apps/web/src/pages/logistics.tsx'),
+              read('apps/web/src/pages/fleet.tsx'),
+              read('apps/web/src/pages/community.tsx')
+            ]);
+          
+            assert.ok(entry.split('\\n').length <= 8, 'The browser entry should stay a minimal bootstrap file.');
+            assert.match(entry, /<Root \\/>/);
+            assert.match(app, /useGameData\\(\\)/);
+            assert.doesNotMatch(app, /requestApi|new WebSocket|setInterval/);
+            assert.match(data, /refreshInFlight/);
+            assert.match(data, /Promise\\.allSettled/);
+            assert.match(data, /new WebSocket/);
+            assert.match(data, /setInterval/);
+            assert.match(data, /\\/api\\/v1\\/station/);
+            assert.match(data, /\\/api\\/v1\\/player\\/ws/);
+            assert.match(model, /export type GameData/);
+            assert.match(utilities, /export function cooldownRemaining/);
+            for (const pageModule of [station, logistics, fleet, community]) {
+              assert.match(pageModule, /export function/);
+            }
+          });
+          '''
+          if 'player entry is split into behavior-preserving feature modules' not in test_source:
+              test_source += architecture_test
+          test_path.write_text(test_source)
+          
+          for relative in ['docs/UI_REVAMP_REPORT.md', 'docs/UI_PERFORMANCE.md']:
+              path = Path(relative)
+              text = path.read_text()
+              text = text.replace(
+                  '- The player `main.tsx` remains monolithic and is the largest structural debt left by this foundation branch.',
+                  '- The player bootstrap, application shell, data layer, models, shared utilities, and page families are now separate modules; future lazy loading must preserve the same URLs and server-authoritative behavior.'
+              )
+              text = text.replace(
+                  'The player application still has one large entry module. The next structural milestone should split page modules and page-specific data access while preserving public URLs and server authority.',
+                  'The player application now separates its bootstrap, shell, data layer, models, utilities, and page families. A later optimization may lazy-load secondary page modules, but it must preserve public URLs and server authority.'
+              )
+              path.write_text(text)
+          PY
+          rm .github/workflows/refactor-player-entry.yml
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: pnpm
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate modular player source
+        run: |
+          node --test tools/test/ui-revamp.test.mjs
+          pnpm --filter @neon-wreckers/web run build
+
+      - name: Commit and push refactor
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apps/web/src tools/test/ui-revamp.test.mjs docs/UI_REVAMP_REPORT.md docs/UI_PERFORMANCE.md .github/workflows/refactor-player-entry.yml
+          git commit -m 'refactor(web): split player feature modules'
+          git push origin HEAD:ui/concept-driven-revamp
