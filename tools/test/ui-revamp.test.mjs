@@ -129,7 +129,9 @@ test('player entry is split into behavior-preserving feature modules', async () 
 
   assert.ok(entry.split('\n').length <= 8, 'The browser entry should stay a minimal bootstrap file.');
   assert.match(entry, /<Root \/>/);
-  assert.match(app, /useGameData\(\)/);
+  assert.match(app, /import \{ useGameData \} from '.\/game-data\.js';/);
+  assert.match(app, /VITE_VISUAL_PREVIEW === '1' \? useVisualGameData : useGameData/);
+  assert.match(app, /const game = useRuntimeGameData\(\)/);
   assert.doesNotMatch(app, /requestApi|new WebSocket|setInterval/);
   assert.match(data, /refreshInFlight/);
   assert.match(data, /Promise\.allSettled/);
@@ -142,4 +144,64 @@ test('player entry is split into behavior-preserving feature modules', async () 
   for (const pageModule of [station, logistics, fleet, community]) {
     assert.match(pageModule, /export function/);
   }
+});
+
+
+test('player HTML entry points declare real device viewports', async () => {
+  const [web, admin] = await Promise.all([
+    read('apps/web/index.html'),
+    read('apps/admin/index.html')
+  ]);
+
+  for (const html of [web, admin]) {
+    assert.match(html, /<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/);
+    assert.match(html, /<meta name="theme-color" content="#020406"/);
+  }
+});
+
+test('concept-faithful player surfaces are implemented in live React pages', async () => {
+  const [app, station, market, logistics, fleet, css] = await Promise.all([
+    read('apps/web/src/app.tsx'),
+    read('apps/web/src/pages/station.tsx'),
+    read('apps/web/src/pages/community.tsx'),
+    read('apps/web/src/pages/logistics.tsx'),
+    read('apps/web/src/pages/fleet.tsx'),
+    read('apps/web/src/styles.css')
+  ]);
+
+  assert.match(app, /className="player-shell"/);
+  assert.match(station, /command-center-grid/);
+  assert.match(station, /salvage-console-grid/);
+  assert.match(market, /market-console/);
+  assert.match(market, /market-featured/);
+  assert.match(logistics, /cargo-console/);
+  assert.match(logistics, /fabrication-console/);
+  assert.match(fleet, /fleet-console/);
+  assert.match(fleet, /crew-console/);
+  assert.match(fleet, /expedition-console/);
+  for (const selector of [
+    '.market-console__tabs',
+    '.market-featured',
+    '.cargo-slot-grid',
+    '.fabrication-card',
+    '.fleet-console__masthead',
+    '.crew-console__masthead',
+    '.expedition-console__masthead'
+  ]) {
+    assert.ok(css.includes(selector), `Missing concept selector ${selector}`);
+  }
+});
+
+test('visual proof fixture is build-gated and cannot replace production data accidentally', async () => {
+  const [app, fixture] = await Promise.all([
+    read('apps/web/src/app.tsx'),
+    read('apps/web/src/visual-preview.ts')
+  ]);
+
+  assert.match(app, /VITE_VISUAL_PREVIEW === '1'/);
+  assert.match(app, /useVisualGameData/);
+  assert.match(app, /useGameData/);
+  assert.match(fixture, /const previewGame: GameData/);
+  assert.match(fixture, /action: async \(\) => undefined/);
+  assert.match(fixture, /refresh: async \(\) => undefined/);
 });

@@ -383,7 +383,7 @@ export function DataGrid<T>({ rows, columns, getRowKey, caption, empty = 'No rec
 
 export const Table = DataGrid;
 
-export type TabItem = { id: string; label: string; icon?: IconName; disabled?: boolean };
+export type TabItem = { id: string; label: string; description?: string; icon?: IconName; disabled?: boolean; primary?: boolean };
 export function Tabs({ items, value, onChange, ariaLabel = 'Sections' }: { items: TabItem[]; value: string; onChange: (id: string) => void; ariaLabel?: string }) {
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
   const handleKey = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -512,14 +512,15 @@ const playerProfileGroup = ['profile', 'quarters', 'notifications', 'history', '
 
 function NavigationButtons({ items, value, onChange }: { items: TabItem[]; value: string; onChange: (id: string) => void }) {
   const groups = [
-    { label: 'Command', ids: ['guide', 'station', 'salvage'] },
-    { label: 'Logistics', ids: ['inventory', 'crafting', 'market'] },
-    { label: 'Station Systems', ids: ['construction', 'crew', 'ships', 'expeditions', 'museum'] },
-    { label: 'Personal', ids: ['history', 'notifications', 'quarters', 'profile', 'settings'] }
+    { label: 'Logistics', ids: ['inventory', 'crafting'] },
+    { label: 'Station Systems', ids: ['crew', 'ships', 'expeditions', 'museum'] },
+    { label: 'Records', ids: ['history', 'notifications', 'quarters', 'guide', 'settings'] }
   ];
   const isPlayer = items.some(item => item.id === 'salvage') && items.some(item => item.id === 'construction');
-  if (!isPlayer) return <>{items.map(item => <button key={item.id} className={value === item.id ? 'is-active' : ''} onClick={() => onChange(item.id)} disabled={item.disabled} aria-current={value === item.id ? 'page' : undefined}>{item.icon && <NWIcon name={item.icon} size={19} />}<span>{item.label}</span></button>)}</>;
-  return <>{groups.map(group => { const groupItems = group.ids.map(id => items.find(item => item.id === id)).filter((item): item is TabItem => Boolean(item)); if (!groupItems.length) return null; return <div className="nw-command-nav__group" key={group.label}><span>{group.label}</span>{groupItems.map(item => <button key={item.id} className={value === item.id ? 'is-active' : ''} onClick={() => onChange(item.id)} disabled={item.disabled} aria-current={value === item.id ? 'page' : undefined}>{item.icon && <NWIcon name={item.icon} size={19} />}<span>{item.label}</span></button>)}</div>; })}</>;
+  const renderButton = (item: TabItem, compact = false) => <button key={item.id} className={cx(value === item.id && 'is-active', compact && 'is-compact')} onClick={() => onChange(item.id)} disabled={item.disabled} aria-current={value === item.id ? 'page' : undefined}>{item.icon && <span className="nw-command-nav__icon"><NWIcon name={item.icon} size={compact ? 17 : 22} /></span>}<span className="nw-command-nav__copy"><strong>{item.label}</strong>{item.description && !compact && <small>{item.description}</small>}</span></button>;
+  if (!isPlayer) return <>{items.map(item => renderButton(item, true))}</>;
+  const primary = items.filter(item => item.primary);
+  return <><div className="nw-command-nav__primary">{primary.map(item => renderButton(item))}</div><div className="nw-command-nav__secondary">{groups.map(group => { const groupItems = group.ids.map(id => items.find(item => item.id === id)).filter((item): item is TabItem => Boolean(item)); if (!groupItems.length) return null; return <div className="nw-command-nav__group" key={group.label}><span>{group.label}</span>{groupItems.map(item => renderButton(item, true))}</div>; })}</div></>;
 }
 
 export function CommandNavigation({ items, value, onChange, ariaLabel = 'Primary navigation' }: { items: TabItem[]; value: string; onChange: (id: string) => void; ariaLabel?: string }) {

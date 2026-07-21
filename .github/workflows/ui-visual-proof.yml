@@ -1,0 +1,132 @@
+name: UI Visual Proof
+
+on:
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'packages/ui/**'
+      - 'tools/test/ui-revamp.test.mjs'
+      - '.github/workflows/ui-visual-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: pnpm
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared UI
+        run: pnpm --filter @neon-wreckers/ui run build
+
+      - name: Build deterministic visual preview
+        env:
+          VITE_VISUAL_PREVIEW: '1'
+        run: pnpm --filter @neon-wreckers/web run build
+
+      - name: Install Chromium
+        run: pnpm dlx playwright@1.55.0 install --with-deps chromium
+
+      - name: Start built preview
+        run: |
+          nohup pnpm --filter @neon-wreckers/web exec vite preview --host 127.0.0.1 --port 4173 > /tmp/neon-preview.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/neon-preview.log
+          exit 1
+
+      - name: Capture every player destination
+        run: |
+          mkdir -p ui-visual-proof/mobile ui-visual-proof/tablet ui-visual-proof/desktop ui-visual-proof/audit
+
+          views="station salvage construction inventory crafting market crew ships expeditions museum history notifications quarters profile settings guide"
+
+          for view in $views; do
+            name="$view"
+            if [ "$view" = "station" ]; then name="home"; fi
+
+            pnpm dlx playwright@1.55.0 screenshot \
+              --browser chromium \
+              --viewport-size "390,844" \
+              --wait-for-timeout 1200 \
+              "http://127.0.0.1:4173/?view=$view" \
+              "ui-visual-proof/mobile/$name.png"
+
+            pnpm dlx playwright@1.55.0 screenshot \
+              --browser chromium \
+              --viewport-size "1920,1080" \
+              --wait-for-timeout 1200 \
+              "http://127.0.0.1:4173/?view=$view" \
+              "ui-visual-proof/desktop/$name.png"
+          done
+
+          for view in station salvage construction market profile; do
+            name="$view"
+            if [ "$view" = "station" ]; then name="home"; fi
+
+            pnpm dlx playwright@1.55.0 screenshot \
+              --browser chromium \
+              --viewport-size "1024,768" \
+              --wait-for-timeout 1200 \
+              "http://127.0.0.1:4173/?view=$view" \
+              "ui-visual-proof/tablet/$name.png"
+          done
+
+          for view in station salvage market; do
+            name="$view"
+            if [ "$view" = "station" ]; then name="home"; fi
+
+            pnpm dlx playwright@1.55.0 screenshot \
+              --browser chromium \
+              --viewport-size "390,844" \
+              --full-page \
+              --wait-for-timeout 1200 \
+              "http://127.0.0.1:4173/?view=$view" \
+              "ui-visual-proof/audit/mobile-$name-full.png"
+          done
+
+          cat > ui-visual-proof/README.txt <<'MANIFEST'
+          These PNGs are screenshots of the production-built React application.
+          Mobile and desktop folders contain every existing player destination.
+          Tablet captures cover the five primary information-architecture destinations.
+          The audit folder contains full-page overflow checks for Home, Salvage, and Market.
+          The build used VITE_VISUAL_PREVIEW=1 only to provide deterministic fixture data.
+          Production builds without that flag continue to use the real API/WebSocket data layer.
+          MANIFEST
+
+      - name: Upload visual proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-visual-proof
+          path: ui-visual-proof
+          retention-days: 14
+
+      - name: Upload preview diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-visual-proof-diagnostics
+          path: /tmp/neon-preview.log
+          retention-days: 14
