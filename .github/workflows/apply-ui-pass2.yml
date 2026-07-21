@@ -62,7 +62,15 @@ jobs:
         run: pnpm --filter @neon-wreckers/ui run build
 
       - name: Build player app
-        run: pnpm --filter @neon-wreckers/web run build
+        shell: bash
+        run: |
+          set -o pipefail
+          if ! pnpm --filter @neon-wreckers/web run build > /tmp/web-build.log 2>&1; then
+            echo '--- PLAYER BUILD ERROR ---'
+            tail -120 /tmp/web-build.log
+            exit 1
+          fi
+          tail -30 /tmp/web-build.log
 
       - name: Run UI contracts
         run: node --test tools/test/ui-revamp.test.mjs
