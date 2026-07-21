@@ -42,6 +42,9 @@ jobs:
           base64 --decode /tmp/ui-pass2.b64 > /tmp/ui-pass2.tar.gz
           tar -tzf /tmp/ui-pass2.tar.gz
           tar -xzf /tmp/ui-pass2.tar.gz -C .
+          sed -i '/^  Tooltip$/d' apps/web/src/pages/community.tsx
+          sed -i '/^  Card,$/d' apps/web/src/pages/logistics.tsx
+          sed -i 's/icon="relic"/icon="museum"/g' apps/web/src/pages/logistics.tsx
           rm -rf .github/ui-pass2
 
       - name: Set up pnpm
