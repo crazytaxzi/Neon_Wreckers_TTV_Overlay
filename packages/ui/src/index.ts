@@ -1,4 +1,5 @@
 import './styles.css';
+import './revamp.css';
 
 export * from './theme.js';
 export * from './icons.js';
