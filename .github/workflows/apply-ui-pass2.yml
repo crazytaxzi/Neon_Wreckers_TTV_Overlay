@@ -1,0 +1,83 @@
+name: Apply concept UI second pass
+
+on:
+  push:
+    branches:
+      - agent/concept-faithful-ui-rebuild
+    paths:
+      - '.github/workflows/apply-ui-pass2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check out UI branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/concept-faithful-ui-rebuild
+          fetch-depth: 0
+
+      - name: Verify and apply reviewed UI payload
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cat \
+            .github/ui-pass2/part-00 \
+            .github/ui-pass2/part-01 \
+            .github/ui-pass2/part-01a \
+            .github/ui-pass2/part-02 \
+            .github/ui-pass2/part-03 \
+            .github/ui-pass2/part-04 \
+            > /tmp/ui-pass2.b64
+          echo '6d3aa940a79ed32b7eff556591059b811231033e51b68677cacf29681d449c25  /tmp/ui-pass2.b64' | sha256sum --check
+          base64 --decode /tmp/ui-pass2.b64 > /tmp/ui-pass2.tar.gz
+          tar -tzf /tmp/ui-pass2.tar.gz
+          tar -xzf /tmp/ui-pass2.tar.gz -C .
+          rm -rf .github/ui-pass2
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: pnpm
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared UI
+        run: pnpm --filter @neon-wreckers/ui run build
+
+      - name: Build player app
+        run: pnpm --filter @neon-wreckers/web run build
+
+      - name: Run UI contracts
+        run: node --test tools/test/ui-revamp.test.mjs
+
+      - name: Commit front-end-only rebuild
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -f .github/workflows/apply-ui-pass2.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            .github/workflows/ui-visual-proof.yml \
+            apps/web/src/app.tsx \
+            apps/web/src/pages/community.tsx \
+            apps/web/src/pages/logistics.tsx \
+            apps/web/src/pages/fleet.tsx \
+            apps/web/src/styles.css \
+            apps/web/src/visual-preview.ts \
+            tools/test/ui-revamp.test.mjs
+          git add -u .github
+          git commit -m 'feat(ui): rebuild market, logistics, and fleet surfaces'
+          git push origin HEAD:agent/concept-faithful-ui-rebuild
