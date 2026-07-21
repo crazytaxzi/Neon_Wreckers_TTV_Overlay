@@ -68,7 +68,17 @@ jobs:
         run: pnpm --filter @neon-wreckers/overlay run build
 
       - name: Run complete test suite
-        run: pnpm test
+        run: |
+          set -o pipefail
+          pnpm test 2>&1 | tee complete-test.log
+
+      - name: Upload complete test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: complete-test-log
+          path: complete-test.log
+          retention-days: 14
 
       - name: Run repository verification
         run: pnpm verify
