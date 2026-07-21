@@ -3,17 +3,18 @@ import { readdirSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 const read = file => readFile(new URL(`../../${file}`, import.meta.url), 'utf8');
-const repositoryRoot = new URL('../../', import.meta.url);
+const repositoryRoot = fileURLToPath(new URL('../../', import.meta.url));
 
 function filesBelow(relativeDirectory) {
-  const root = new URL(`${relativeDirectory}/`, repositoryRoot);
+  const root = path.join(repositoryRoot, relativeDirectory);
   const walk = directory => readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
     const child = path.join(directory, entry.name);
     return entry.isDirectory() ? walk(child) : child;
   });
-  return walk(root).map(file => path.relative(root.pathname, file).replaceAll(path.sep, '/'));
+  return walk(root).map(file => path.relative(root, file).replaceAll(path.sep, '/'));
 }
 
 test('shared UI loads the canonical revamp stylesheet and stream theme', async () => {
