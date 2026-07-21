@@ -1,7 +1,7 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { requestApi } from '@neon-wreckers/browser-client';
-import { Badge, Meter, NWIcon, Panel, ThemeProvider, defaultTheme, type Tone } from '@neon-wreckers/ui';
+import { Badge, Meter, NWIcon, OverlayEventPopup, Panel, ThemeProvider, defaultTheme, type Tone } from '@neon-wreckers/ui';
 import { loadOverlayConfig, type OverlayConfig } from './config.js';
 import './overlay.css';
 
@@ -357,6 +357,10 @@ function App() {
         <TelemetryMeter label="REMAINING HULL" value={clamp(wreck?.integrity)} tone={clamp(wreck?.integrity) <= 25 ? 'critical' : clamp(wreck?.integrity) <= 50 ? 'warning' : 'positive'} />
         <footer className="wreck-footer"><span>OBJECT ID</span><strong className="nw-numeric">{wreck?.id ? wreck.id.slice(0, 12).toUpperCase() : 'NO CONTACT'}</strong></footer>
       </Panel>}
+
+      {current.severity === 'viewer' && showTicker && <div className="viewer-event-region" key={`viewer-${current.id}-${transitionKey}`}>
+        <OverlayEventPopup label={current.label} title={current.title} tone="purple" icon="broadcast">{current.body}</OverlayEventPopup>
+      </div>}
 
       {config.ticker.visible && <section className={`dispatch-rail nw-tone--${uiTone(current.severity)} ${breaking ? 'breaking' : ''} ${showTicker ? 'overlay-awake' : 'overlay-idle'}`} aria-live="polite">
         {breaking && <div className="breaking-ribbon">BREAKING</div>}
