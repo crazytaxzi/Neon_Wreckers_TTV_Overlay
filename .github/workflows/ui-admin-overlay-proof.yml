@@ -1,0 +1,82 @@
+name: Admin and Overlay Visual Proof
+
+on:
+  pull_request:
+    paths:
+      - 'apps/admin/**'
+      - 'apps/overlay/**'
+      - 'packages/ui/**'
+      - 'tools/visual-proof/capture-admin-overlay.mjs'
+      - '.github/workflows/ui-admin-overlay-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: pnpm
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build production surfaces
+        run: |
+          pnpm --filter @neon-wreckers/ui run build
+          pnpm --filter @neon-wreckers/admin run build
+          pnpm --filter @neon-wreckers/overlay run build
+          node --test tools/test/ui-graphics.test.mjs
+
+      - name: Install ephemeral browser harness
+        run: |
+          pnpm add -Dw playwright@1.55.0 --lockfile=false
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Start built previews
+        run: |
+          nohup pnpm --filter @neon-wreckers/admin exec vite preview --host 127.0.0.1 --port 4174 > /tmp/admin-preview.log 2>&1 &
+          nohup pnpm --filter @neon-wreckers/overlay exec vite preview --host 127.0.0.1 --port 4175 > /tmp/overlay-preview.log 2>&1 &
+          for url in http://127.0.0.1:4174/admin/ http://127.0.0.1:4175/overlay/?preview=1; do
+            ready=0
+            for attempt in $(seq 1 30); do
+              if curl --fail --silent "$url" >/dev/null; then ready=1; break; fi
+              sleep 1
+            done
+            if [ "$ready" -ne 1 ]; then
+              cat /tmp/*-preview.log
+              exit 1
+            fi
+          done
+
+      - name: Capture real built admin and overlay surfaces
+        env:
+          NW_ADMIN_PREVIEW_URL: http://127.0.0.1:4174/admin/
+          NW_OVERLAY_PREVIEW_URL: http://127.0.0.1:4175/overlay/
+          NW_VISUAL_PROOF_DIR: proof
+        run: node tools/visual-proof/capture-admin-overlay.mjs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: admin-overlay-visual-proof
+          path: proof
+          retention-days: 14
+
+      - name: Upload diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-overlay-proof-diagnostics
+          path: /tmp/*-preview.log
+          retention-days: 14

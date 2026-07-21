@@ -1,0 +1,382 @@
+/* Surface-specific graphics for the operational admin console.
+   Generic chrome remains owned by packages/ui. */
+
+.admin-shell {
+  --admin-accent: var(--nw-color-green);
+  --admin-accent-rgb: var(--nw-color-green-rgb);
+  position: relative;
+  min-height: 100vh;
+  background:
+    linear-gradient(90deg, rgba(var(--nw-color-green-rgb), 0.035), transparent 24rem),
+    radial-gradient(circle at 82% 4%, rgba(var(--nw-color-purple-rgb), 0.08), transparent 30rem),
+    var(--nw-color-void);
+}
+
+.admin-shell::before {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  content: "";
+  pointer-events: none;
+  opacity: calc(var(--nw-effects-grid-opacity) * 0.62);
+  background-image:
+    linear-gradient(rgba(var(--nw-color-green-rgb), 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--nw-color-green-rgb), 0.04) 1px, transparent 1px),
+    repeating-linear-gradient(135deg, transparent 0 5rem, rgba(var(--nw-color-purple-rgb), 0.025) 5rem calc(5rem + 1px));
+  background-size: 4rem 4rem, 4rem 4rem, 12rem 12rem;
+  mask-image: linear-gradient(90deg, black, transparent 76%);
+}
+
+.admin-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-shell .nw-command-header {
+  min-height: 5.5rem;
+  border-block-end: 1px solid rgba(var(--nw-color-green-rgb), 0.42);
+  background:
+    linear-gradient(90deg, rgba(var(--nw-color-green-rgb), 0.08), transparent 30%),
+    linear-gradient(180deg, rgba(var(--nw-color-text-rgb), 0.045), transparent 46%),
+    rgba(var(--nw-color-void-rgb), 0.96);
+  box-shadow:
+    inset 0 -1px rgba(var(--nw-color-purple-rgb), 0.18),
+    0 0.8rem 2.8rem rgba(var(--nw-color-void-rgb), 0.72);
+}
+
+.admin-shell .nw-command-header::after {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: -1px;
+  height: 3px;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--nw-color-green) 0 9rem, transparent 22rem 62%, var(--nw-color-purple) 82%, transparent);
+  box-shadow: 0 0 16px rgba(var(--nw-color-green-rgb), 0.25);
+}
+
+.admin-shell .nw-brand-lockup {
+  min-width: 9rem;
+  border-inline-start-width: 0.4rem;
+  background:
+    linear-gradient(105deg, rgba(var(--nw-color-green-rgb), 0.18), transparent 74%),
+    repeating-linear-gradient(135deg, transparent 0 6px, rgba(var(--nw-color-text-rgb), 0.035) 6px 7px);
+}
+
+.admin-shell .nw-command-header__identity > span::after {
+  content: "  //  AUTHORIZED CONTROL SURFACE";
+  color: var(--nw-color-text-dim);
+}
+
+.admin-shell .nw-command-nav {
+  border-inline-end: 1px solid rgba(var(--nw-color-green-rgb), 0.22);
+  background:
+    linear-gradient(180deg, rgba(var(--nw-color-green-rgb), 0.04), transparent 24rem),
+    rgba(var(--nw-color-void-rgb), 0.94);
+  box-shadow:
+    inset -1px 0 rgba(var(--nw-color-purple-rgb), 0.08),
+    0.8rem 0 2rem rgba(var(--nw-color-void-rgb), 0.38);
+}
+
+.admin-shell .nw-command-nav::before {
+  display: block;
+  margin: 0.65rem 0.6rem 0.85rem;
+  padding: 0.48rem 0.6rem;
+  border: 1px solid rgba(var(--nw-color-green-rgb), 0.26);
+  color: var(--nw-color-green);
+  background: rgba(var(--nw-color-green-rgb), 0.055);
+  content: "OPS CHANNEL // ZERO-01";
+  font-family: var(--nw-font-mono);
+  font-size: 0.54rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  clip-path: polygon(0.45rem 0, 100% 0, 100% calc(100% - 0.45rem), calc(100% - 0.45rem) 100%, 0 100%, 0 0.45rem);
+}
+
+.admin-shell .nw-command-nav button {
+  position: relative;
+  margin-inline: 0.45rem;
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: var(--nw-font-display);
+  font-size: 0.72rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-shell .nw-command-nav button::after {
+  position: absolute;
+  inset-block: 0.35rem;
+  inset-inline-end: 0.4rem;
+  width: 3px;
+  content: "";
+  opacity: 0;
+  background: var(--nw-tone, var(--nw-color-green));
+  box-shadow: 0 0 10px var(--nw-tone, var(--nw-color-green));
+}
+
+.admin-shell .nw-command-nav button:hover,
+.admin-shell .nw-command-nav button[aria-current="page"],
+.admin-shell .nw-command-nav button[aria-selected="true"] {
+  border-color: rgba(var(--nw-color-green-rgb), 0.25);
+  color: var(--nw-color-text);
+  background:
+    linear-gradient(90deg, rgba(var(--nw-color-green-rgb), 0.16), transparent 80%),
+    rgba(var(--nw-color-surface-rgb), 0.7);
+  box-shadow: inset 3px 0 var(--nw-color-green);
+}
+
+.admin-shell .nw-command-nav button:hover::after,
+.admin-shell .nw-command-nav button[aria-current="page"]::after,
+.admin-shell .nw-command-nav button[aria-selected="true"]::after {
+  opacity: 1;
+}
+
+.admin-page {
+  position: relative;
+  isolation: isolate;
+}
+
+.admin-page::before {
+  position: absolute;
+  inset: -0.6rem -0.6rem auto;
+  z-index: -1;
+  height: 7rem;
+  content: "";
+  pointer-events: none;
+  opacity: 0.58;
+  background:
+    linear-gradient(90deg, rgba(var(--nw-color-green-rgb), 0.1), transparent 42%),
+    repeating-linear-gradient(90deg, transparent 0 3.5rem, rgba(var(--nw-color-green-rgb), 0.04) 3.5rem calc(3.5rem + 1px));
+  clip-path: polygon(0 0, 100% 0, 100% 40%, 72% 40%, 68% 100%, 0 100%);
+}
+
+.admin-shell .nw-section-title {
+  min-height: 4.7rem;
+  padding: 0.65rem 0.8rem 0.75rem;
+  border: 1px solid rgba(var(--nw-tone-rgb, var(--nw-color-green-rgb)), 0.24);
+  background:
+    linear-gradient(100deg, rgba(var(--nw-tone-rgb, var(--nw-color-green-rgb)), 0.12), transparent 48%),
+    rgba(var(--nw-color-surface-rgb), 0.68);
+  clip-path: polygon(0.8rem 0, 100% 0, 100% calc(100% - 0.8rem), calc(100% - 0.8rem) 100%, 0 100%, 0 0.8rem);
+}
+
+.admin-shell .nw-section-title::after {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 1rem;
+  width: min(18rem, 32%);
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, transparent, var(--nw-tone, var(--nw-color-green)));
+}
+
+.admin-shell .nw-section-title__mark {
+  width: 2.65rem;
+  height: 2.65rem;
+  border: 1px solid rgba(var(--nw-tone-rgb, var(--nw-color-green-rgb)), 0.5);
+  color: var(--nw-tone, var(--nw-color-green));
+  background:
+    radial-gradient(circle, rgba(var(--nw-tone-rgb, var(--nw-color-green-rgb)), 0.22), transparent 60%),
+    rgba(var(--nw-color-void-rgb), 0.85);
+  filter: drop-shadow(0 0 7px rgba(var(--nw-tone-rgb, var(--nw-color-green-rgb)), 0.32));
+}
+
+.admin-shell .nw-status-display {
+  min-height: 7rem;
+  padding: 0.95rem;
+  border-color: rgba(var(--nw-tone-rgb), 0.38);
+  background:
+    radial-gradient(circle at 86% 20%, rgba(var(--nw-tone-rgb), 0.12), transparent 3.5rem),
+    linear-gradient(145deg, rgba(var(--nw-tone-rgb), 0.11), transparent 55%),
+    rgba(var(--nw-color-surface-rgb), 0.95);
+  box-shadow:
+    inset 0 1px rgba(var(--nw-color-text-rgb), 0.08),
+    inset 0 -0.35rem rgba(var(--nw-color-void-rgb), 0.28),
+    0 0 18px rgba(var(--nw-tone-rgb), 0.08);
+}
+
+.admin-shell .nw-status-display::after {
+  position: absolute;
+  inset-block-end: 0.55rem;
+  inset-inline: 0.8rem;
+  height: 3px;
+  content: "";
+  background: repeating-linear-gradient(90deg, var(--nw-tone) 0 8%, transparent 8% 11%);
+  opacity: 0.72;
+}
+
+.admin-shell .nw-status-display__icon {
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0.42rem;
+  border: 1px solid rgba(var(--nw-tone-rgb), 0.42);
+  clip-path: polygon(0.45rem 0, 100% 0, 100% calc(100% - 0.45rem), calc(100% - 0.45rem) 100%, 0 100%, 0 0.45rem);
+  background: rgba(var(--nw-tone-rgb), 0.09);
+}
+
+.admin-shell .nw-panel {
+  border-color: rgba(var(--nw-tone-rgb, var(--nw-color-green-rgb)), 0.28);
+  background:
+    linear-gradient(125deg, rgba(var(--nw-tone-rgb, var(--nw-color-green-rgb)), 0.06), transparent 34%),
+    repeating-linear-gradient(135deg, transparent 0 12px, rgba(var(--nw-color-text-rgb), 0.012) 12px 13px),
+    linear-gradient(180deg, rgba(var(--nw-color-surface-raised-rgb), 0.97), rgba(var(--nw-color-surface-rgb), 0.96));
+}
+
+.admin-shell .nw-panel::after {
+  inset: 0.32rem;
+  border-color: rgba(var(--nw-tone-rgb, var(--nw-color-green-rgb)), 0.12);
+}
+
+.admin-command-grid > * {
+  min-height: 10rem;
+  border: 1px solid rgba(var(--nw-color-purple-rgb), 0.32);
+  background:
+    radial-gradient(circle at 90% 12%, rgba(var(--nw-color-purple-rgb), 0.14), transparent 4rem),
+    linear-gradient(145deg, rgba(var(--nw-color-purple-rgb), 0.08), transparent 46%),
+    rgba(var(--nw-color-surface-rgb), 0.95);
+  clip-path: polygon(0.75rem 0, 100% 0, 100% calc(100% - 0.75rem), calc(100% - 0.75rem) 100%, 0 100%, 0 0.75rem);
+  box-shadow: inset 0 1px rgba(var(--nw-color-text-rgb), 0.06), 0 0.75rem 1.6rem rgba(var(--nw-color-void-rgb), 0.32);
+}
+
+.admin-command-grid > *::before {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0.75rem auto;
+  width: 5rem;
+  height: 2px;
+  content: "";
+  background: var(--nw-color-purple);
+  box-shadow: 0 0 12px rgba(var(--nw-color-purple-rgb), 0.46);
+}
+
+.admin-player-button {
+  position: relative;
+  border-color: rgba(var(--nw-color-line-strong-rgb, 210, 232, 226), 0.22);
+  clip-path: polygon(0.45rem 0, 100% 0, 100% calc(100% - 0.45rem), calc(100% - 0.45rem) 100%, 0 100%, 0 0.45rem);
+  background:
+    linear-gradient(90deg, rgba(var(--nw-color-cyan-rgb), 0.04), transparent 60%),
+    var(--nw-color-surface-raised);
+}
+
+.admin-player-button::after {
+  position: absolute;
+  inset-block: 0.4rem;
+  inset-inline-end: 0.35rem;
+  width: 2px;
+  content: "";
+  background: var(--nw-color-line-strong);
+}
+
+.admin-player-button:hover,
+.admin-player-button.is-selected {
+  border-color: rgba(var(--nw-color-cyan-rgb), 0.72);
+  background:
+    linear-gradient(90deg, rgba(var(--nw-color-cyan-rgb), 0.17), transparent 74%),
+    var(--nw-color-surface-raised);
+  box-shadow: inset 0.25rem 0 var(--nw-color-cyan), 0 0 14px rgba(var(--nw-color-cyan-rgb), 0.14);
+}
+
+.admin-shell .nw-data-grid {
+  border: 1px solid rgba(var(--nw-color-cyan-rgb), 0.18);
+  background: rgba(var(--nw-color-void-rgb), 0.56);
+  box-shadow: inset 0 0 1.2rem rgba(var(--nw-color-cyan-rgb), 0.025);
+}
+
+.admin-shell .nw-data-grid thead {
+  color: var(--nw-color-cyan);
+  background:
+    repeating-linear-gradient(135deg, rgba(var(--nw-color-cyan-rgb), 0.055) 0 6px, transparent 6px 12px),
+    rgba(var(--nw-color-surface-raised-rgb), 0.94);
+  font-family: var(--nw-font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.admin-shell .nw-data-grid tbody tr:nth-child(even) {
+  background: rgba(var(--nw-color-text-rgb), 0.018);
+}
+
+.admin-shell .nw-data-grid tbody tr:hover {
+  background: rgba(var(--nw-color-cyan-rgb), 0.055);
+}
+
+.admin-shell input,
+.admin-shell select,
+.admin-shell textarea {
+  border-color: rgba(var(--nw-color-cyan-rgb), 0.22);
+  background:
+    linear-gradient(90deg, rgba(var(--nw-color-cyan-rgb), 0.035), transparent 42%),
+    rgba(var(--nw-color-void-rgb), 0.76);
+  box-shadow: inset 0 1px rgba(var(--nw-color-text-rgb), 0.035);
+}
+
+.admin-shell input:focus,
+.admin-shell select:focus,
+.admin-shell textarea:focus {
+  border-color: var(--nw-color-cyan);
+  box-shadow: 0 0 0 1px rgba(var(--nw-color-cyan-rgb), 0.32), 0 0 14px rgba(var(--nw-color-cyan-rgb), 0.12);
+}
+
+.admin-meter {
+  position: relative;
+  padding-inline: 0.8rem;
+  border: 1px solid rgba(var(--nw-color-green-rgb), 0.15);
+  background: rgba(var(--nw-color-void-rgb), 0.42);
+  clip-path: polygon(0.45rem 0, 100% 0, 100% calc(100% - 0.45rem), calc(100% - 0.45rem) 100%, 0 100%, 0 0.45rem);
+}
+
+.admin-cooldowns > div {
+  border-color: rgba(var(--nw-color-purple-rgb), 0.24);
+  background: linear-gradient(90deg, rgba(var(--nw-color-purple-rgb), 0.065), transparent 72%);
+  clip-path: polygon(0.35rem 0, 100% 0, 100% calc(100% - 0.35rem), calc(100% - 0.35rem) 100%, 0 100%, 0 0.35rem);
+}
+
+.admin-json {
+  border-color: rgba(var(--nw-color-purple-rgb), 0.34) !important;
+  background:
+    linear-gradient(180deg, rgba(var(--nw-color-purple-rgb), 0.04), transparent 20%),
+    rgba(var(--nw-color-void-rgb), 0.92) !important;
+  color: #d9f4e9;
+  text-shadow: 0 0 8px rgba(var(--nw-color-green-rgb), 0.08);
+}
+
+html[data-low-effects="true"] .admin-shell::before,
+html[data-reduced-motion="true"] .admin-shell::before {
+  opacity: 0.025;
+}
+
+html[data-low-effects="true"] .admin-shell .nw-command-header,
+html[data-low-effects="true"] .admin-shell .nw-panel,
+html[data-low-effects="true"] .admin-shell .nw-status-display {
+  box-shadow: none;
+}
+
+@media (max-width: 1100px) {
+  .admin-shell .nw-command-header__identity > span::after { content: " // CONTROL"; }
+  .admin-shell .nw-command-nav::before { display: none; }
+}
+
+@media (max-width: 760px) {
+  .admin-shell::before { mask-image: none; opacity: 0.04; }
+  .admin-shell .nw-command-header { min-height: 4.7rem; }
+  .admin-shell .nw-brand-lockup { min-width: 6.5rem; }
+  .admin-shell .nw-command-header__identity > span::after { content: ""; }
+  .admin-page::before { height: 4rem; }
+  .admin-shell .nw-section-title { min-height: auto; padding: 0.58rem 0.65rem; }
+  .admin-shell .nw-status-display { min-height: 6rem; }
+  .admin-command-grid > * { min-height: 8rem; }
+}
+
+@media (forced-colors: active) {
+  .admin-shell::before,
+  .admin-page::before,
+  .admin-shell .nw-command-header::after,
+  .admin-shell .nw-status-display::after,
+  .admin-command-grid > *::before { display: none; }
+  .admin-shell .nw-panel,
+  .admin-shell .nw-status-display,
+  .admin-player-button { border: 1px solid CanvasText; }
+}

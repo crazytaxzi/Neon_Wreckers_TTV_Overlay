@@ -1,0 +1,26 @@
+/* The brand emblem is rendered as an SVG background instead of an alpha mask so
+   the sockets and teeth remain cut out in every Chromium/WebKit mask mode. */
+
+:root {
+  --nw-brand-skull-art: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Cg stroke-linejoin='round'%3E%3Cpath fill='%239cff16' stroke='%2305070b' stroke-width='2' d='M36 6C20 6 10 16.7 10 31c0 9.2 4.8 17 13 21v10h8v-7h10v7h8V52c8.2-4 13-11.8 13-21C62 16.7 52 6 36 6Z'/%3E%3Cpath fill='%2305070b' stroke='%23bb4dff' stroke-width='2.4' d='M16 31c0-5.7 4.3-10 9.5-10S35 25.3 35 31s-4.3 10-9.5 10S16 36.7 16 31Zm21 0c0-5.7 4.3-10 9.5-10S56 25.3 56 31s-4.3 10-9.5 10S37 36.7 37 31Z'/%3E%3Cpath fill='%23bb4dff' stroke='%2305070b' stroke-width='1.5' d='m29 47 7-9 7 9-7 6-7-6Z'/%3E%3Cpath fill='%2305070b' d='M25 54h5v8h-5zm9 1h5v7h-5zm9-1h5v8h-5z'/%3E%3Cpath fill='%23bb4dff' stroke='%2305070b' stroke-width='1.5' d='M2 26h11v7H2zM59 26h11v7H59zM7 10l13 9-4 6-13-9zM65 10l-13 9 4 6 13-9z'/%3E%3Cpath fill='%239cff16' stroke='%2305070b' stroke-width='1.5' d='M19 1l7 14-7 3-7-14zM53 1l-7 14 7 3 7-14zM31 0h10l-2 13h-6z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.nw-brand-lockup::before {
+  background: var(--nw-brand-skull-art) center / contain no-repeat;
+  mask: none;
+}
+
+.nw-loading-mark {
+  border-radius: 0;
+  background:
+    var(--nw-brand-skull-art) center / 78% no-repeat,
+    radial-gradient(circle, rgba(var(--nw-color-green-rgb), 0.15), transparent 66%),
+    rgba(var(--nw-color-void-rgb), 0.78);
+  mask: none;
+  clip-path: polygon(0.75rem 0, 100% 0, 100% calc(100% - 0.75rem), calc(100% - 0.75rem) 100%, 0 100%, 0 0.75rem);
+}
+
+@media (forced-colors: active) {
+  .nw-brand-lockup::before,
+  .nw-loading-mark { background: none; border: 2px solid CanvasText; }
+}

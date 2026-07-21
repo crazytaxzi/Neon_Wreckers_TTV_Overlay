@@ -37,7 +37,7 @@ jobs:
       - name: Build shared UI
         run: pnpm --filter @neon-wreckers/ui run build
 
-      - name: Build deterministic visual preview
+      - name: Build deterministic player preview
         env:
           VITE_VISUAL_PREVIEW: '1'
         run: pnpm --filter @neon-wreckers/web run build
@@ -108,7 +108,7 @@ jobs:
           done
 
           cat > ui-visual-proof/README.txt <<'MANIFEST'
-          These PNGs are screenshots of the production-built React application.
+          These PNGs are screenshots of the production-built React player application.
           Mobile and desktop folders contain every existing player destination.
           Tablet captures cover the five primary information-architecture destinations.
           The audit folder contains full-page overflow checks for Home, Salvage, and Market.

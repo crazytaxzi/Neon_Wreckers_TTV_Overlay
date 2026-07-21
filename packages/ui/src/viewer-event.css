@@ -1,0 +1,115 @@
+.viewer-event-region {
+  position: absolute;
+  top: clamp(8rem, 19vh, 15rem);
+  left: 50%;
+  z-index: 12;
+  width: min(25rem, 34vw);
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: viewer-event-arrive 420ms var(--nw-motion-easing) both;
+}
+
+.viewer-event-region .nw-overlay-event {
+  position: relative;
+  overflow: visible;
+  min-height: 8.4rem;
+  padding: 1.15rem 1.35rem;
+  border: 1px solid rgba(var(--nw-color-purple-rgb), 0.78);
+  border-inline-start: 4px solid var(--nw-color-green);
+  color: var(--nw-color-text);
+  background:
+    radial-gradient(circle at 18% 50%, rgba(var(--nw-color-purple-rgb), 0.2), transparent 7rem),
+    repeating-linear-gradient(135deg, transparent 0 12px, rgba(var(--nw-color-text-rgb), 0.018) 12px 13px),
+    linear-gradient(180deg, rgba(var(--nw-color-surface-raised-rgb), 0.97), rgba(var(--nw-color-void-rgb), 0.97));
+  box-shadow:
+    inset 0 1px rgba(var(--nw-color-text-rgb), 0.11),
+    inset 0 -0.4rem rgba(var(--nw-color-void-rgb), 0.42),
+    0 0 0 1px rgba(var(--nw-color-void-rgb), 0.92),
+    0 0 34px rgba(var(--nw-color-purple-rgb), 0.28),
+    0 1.4rem 3.5rem rgba(var(--nw-color-void-rgb), 0.66);
+  clip-path: polygon(1rem 0, calc(100% - 1rem) 0, 100% 1rem, 100% calc(100% - 1rem), calc(100% - 1rem) 100%, 1rem 100%, 0 calc(100% - 1rem), 0 1rem);
+}
+
+.viewer-event-region .nw-overlay-event::before {
+  position: absolute;
+  inset: -0.38rem;
+  z-index: -1;
+  content: "";
+  border: 1px solid rgba(var(--nw-color-green-rgb), 0.24);
+  background:
+    linear-gradient(90deg, var(--nw-color-green) 0 5rem, transparent 5rem) top left / 100% 3px no-repeat,
+    linear-gradient(90deg, transparent, var(--nw-color-purple)) bottom right / 48% 3px no-repeat;
+  clip-path: inherit;
+}
+
+.viewer-event-region .nw-overlay-event::after {
+  position: absolute;
+  inset-block: 0.65rem;
+  inset-inline-end: 0.48rem;
+  width: 3px;
+  content: "";
+  background: repeating-linear-gradient(180deg, var(--nw-color-purple) 0 8px, transparent 8px 12px);
+  box-shadow: 0 0 10px rgba(var(--nw-color-purple-rgb), 0.58);
+}
+
+.viewer-event-region .nw-overlay-event__icon {
+  width: 4rem;
+  height: 4rem;
+  border: 1px solid rgba(var(--nw-color-purple-rgb), 0.6);
+  color: var(--nw-color-green);
+  background:
+    radial-gradient(circle, rgba(var(--nw-color-purple-rgb), 0.28), transparent 64%),
+    rgba(var(--nw-color-void-rgb), 0.72);
+  box-shadow: inset 0 0 0 1px rgba(var(--nw-color-green-rgb), 0.12), 0 0 20px rgba(var(--nw-color-purple-rgb), 0.24);
+}
+
+.viewer-event-region .nw-overlay-event > div:last-child > span {
+  color: var(--nw-color-green);
+  font-family: var(--nw-font-mono);
+  font-size: 0.58rem;
+  font-weight: 850;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.viewer-event-region .nw-overlay-event strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-family: var(--nw-font-display);
+  font-size: clamp(1.1rem, 1.25vw, 1.55rem);
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  text-shadow: 0 0 16px rgba(var(--nw-color-purple-rgb), 0.36);
+}
+
+.viewer-event-region .nw-overlay-event p {
+  margin: 0.45rem 0 0;
+  color: var(--nw-color-text-muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+@keyframes viewer-event-arrive {
+  from { opacity: 0; transform: translate(-50%, -1rem) scale(0.96); filter: blur(4px); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); filter: none; }
+}
+
+@media (max-width: 1600px), (max-height: 800px) {
+  .viewer-event-region { top: 6.4rem; width: min(22rem, 38vw); }
+  .viewer-event-region .nw-overlay-event { min-height: 7rem; padding: 0.9rem 1rem; }
+  .viewer-event-region .nw-overlay-event__icon { width: 3.3rem; height: 3.3rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viewer-event-region { animation: none; }
+}
+
+html[data-low-effects="true"] .viewer-event-region .nw-overlay-event {
+  box-shadow: 0 0 0 1px rgba(var(--nw-color-purple-rgb), 0.34);
+}
+
+@media (forced-colors: active) {
+  .viewer-event-region .nw-overlay-event { border: 2px solid CanvasText; background: Canvas; }
+  .viewer-event-region .nw-overlay-event::before,
+  .viewer-event-region .nw-overlay-event::after { display: none; }
+}
