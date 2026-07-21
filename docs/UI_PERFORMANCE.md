@@ -93,7 +93,7 @@ Activated by the existing low-effects preference, reduced-motion preference, red
 
 ## Remaining optimization work
 
-The player application still has one large entry module. The next structural milestone should split page modules and page-specific data access while preserving public URLs and server authority.
+The player application now separates its bootstrap, shell, data layer, models, utilities, and page families. A later optimization may lazy-load secondary page modules, but it must preserve public URLs and server authority.
 
 Recommended sequence:
 

@@ -70,9 +70,11 @@ test('shared component contract includes player, admin, and overlay primitives',
 });
 
 test('player artwork uses responsive project assets instead of concept screenshots', async () => {
-  const [component, player] = await Promise.all([
+  const [component, entry, stationPages, fleetPages] = await Promise.all([
     read('apps/web/src/components/GameArtwork.tsx'),
-    read('apps/web/src/main.tsx')
+    read('apps/web/src/main.tsx'),
+    read('apps/web/src/pages/station.tsx'),
+    read('apps/web/src/pages/fleet.tsx')
   ]);
   const assets = [
     ...filesBelow('apps/web/public/station'),
@@ -91,9 +93,11 @@ test('player artwork uses responsive project assets instead of concept screensho
   assert.match(component, /height=\{675\}/);
   assert.match(component, /loading=\{eager \? 'eager' : 'lazy'\}/);
   assert.match(component, /decoding="async"/);
-  assert.match(player, /import \{ GameArtwork \}/);
-  assert.match(player, /<GameArtwork/);
-  assert.doesNotMatch(player, /<img[^>]+src=\{?`?\/?(?:station|wrecks|ships)\//);
+  assert.match(entry, /import \{ Root \} from '.\/app\.js';/);
+  const artworkPages = `${stationPages}\n${fleetPages}`;
+  assert.match(artworkPages, /import \{ GameArtwork \}/);
+  assert.match(artworkPages, /<GameArtwork/);
+  assert.doesNotMatch(artworkPages, /<img[^>]+src=\{?`?\/?(?:station|wrecks|ships)\//);
 });
 
 test('overlay safety behavior remains present', async () => {
@@ -107,4 +111,35 @@ test('overlay safety behavior remains present', async () => {
   assert.match(source, /reconnectTimer/);
   assert.match(css, /pointer-events:\s*none/);
   assert.match(css, /background:\s*transparent/);
+});
+
+
+test('player entry is split into behavior-preserving feature modules', async () => {
+  const [entry, app, data, model, utilities, station, logistics, fleet, community] = await Promise.all([
+    read('apps/web/src/main.tsx'),
+    read('apps/web/src/app.tsx'),
+    read('apps/web/src/game-data.ts'),
+    read('apps/web/src/model.ts'),
+    read('apps/web/src/page-utils.tsx'),
+    read('apps/web/src/pages/station.tsx'),
+    read('apps/web/src/pages/logistics.tsx'),
+    read('apps/web/src/pages/fleet.tsx'),
+    read('apps/web/src/pages/community.tsx')
+  ]);
+
+  assert.ok(entry.split('\n').length <= 8, 'The browser entry should stay a minimal bootstrap file.');
+  assert.match(entry, /<Root \/>/);
+  assert.match(app, /useGameData\(\)/);
+  assert.doesNotMatch(app, /requestApi|new WebSocket|setInterval/);
+  assert.match(data, /refreshInFlight/);
+  assert.match(data, /Promise\.allSettled/);
+  assert.match(data, /new WebSocket/);
+  assert.match(data, /setInterval/);
+  assert.match(data, /\/api\/v1\/station/);
+  assert.match(data, /\/api\/v1\/player\/ws/);
+  assert.match(model, /export type GameData/);
+  assert.match(utilities, /export function cooldownRemaining/);
+  for (const pageModule of [station, logistics, fleet, community]) {
+    assert.match(pageModule, /export function/);
+  }
 });

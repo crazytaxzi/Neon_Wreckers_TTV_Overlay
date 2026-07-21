@@ -143,7 +143,7 @@ The complete repository test suite includes 21 repository/source-contract tests 
 
 ## Remaining risks
 
-- The player `main.tsx` remains monolithic and is the largest structural debt left by this foundation branch.
+- The player bootstrap, application shell, data layer, models, shared utilities, and page families are now separate modules; future lazy loading must preserve the same URLs and server-authoritative behavior.
 - Full visual validation still requires the documented viewport matrix and OBS canvases.
 - Effects using `clip-path`, `color-mix`, and blur require browser checks, although core layout and semantic communication do not depend on them.
 - Compressed transfer, runtime interaction timing, and OBS CPU/memory measurements are not yet recorded.
