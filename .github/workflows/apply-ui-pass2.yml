@@ -67,14 +67,18 @@ jobs:
           set -o pipefail
           if ! pnpm --filter @neon-wreckers/web run build > /tmp/web-build.log 2>&1; then
             cp /tmp/web-build.log .github/ui-build-error.log
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add .github/ui-build-error.log
-            git commit -m 'chore: capture UI compiler diagnostics'
-            git push origin HEAD:agent/concept-faithful-ui-rebuild
             exit 1
           fi
           tail -30 /tmp/web-build.log
+
+      - name: Upload compiler diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-compiler-diagnostics
+          path: .github/ui-build-error.log
+          if-no-files-found: ignore
+          retention-days: 1
 
       - name: Run UI contracts
         run: node --test tools/test/ui-revamp.test.mjs
