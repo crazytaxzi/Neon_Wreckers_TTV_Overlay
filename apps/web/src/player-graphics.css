@@ -1,0 +1,247 @@
+/* Page-specific illustrated motifs for the player surface.
+   Layout and server-backed behavior remain unchanged. */
+
+:root {
+  --nw-art-crate: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 130'%3E%3Cg fill='none' stroke='%2354ddff' stroke-width='3' opacity='.8'%3E%3Cpath d='m90 8 70 34v48l-70 34-70-34V42L90 8Z'/%3E%3Cpath d='M20 42 90 78l70-36M90 78v46M48 28l70 36M48 103V67l42-22 42 22v36'/%3E%3C/g%3E%3Cpath fill='%2354ddff' opacity='.08' d='m90 8 70 34v48l-70 34-70-34V42L90 8Z'/%3E%3C/svg%3E");
+  --nw-art-fabricator: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 130'%3E%3Cg fill='none' stroke='%239cff16' stroke-width='3' opacity='.8'%3E%3Cpath d='M12 24h48l14 14h48l14-14h52M12 106h34l18-18h62l18 18h44M82 0v26M142 104v26'/%3E%3Ccircle cx='76' cy='38' r='7' fill='%239cff16'/%3E%3Ccircle cx='134' cy='88' r='7' fill='%239cff16'/%3E%3Cpath d='M100 45 124 58v26l-24 13-24-13V58l24-13Zm0 0v52M76 58l24 13 24-13'/%3E%3C/g%3E%3C/svg%3E");
+  --nw-art-fleet: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 120'%3E%3Cpath fill='%23bb4dff' opacity='.12' d='m18 66 38-34 50 8 22-22 74 38-34 20 18 22-74 4-40-18-54 8 18-26Z'/%3E%3Cg fill='none' stroke='%23bb4dff' stroke-width='3' opacity='.84'%3E%3Cpath d='m18 66 38-34 50 8 22-22 74 38-34 20 18 22-74 4-40-18-54 8 18-26Z'/%3E%3Cpath d='m56 32 16 52M106 40l6 62M128 18l40 58M37 66h142'/%3E%3C/g%3E%3C/svg%3E");
+  --nw-art-crew: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 130'%3E%3Cg fill='none' stroke='%23bb4dff' stroke-width='3' opacity='.82'%3E%3Cpath d='M62 58V42a38 38 0 0 1 76 0v16l-12 18H74L62 58Z'/%3E%3Cpath d='M78 50h44M74 76v20l26 18 26-18V76M48 128v-12l28-19M152 128v-12l-28-19'/%3E%3Cpath d='M20 70a24 24 0 0 1 28-24M180 70a24 24 0 0 0-28-24' opacity='.55'/%3E%3C/g%3E%3Cpath fill='%23bb4dff' opacity='.07' d='M62 58V42a38 38 0 0 1 76 0v16l-12 18H74L62 58Z'/%3E%3C/svg%3E");
+  --nw-art-radar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'%3E%3Cg fill='none' stroke='%239cff16' opacity='.72'%3E%3Ccircle cx='80' cy='80' r='68'/%3E%3Ccircle cx='80' cy='80' r='48'/%3E%3Ccircle cx='80' cy='80' r='26'/%3E%3Cpath d='M80 12v136M12 80h136M80 80l50-46'/%3E%3Cpath d='M80 80a54 54 0 0 1 48-52' stroke-width='7' opacity='.22'/%3E%3Ccircle cx='126' cy='44' r='5' fill='%23bb4dff' stroke='none'/%3E%3C/g%3E%3C/svg%3E");
+  --nw-art-market: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 130'%3E%3Cg fill='none' stroke='%23bb4dff' stroke-width='3' opacity='.82'%3E%3Cpath d='M18 28h144l-10 42H28L18 28ZM34 70v42h112V70M58 112V82h64v30M8 28 30 8h120l22 20M58 8v20M122 8v20'/%3E%3Ccircle cx='138' cy='88' r='28' fill='%2305070b'/%3E%3Cpath d='M138 72v32M126 80h20M130 96h20'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.player-shell :is(
+  .cargo-console__masthead,
+  .fabrication-console__masthead,
+  .fleet-console__masthead,
+  .crew-console__masthead,
+  .expedition-console__masthead,
+  .market-console__masthead
+) {
+  position: relative;
+  min-height: 8.5rem;
+  overflow: hidden;
+  border: 1px solid rgba(var(--nw-tone-rgb, var(--nw-color-green-rgb)), 0.26);
+  clip-path: polygon(0.85rem 0, 100% 0, 100% calc(100% - 0.85rem), calc(100% - 0.85rem) 100%, 0 100%, 0 0.85rem);
+  background:
+    linear-gradient(105deg, rgba(var(--nw-tone-rgb, var(--nw-color-green-rgb)), 0.13), transparent 48%),
+    repeating-linear-gradient(135deg, transparent 0 14px, rgba(var(--nw-color-text-rgb), 0.012) 14px 15px),
+    rgba(var(--nw-color-surface-rgb), 0.94);
+  box-shadow: inset 0 1px rgba(var(--nw-color-text-rgb), 0.06), 0 0.9rem 2rem rgba(var(--nw-color-void-rgb), 0.3);
+}
+
+.player-shell :is(
+  .cargo-console__masthead,
+  .fabrication-console__masthead,
+  .fleet-console__masthead,
+  .crew-console__masthead,
+  .expedition-console__masthead,
+  .market-console__masthead
+)::before {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: min(28rem, 44%);
+  content: "";
+  pointer-events: none;
+  opacity: 0.42;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  mask-image: linear-gradient(90deg, transparent, black 28%);
+}
+
+.player-shell :is(
+  .cargo-console__masthead,
+  .fabrication-console__masthead,
+  .fleet-console__masthead,
+  .crew-console__masthead,
+  .expedition-console__masthead,
+  .market-console__masthead
+)::after {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0.85rem auto;
+  width: 8rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--nw-tone, var(--nw-color-green)), transparent);
+  box-shadow: 0 0 12px rgba(var(--nw-tone-rgb, var(--nw-color-green-rgb)), 0.4);
+}
+
+.player-shell .cargo-console__masthead { --nw-tone: var(--nw-color-cyan); --nw-tone-rgb: var(--nw-color-cyan-rgb); }
+.player-shell .cargo-console__masthead::before { background-image: var(--nw-art-crate); }
+.player-shell .fabrication-console__masthead { --nw-tone: var(--nw-color-green); --nw-tone-rgb: var(--nw-color-green-rgb); }
+.player-shell .fabrication-console__masthead::before { background-image: var(--nw-art-fabricator); }
+.player-shell .fleet-console__masthead { --nw-tone: var(--nw-color-purple); --nw-tone-rgb: var(--nw-color-purple-rgb); }
+.player-shell .fleet-console__masthead::before { background-image: var(--nw-art-fleet); }
+.player-shell .crew-console__masthead { --nw-tone: var(--nw-color-purple); --nw-tone-rgb: var(--nw-color-purple-rgb); }
+.player-shell .crew-console__masthead::before { background-image: var(--nw-art-crew); }
+.player-shell .expedition-console__masthead { --nw-tone: var(--nw-color-green); --nw-tone-rgb: var(--nw-color-green-rgb); }
+.player-shell .expedition-console__masthead::before { background-image: var(--nw-art-radar); }
+.player-shell .market-console__masthead { --nw-tone: var(--nw-color-purple); --nw-tone-rgb: var(--nw-color-purple-rgb); }
+.player-shell .market-console__masthead::before { background-image: var(--nw-art-market); }
+
+.player-shell :is(
+  .cargo-console__masthead,
+  .fabrication-console__masthead,
+  .fleet-console__masthead,
+  .crew-console__masthead,
+  .expedition-console__masthead,
+  .market-console__masthead
+) > * {
+  position: relative;
+  z-index: 1;
+}
+
+.player-shell .cargo-slot,
+.player-shell .fabrication-card,
+.player-shell .ship-card,
+.player-shell .crew-card,
+.player-shell .expedition-card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(var(--nw-tone-rgb, var(--nw-color-purple-rgb)), 0.26);
+  background:
+    linear-gradient(145deg, rgba(var(--nw-tone-rgb, var(--nw-color-purple-rgb)), 0.07), transparent 48%),
+    repeating-linear-gradient(135deg, transparent 0 12px, rgba(var(--nw-color-text-rgb), 0.012) 12px 13px),
+    rgba(var(--nw-color-surface-rgb), 0.96);
+  box-shadow:
+    inset 0 1px rgba(var(--nw-color-text-rgb), 0.06),
+    inset 0 -0.35rem rgba(var(--nw-color-void-rgb), 0.28),
+    0 0.8rem 1.6rem rgba(var(--nw-color-void-rgb), 0.26);
+}
+
+.player-shell :is(.cargo-slot, .fabrication-card, .ship-card, .crew-card, .expedition-card)::after {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0.65rem auto;
+  width: 5rem;
+  height: 2px;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--nw-tone, var(--nw-color-purple)), transparent);
+  opacity: 0.72;
+  box-shadow: 0 0 8px rgba(var(--nw-tone-rgb, var(--nw-color-purple-rgb)), 0.35);
+}
+
+.player-shell .cargo-slot__glyph,
+.player-shell .fabrication-card__icon {
+  border: 1px solid rgba(var(--nw-tone-rgb, var(--nw-color-purple-rgb)), 0.32);
+  clip-path: polygon(0.55rem 0, 100% 0, 100% calc(100% - 0.55rem), calc(100% - 0.55rem) 100%, 0 100%, 0 0.55rem);
+  background:
+    radial-gradient(circle, rgba(var(--nw-tone-rgb, var(--nw-color-purple-rgb)), 0.2), transparent 60%),
+    rgba(var(--nw-color-void-rgb), 0.72);
+  box-shadow: inset 0 0 0 1px rgba(var(--nw-color-text-rgb), 0.04), 0 0 14px rgba(var(--nw-tone-rgb, var(--nw-color-purple-rgb)), 0.12);
+}
+
+.player-shell .cargo-slot--empty {
+  opacity: 0.56;
+  background:
+    repeating-linear-gradient(135deg, rgba(var(--nw-color-text-rgb), 0.02) 0 8px, transparent 8px 16px),
+    rgba(var(--nw-color-void-rgb), 0.5);
+}
+
+.player-shell .market-featured,
+.player-shell .cargo-manifest-panel,
+.player-shell .fabrication-network-panel,
+.player-shell .fleet-management-console,
+.player-shell .expedition-loadout-panel {
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--nw-tone-rgb, var(--nw-color-purple-rgb)), 0.08),
+    inset 0 0 2rem rgba(var(--nw-tone-rgb, var(--nw-color-purple-rgb)), 0.025),
+    0 1rem 2.2rem rgba(var(--nw-color-void-rgb), 0.32);
+}
+
+.player-shell .ship-card__schematic,
+.player-shell .management-preview {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(var(--nw-color-purple-rgb), 0.22);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(var(--nw-color-purple-rgb), 0.16), transparent 58%),
+    linear-gradient(rgba(var(--nw-color-purple-rgb), 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--nw-color-purple-rgb), 0.055) 1px, transparent 1px),
+    rgba(var(--nw-color-void-rgb), 0.6);
+  background-size: auto, 1.5rem 1.5rem, 1.5rem 1.5rem, auto;
+}
+
+.player-shell .ship-card__schematic::after {
+  position: absolute;
+  inset: 0.45rem;
+  content: "";
+  pointer-events: none;
+  border: 1px solid rgba(var(--nw-color-purple-rgb), 0.1);
+  clip-path: polygon(0.5rem 0, 100% 0, 100% calc(100% - 0.5rem), calc(100% - 0.5rem) 100%, 0 100%, 0 0.5rem);
+}
+
+html[data-low-effects="true"] .player-shell :is(
+  .cargo-console__masthead,
+  .fabrication-console__masthead,
+  .fleet-console__masthead,
+  .crew-console__masthead,
+  .expedition-console__masthead,
+  .market-console__masthead
+)::before {
+  opacity: 0.12;
+}
+
+html[data-low-effects="true"] .player-shell :is(.cargo-slot, .fabrication-card, .ship-card, .crew-card, .expedition-card) {
+  box-shadow: inset 0 0 0 1px rgba(var(--nw-tone-rgb, var(--nw-color-purple-rgb)), 0.08);
+}
+
+@media (max-width: 760px) {
+  .player-shell :is(
+    .cargo-console__masthead,
+    .fabrication-console__masthead,
+    .fleet-console__masthead,
+    .crew-console__masthead,
+    .expedition-console__masthead,
+    .market-console__masthead
+  ) {
+    min-height: 7rem;
+  }
+
+  .player-shell :is(
+    .cargo-console__masthead,
+    .fabrication-console__masthead,
+    .fleet-console__masthead,
+    .crew-console__masthead,
+    .expedition-console__masthead,
+    .market-console__masthead
+  )::before {
+    width: 46%;
+    opacity: 0.2;
+  }
+}
+
+@media (forced-colors: active) {
+  .player-shell :is(
+    .cargo-console__masthead,
+    .fabrication-console__masthead,
+    .fleet-console__masthead,
+    .crew-console__masthead,
+    .expedition-console__masthead,
+    .market-console__masthead,
+    .cargo-slot,
+    .fabrication-card,
+    .ship-card,
+    .crew-card,
+    .expedition-card
+  ) {
+    border: 2px solid CanvasText;
+    background: Canvas;
+  }
+
+  .player-shell :is(
+    .cargo-console__masthead,
+    .fabrication-console__masthead,
+    .fleet-console__masthead,
+    .crew-console__masthead,
+    .expedition-console__masthead,
+    .market-console__masthead
+  )::before,
+  .player-shell :is(.cargo-slot, .fabrication-card, .ship-card, .crew-card, .expedition-card)::after {
+    display: none;
+  }
+}
