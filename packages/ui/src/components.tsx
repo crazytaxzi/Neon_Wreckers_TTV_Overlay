@@ -529,7 +529,7 @@ export function CommandNavigation({ items, value, onChange, ariaLabel = 'Primary
   const select = (id: string) => { setSheet(null); onChange(id); };
   const itemById = (id: string) => items.find(item => item.id === id);
   const sheetItems = (sheet === 'station' ? playerStationGroup : playerProfileGroup).map(itemById).filter((item): item is TabItem => Boolean(item));
-  const mobileButton = (id: string, label: string, icon: IconName, active: boolean, action: () => void) => <button key={label} type="button" className={active ? 'is-active' : ''} onClick={action} aria-current={active ? 'page' : undefined}><NWIcon name={icon} size={21} /><span>{label}</span></button>;
+  const mobileButton = (id: string, label: string, icon: IconName, active: boolean, action: () => void) => <button key={label} type="button" data-destination={id} className={active ? 'is-active' : ''} onClick={action} aria-current={active ? 'page' : undefined}><NWIcon name={icon} size={21} /><span>{label}</span></button>;
   return (
     <nav className={cx('nw-command-nav', isPlayer && 'nw-command-nav--player')} aria-label={ariaLabel}>
       <div className="nw-command-nav__desktop"><NavigationButtons items={items} value={value} onChange={onChange} /></div>
