@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/concept-faithful-ui-rebuild
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
