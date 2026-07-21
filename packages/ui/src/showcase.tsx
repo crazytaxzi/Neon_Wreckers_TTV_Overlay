@@ -43,7 +43,20 @@ import {
   Tooltip,
   useToast
 } from './components.js';
-import { NWIcon } from './icons.js';
+import { NWIcon, type IconName } from './icons.js';
+
+const graphicGlyphs = [
+  { name: 'wrecker', label: 'Wrecker mark', tone: 'success', detail: 'Brand identity' },
+  { name: 'station', label: 'Station', tone: 'success', detail: 'Orbital command' },
+  { name: 'wreck', label: 'Wreck', tone: 'info', detail: 'Salvage target' },
+  { name: 'salvage', label: 'Cutter', tone: 'purple', detail: 'Salvage action' },
+  { name: 'inventory', label: 'Cargo', tone: 'warning', detail: 'Inventory hold' },
+  { name: 'crew', label: 'Crew', tone: 'purple', detail: 'Personnel deck' },
+  { name: 'market', label: 'Market', tone: 'success', detail: 'Trade network' },
+  { name: 'construction', label: 'Build', tone: 'info', detail: 'Station works' },
+  { name: 'broadcast', label: 'Broadcast', tone: 'purple', detail: 'Viewer network' },
+  { name: 'danger', label: 'Hazard', tone: 'danger', detail: 'Critical state' }
+] as const satisfies ReadonlyArray<{ name: IconName; label: string; tone: 'success' | 'info' | 'warning' | 'danger' | 'purple'; detail: string }>;
 
 export function ComponentShowcase() {
   const [tab, setTab] = useState('primitives');
@@ -60,9 +73,10 @@ export function ComponentShowcase() {
 
   return (
     <div className="nw-showcase">
-      <SectionTitle eyebrow="DESIGN SYSTEM 2.1" title="Interface Component Matrix" description="The production contract for player, administrator, and broadcast surfaces. Every state remains live HTML, keyboard reachable, and token driven." icon="diagnostics" />
+      <SectionTitle eyebrow="DESIGN SYSTEM 2.2" title="Interface Component Matrix" description="The production contract for player, administrator, and broadcast surfaces. Every state remains live HTML, keyboard reachable, token driven, and visually synchronized." icon="diagnostics" />
       <Tabs value={tab} onChange={setTab} items={[
         { id: 'primitives', label: 'Primitives', icon: 'module' },
+        { id: 'graphics', label: 'Graphic Language', icon: 'wrecker' },
         { id: 'entities', label: 'Entities & Inventory', icon: 'inventory' },
         { id: 'data', label: 'Data & Status', icon: 'data' },
         { id: 'controls', label: 'Controls', icon: 'settings' },
@@ -82,6 +96,31 @@ export function ComponentShowcase() {
           <ActionTile icon="salvage" title="Deploy Cutters" detail="Standard command state." tone="success" onClick={() => pushToast({ title: 'Cutters dispatched', tone: 'success' })} />
           <ActionTile icon="danger" title="Safety Override" detail="Danger treatment includes label and icon, not color alone." tone="danger" onClick={() => setConfirm(true)} badge={<Badge tone="danger">HIGH RISK</Badge>} />
         </ResponsiveGrid>
+      </div>}
+
+      {tab === 'graphics' && <div className="nw-demo-stack">
+        <Panel tone="success"><SectionTitle eyebrow="SYNCHRONIZED GLYPHS" title="Neon Wreckers Graphic Language" description="Custom SVG glyphs replace generic dashboard symbols for the core player, administrator, and broadcast vocabulary." icon="wrecker" />
+          <ResponsiveGrid min="8.5rem">
+            {graphicGlyphs.map(glyph => <Card key={glyph.name} className="nw-glyph-swatch" tone={glyph.tone}>
+              <div className="nw-glyph-swatch__plate"><NWIcon name={glyph.name} size={32} /></div>
+              <strong>{glyph.label}</strong>
+              <small>{glyph.detail}</small>
+            </Card>)}
+          </ResponsiveGrid>
+        </Panel>
+        <Panel tone="purple"><SectionTitle eyebrow="RARITY HARDWARE" title="Inventory Frame Ladder" description="Every rarity retains a live label and receives a distinct frame, pattern, and accent treatment." icon="inventory" />
+          <div className="nw-rarity-demo">
+            <InventorySlot name="Hull Scrap" quantity={842} rarity="common" icon="resources" />
+            <InventorySlot name="Refined Alloy" quantity={64} rarity="uncommon" icon="resources" />
+            <InventorySlot name="Quantum Lens" quantity={7} rarity="rare" icon="scanner" />
+            <InventorySlot name="Ghost Relay" quantity={2} rarity="epic" icon="signal" />
+            <InventorySlot name="Station Core" quantity={1} rarity="legendary" icon="station" />
+          </div>
+        </Panel>
+        <div className="nw-broadcast-demo">
+          <DispatchBanner label="WRECKER NEWS" title="Major update deployed" tone="success" icon="broadcast">New synchronized graphics are available across every command surface.</DispatchBanner>
+          <DispatchBanner label="BREAKING" title="Reactor breach detected" tone="danger" icon="danger">Hazard communication uses icon, wording, pattern, and color together.</DispatchBanner>
+        </div>
       </div>}
 
       {tab === 'entities' && <div className="nw-demo-stack">
