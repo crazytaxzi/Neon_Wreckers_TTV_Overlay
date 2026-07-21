@@ -18,15 +18,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ui/concept-driven-revamp
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Run reviewed behavior-preserving extraction
         run: |
-          git show HEAD^:.github/workflows/refactor-player-entry.yml > /tmp/previous-refactor.yml
+          git show 49e80a0601d039779a8963a0e5e8b496f01722e8:.github/workflows/refactor-player-entry.yml > /tmp/reviewed-refactor.yml
           python - <<'PY'
           from pathlib import Path
 
-          source = Path('/tmp/previous-refactor.yml').read_text()
+          source = Path('/tmp/reviewed-refactor.yml').read_text()
           marker = "          python - <<'PY'\n"
           start = source.index(marker) + len(marker)
           end = source.index("\n          PY\n", start)
@@ -51,8 +51,19 @@ jobs:
 
       - name: Validate modular player source
         run: |
-          node --test tools/test/ui-revamp.test.mjs
-          pnpm --filter @neon-wreckers/web run build
+          set -o pipefail
+          {
+            node --test tools/test/ui-revamp.test.mjs
+            pnpm --filter @neon-wreckers/web run build
+          } 2>&1 | tee modular-validation.log
+
+      - name: Upload modular validation diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: modular-player-validation
+          path: modular-validation.log
+          retention-days: 14
 
       - name: Commit and push refactor
         run: |
