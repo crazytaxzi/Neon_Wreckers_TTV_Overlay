@@ -1,0 +1,58 @@
+name: Generate Responsive Artwork
+
+on:
+  push:
+    branches:
+      - ui/concept-driven-revamp
+    paths:
+      - '.github/workflows/generate-responsive-artwork.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ui/concept-driven-revamp
+
+      - name: Ensure ImageMagick is available
+        run: |
+          if ! command -v convert >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y imagemagick
+          fi
+          convert -version
+
+      - name: Generate mobile and tablet WebP variants
+        run: |
+          set -euo pipefail
+          find apps/web/public/station apps/web/public/wrecks apps/web/public/ships \
+            -type f -name '*.webp' \
+            ! -name '*-360w.webp' \
+            ! -name '*-600w.webp' \
+            -print0 |
+          while IFS= read -r -d '' source; do
+            stem="${source%.webp}"
+            convert "$source" -strip -resize '360x>' -quality 78 -define webp:method=6 "${stem}-360w.webp"
+            convert "$source" -strip -resize '600x>' -quality 80 -define webp:method=6 "${stem}-600w.webp"
+          done
+
+      - name: Validate generated artwork
+        run: |
+          test "$(find apps/web/public/station apps/web/public/wrecks apps/web/public/ships -type f -name '*-360w.webp' | wc -l)" -eq 30
+          test "$(find apps/web/public/station apps/web/public/wrecks apps/web/public/ships -type f -name '*-600w.webp' | wc -l)" -eq 30
+          find apps/web/public/station apps/web/public/wrecks apps/web/public/ships -type f -name '*-360w.webp' -o -name '*-600w.webp' | sort | xargs identify >/dev/null
+
+      - name: Commit responsive variants
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apps/web/public/station apps/web/public/wrecks apps/web/public/ships
+          git commit -m 'feat(assets): add responsive game artwork variants'
+          git push origin HEAD:ui/concept-driven-revamp
