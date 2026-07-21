@@ -2,6 +2,7 @@ import './styles.css';
 import './revamp.css';
 import './graphics.css';
 import './illustration.css';
+import './brand-art.css';
 
 export * from './theme.js';
 export * from './icons.js';
