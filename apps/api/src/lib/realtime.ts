@@ -1,3 +1,5 @@
+import { realtimeEventSchema, type RealtimeEvent } from '@neon-wreckers/contracts';
+
 type SocketLike = {
   readyState: number;
   OPEN: number;
@@ -20,8 +22,13 @@ export class RealtimeHub {
     this.sockets.delete(socket);
   }
 
-  broadcast(payload: unknown) {
-    const message = JSON.stringify(payload);
+  broadcast(payload: RealtimeEvent) {
+    const parsed = realtimeEventSchema.safeParse(payload);
+    if (!parsed.success) {
+      console.error('Realtime contract validation failed', { issues: parsed.error.issues, type: (payload as { type?: unknown }).type });
+      return false;
+    }
+    const message = JSON.stringify(parsed.data);
     for (const socket of this.sockets) {
       if (socket.readyState !== socket.OPEN) {
         this.sockets.delete(socket);
@@ -33,6 +40,7 @@ export class RealtimeHub {
         this.sockets.delete(socket);
       }
     }
+    return true;
   }
 }
 
