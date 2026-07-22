@@ -24,6 +24,10 @@ Realtime events are a discriminated union on `type`. Unknown event types and mal
 5. Public schemas use explicit DTO shapes with `.passthrough()` where additive server fields are expected. They do not export Prisma model types.
 6. Dates are serialized as ISO-8601 strings at network boundaries. Schemas accept `Date` objects only for server-side validation before serialization.
 
+## Verification scope
+
+Repository tests assert valid envelopes and realtime variants, reject representative malformed payloads, and confirm the player and overlay retain safe reconnect behavior while using runtime validation.
+
 ## Migration status
 
 Core station, current-wreck, history, presence, authenticated-user, inventory, ship, crew, and expedition payloads are covered. The browser client validates every response envelope, while endpoint-specific data validation is being adopted on core game-data and overlay calls first.
