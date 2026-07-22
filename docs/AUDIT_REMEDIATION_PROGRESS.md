@@ -40,7 +40,7 @@
 - Pull request: [#10](https://github.com/crazytaxzi/Neon_Wreckers_TTV_Overlay/pull/10)
 - Merge commit: pending
 - Completed date: pending
-- Verification: Adaptive controller tests, repository verification, and existing UI/visual-proof lanes are being aligned and rerun.
+- Verification: Final connector-authored verification trigger submitted after the WebSocket event-handler type alignment; full self-hosted and UI/visual lanes are rerunning.
 - Notes: Replaced continuous three-request polling every 2.5 seconds with one initial snapshot, WebSocket-first updates, 90-second connected reconciliation, a 5-second disconnect grace period, 10-second fallback polling, immediate reconnect reconciliation, explicit connection states, jittered exponential backoff, timestamp tracking, and deterministic cleanup.
 - Remaining risks: Production OBS sessions should be observed for real-world proxy idle timeouts and network flapping after merge.
 
