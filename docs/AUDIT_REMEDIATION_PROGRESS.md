@@ -2,12 +2,12 @@
 
 ## Step 01: Enable and Enforce Content Security Policy
 
-- Status: in progress
+- Status: complete
 - Branch: `audit/01-enable-content-security-policy`
-- Pull request: pending
-- Merge commit:
-- Completed date:
-- Verification: CSP contract tests added; full `pnpm verify` pending GitHub Actions.
+- Pull request: [#5](https://github.com/crazytaxzi/Neon_Wreckers_TTV_Overlay/pull/5)
+- Merge commit: `d70bb8c7cb680fd66bb8d4e29f724918c5f5a724`
+- Completed date: 2026-07-22
+- Verification: GitHub Actions run 29933974722 passed CSP contract tests, repository guardrails, all builds, the complete test suite, and `pnpm verify`.
 - Notes: Nginx is the canonical policy layer for browser documents. Fastify Helmet applies a deny-by-default policy to API responses. Player and overlay allow same-origin resources plus explicit realtime schemes; admin framing is denied.
 - Remaining risks: Production browser-console verification in the deployed TLS environment is still required. External integrations were not claimed as verified.
 
