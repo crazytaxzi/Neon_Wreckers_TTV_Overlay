@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const isoDateTimeSchema = z.string().datetime({ offset: true }).or(z.string().datetime());
+const serializedDateTimeSchema = z.preprocess(value => value instanceof Date ? value.toISOString() : value, isoDateTimeSchema);
 export const jsonValueSchema: z.ZodType<unknown> = z.unknown();
 
 export const apiErrorSchema = z.object({
@@ -23,30 +24,66 @@ export const stationAlertSchema = z.object({
   severity: z.string(),
   title: z.string(),
   body: z.string(),
-  createdAt: isoDateTimeSchema
+  createdAt: serializedDateTimeSchema
 }).passthrough();
+
+const historyDetailsSchema = z.preprocess(
+  value => value && typeof value === 'object' ? value : {},
+  z.object({
+    operation: z.string().optional(),
+    mode: z.string().optional(),
+    wreckName: z.string().optional(),
+    expeditionName: z.string().optional(),
+    shipName: z.string().optional(),
+    items: z.array(z.object({
+      itemSlug: z.string(),
+      name: z.string(),
+      quantity: z.number(),
+      rarity: z.string().optional()
+    }).passthrough()).optional()
+  }).passthrough()
+);
 
 export const historyRecordSchema = z.object({
   id: z.string(),
   category: z.string(),
   title: z.string(),
   body: z.string(),
-  createdAt: z.union([isoDateTimeSchema, z.date()]),
-  actorDisplayName: z.string().nullable().optional(),
-  details: jsonValueSchema.optional()
+  createdAt: serializedDateTimeSchema,
+  actorDisplayName: z.string().nullable().default(null),
+  details: historyDetailsSchema
+}).passthrough();
+
+const plaqueSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  body: z.string(),
+  playerDisplayName: z.string().nullable(),
+  createdAt: serializedDateTimeSchema
 }).passthrough();
 
 export const stationModuleSchema = z.object({
   slug: z.string(),
   name: z.string(),
+  description: z.string(),
+  maxLevel: z.number(),
+  prerequisites: z.array(z.string()),
   level: z.number(),
   state: z.string(),
   progress: z.number(),
   integrity: z.number(),
   visualKey: z.string(),
   effects: z.record(z.unknown()),
-  plaques: z.array(z.unknown()).optional(),
-  project: z.unknown().nullable().optional()
+  perLevelEffects: z.record(z.unknown()),
+  nextLevelRequirements: z.record(z.number()).nullable(),
+  plaques: z.array(plaqueSchema),
+  project: z.object({
+    id: z.string(),
+    kind: z.string(),
+    targetLevel: z.number(),
+    requirements: z.record(z.number()),
+    contributed: z.record(z.number())
+  }).passthrough().nullable().optional()
 }).passthrough();
 
 export const stationSnapshotSchema = z.object({
@@ -55,35 +92,68 @@ export const stationSnapshotSchema = z.object({
   name: z.string(),
   level: z.number(),
   population: z.number(),
+  populationStatus: z.object({
+    capacity: z.number(),
+    trend: z.number(),
+    reasons: z.array(z.string())
+  }).optional(),
   power: z.number(),
   morale: z.number(),
   integrity: z.number(),
   storageCapacity: z.number(),
   storageUsed: z.number(),
   threatLevel: z.union([z.string(), z.number()]),
+  activeSeason: z.string().nullable(),
   resources: z.record(z.number()),
+  museum: z.object({
+    collection: z.array(z.object({ itemSlug: z.string(), name: z.string(), quantity: z.number() })),
+    donatedToday: z.number(),
+    dailyCapacity: z.number()
+  }),
   modules: z.array(stationModuleSchema),
   alerts: z.array(stationAlertSchema),
-  activeModifiers: z.array(z.unknown()).optional()
+  activeModifiers: z.array(z.unknown())
+}).passthrough();
+
+const salvageModeSchema = z.object({
+  successChance: z.number(),
+  scrapRange: z.array(z.number()),
+  electronicsChance: z.number(),
+  fuelChance: z.number(),
+  relicChance: z.number(),
+  wreckLootRolls: z.number(),
+  wreckLootChancePerRoll: z.number(),
+  wreckLootPool: z.array(z.object({ slug: z.string(), name: z.string(), rarity: z.string() }))
 }).passthrough();
 
 export const currentWreckSchema = z.object({
   id: z.string(),
+  archetype: z.string(),
   name: z.string(),
+  description: z.string(),
   risk: z.string(),
   integrity: z.number(),
-  description: z.string().optional(),
-  visualKey: z.string().optional(),
-  salvageProfile: z.record(z.unknown()).optional()
+  depleted: z.boolean(),
+  visualKey: z.string(),
+  remainingLootBudget: z.number(),
+  createdAt: serializedDateTimeSchema,
+  updatedAt: serializedDateTimeSchema,
+  salvageProfile: z.object({ cutters: salvageModeSchema, cargo: salvageModeSchema })
 }).passthrough();
 
 export const authenticatedUserSummarySchema = z.object({
   id: z.string(),
   twitchUserId: z.string().optional(),
   displayName: z.string(),
-  avatarUrl: z.string().nullable().optional(),
+  avatarUrl: z.string().nullable(),
   roles: z.array(z.string()),
-  player: z.object({ id: z.string() }).passthrough()
+  player: z.object({
+    id: z.string(),
+    level: z.number(),
+    title: z.string(),
+    career: z.string(),
+    credits: z.number()
+  }).passthrough().nullable()
 }).passthrough();
 
 export const inventoryItemSchema = z.object({
@@ -92,18 +162,24 @@ export const inventoryItemSchema = z.object({
   itemSlug: z.string(),
   name: z.string(),
   quantity: z.number().int().nonnegative(),
-  rarity: z.string().optional(),
-  visualKey: z.string().optional()
+  rarity: z.string(),
+  visualKey: z.string(),
+  updatedAt: serializedDateTimeSchema
 }).passthrough();
 
 export const shipSchema = z.object({
   id: z.string(),
   playerId: z.string().optional(),
   name: z.string(),
-  fuel: z.number().optional(),
-  condition: z.number().optional(),
-  upgrades: z.array(z.string()).optional(),
-  activeSkin: z.string().nullable().optional()
+  classSlug: z.string(),
+  condition: z.number(),
+  fuel: z.number(),
+  cargoCapacity: z.number(),
+  upgrades: z.array(z.string()),
+  ownedSkins: z.array(z.string()),
+  activeSkin: z.string().nullable(),
+  visualKey: z.string(),
+  createdAt: serializedDateTimeSchema
 }).passthrough();
 
 export const crewMemberSchema = z.object({
@@ -111,9 +187,12 @@ export const crewMemberSchema = z.object({
   playerId: z.string().optional(),
   name: z.string(),
   role: z.string(),
-  jobStars: z.number().optional(),
-  talentStars: z.number().optional(),
-  injuredUntil: z.union([isoDateTimeSchema, z.date(), z.null()]).optional()
+  level: z.number(),
+  jobStars: z.number(),
+  talentStars: z.number(),
+  morale: z.number(),
+  injuredUntil: serializedDateTimeSchema.nullable(),
+  traits: z.array(z.string())
 }).passthrough();
 
 export const expeditionSchema = z.object({
@@ -123,12 +202,14 @@ export const expeditionSchema = z.object({
   name: z.string(),
   status: z.string(),
   risk: z.string(),
-  shipId: z.string(),
+  shipId: z.string().nullable(),
   crewIds: z.array(z.string()),
-  launchedAt: z.union([isoDateTimeSchema, z.date()]),
-  resolvesAt: z.union([isoDateTimeSchema, z.date()]),
-  rewards: z.array(z.unknown()).optional(),
-  incidentLog: z.array(z.unknown()).optional()
+  launchedAt: serializedDateTimeSchema.nullable(),
+  resolvesAt: serializedDateTimeSchema.nullable(),
+  rewards: z.array(z.unknown()),
+  incidentLog: z.array(z.string()),
+  createdAt: serializedDateTimeSchema,
+  updatedAt: serializedDateTimeSchema
 }).passthrough();
 
 export const presenceUpdatedEventSchema = z.object({
