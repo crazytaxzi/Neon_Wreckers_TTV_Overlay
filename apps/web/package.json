@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@neon-wreckers/browser-client": "workspace:*",
+    "@neon-wreckers/contracts": "workspace:*",
     "@neon-wreckers/ui": "workspace:*",
     "react": "19.2.7",
     "react-dom": "19.2.7"

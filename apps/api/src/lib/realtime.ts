@@ -1,3 +1,5 @@
+import { realtimeEventSchema } from '@neon-wreckers/contracts';
+
 type SocketLike = {
   readyState: number;
   OPEN: number;
@@ -21,7 +23,21 @@ export class RealtimeHub {
   }
 
   broadcast(payload: unknown) {
-    const message = JSON.stringify(payload);
+    let wirePayload: unknown;
+    try {
+      wirePayload = JSON.parse(JSON.stringify(payload));
+    } catch (error) {
+      console.error('Realtime payload serialization failed', { error, type: (payload as { type?: unknown } | null)?.type });
+      return false;
+    }
+
+    const parsed = realtimeEventSchema.safeParse(wirePayload);
+    if (!parsed.success) {
+      console.error('Realtime contract validation failed', { issues: parsed.error.issues, type: (wirePayload as { type?: unknown } | null)?.type });
+      return false;
+    }
+
+    const message = JSON.stringify(parsed.data);
     for (const socket of this.sockets) {
       if (socket.readyState !== socket.OPEN) {
         this.sockets.delete(socket);
@@ -33,6 +49,7 @@ export class RealtimeHub {
         this.sockets.delete(socket);
       }
     }
+    return true;
   }
 }
 

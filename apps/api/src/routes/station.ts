@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { GameRuleError, salvageWreckProfile } from '@neon-wreckers/game-engine';
+import { crewMemberSchema, historyRecordSchema, inventoryItemSchema, shipSchema, stationSnapshotSchema } from '@neon-wreckers/contracts';
 import { careerRules, itemsBySlug } from '@neon-wreckers/content';
 import type { ApiContext } from '../types.js';
 import { requireUser } from '../services/auth.js';
@@ -9,7 +10,7 @@ import { stationDto } from '../services/station.js';
 import { enforceDurableCooldown } from '../services/actions.js';
 
 export async function registerStationRoutes(app: FastifyInstance, context: ApiContext) {
-  app.get('/api/v1/station', async request => ({ data: await stationDto(context.prisma), requestId: request.id }));
+  app.get('/api/v1/station', async request => ({ data: stationSnapshotSchema.parse(await stationDto(context.prisma)), requestId: request.id }));
 
   app.get('/api/v1/wrecks/current', async request => {
     const user = await requireUser(context.prisma, request);
@@ -26,17 +27,17 @@ export async function registerStationRoutes(app: FastifyInstance, context: ApiCo
       where: { playerId: user.player.id },
       orderBy: { name: 'asc' }
     });
-    return { data: inventory, requestId: request.id };
+    return { data: inventoryItemSchema.array().parse(inventory), requestId: request.id };
   });
 
   app.get('/api/v1/ships', async request => {
     const user = await requireUser(context.prisma, request);
-    return { data: await context.prisma.ship.findMany({ where: { playerId: user.player.id } }), requestId: request.id };
+    return { data: shipSchema.array().parse(await context.prisma.ship.findMany({ where: { playerId: user.player.id } })), requestId: request.id };
   });
 
   app.get('/api/v1/crew', async request => {
     const user = await requireUser(context.prisma, request);
-    return { data: await context.prisma.crewMember.findMany({ where: { playerId: user.player.id } }), requestId: request.id };
+    return { data: crewMemberSchema.array().parse(await context.prisma.crewMember.findMany({ where: { playerId: user.player.id } })), requestId: request.id };
   });
 
   app.get('/api/v1/cooldowns', async request => {
@@ -53,7 +54,7 @@ export async function registerStationRoutes(app: FastifyInstance, context: ApiCo
 
   app.get('/api/v1/history', async request => {
     const query = z.object({ limit: z.coerce.number().int().min(1).max(5000).default(2000) }).parse(request.query ?? {});
-    return { data: await context.prisma.historyEntry.findMany({ orderBy: { createdAt: 'desc' }, take: query.limit }), requestId: request.id };
+    return { data: historyRecordSchema.array().parse(await context.prisma.historyEntry.findMany({ orderBy: { createdAt: 'desc' }, take: query.limit })), requestId: request.id };
   });
 
   app.get('/api/v1/notifications', async request => {

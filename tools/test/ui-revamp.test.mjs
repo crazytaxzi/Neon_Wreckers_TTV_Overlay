@@ -108,10 +108,11 @@ test('overlay safety behavior remains present', async () => {
     read('apps/overlay/src/overlay.css')
   ]);
 
-  assert.match(source, /malformed packet must not take down a live stream overlay/i);
+  assert.match(source, /realtimeEventSchema\.safeParse/);
+  assert.match(source, /contract validation failed/i);
   assert.match(source, /Promise\.allSettled/);
   assert.match(source, /reconnectTimer/);
-  assert.match(source, /visualKey\?: string/);
+  assert.match(source, /currentWreckSchema/);
   assert.match(source, /wreck-schematic__art/);
   assert.match(source, /wreckArtworkSrc/);
   assert.match(css, /pointer-events:\s*none/);
