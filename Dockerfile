@@ -4,7 +4,9 @@ FROM node:22.16.0-bookworm-slim AS build
 
 WORKDIR /workspace
 
-RUN apt-get update  && apt-get install -y --no-install-recommends openssl ca-certificates  && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends openssl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 
 ENV CI=true
 ENV PNPM_HOME=/pnpm
@@ -34,26 +36,33 @@ FROM node:22.16.0-bookworm-slim AS app
 
 WORKDIR /app
 
-RUN apt-get update  && apt-get install -y --no-install-recommends openssl ca-certificates  && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends openssl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
+ENV PNPM_HOME=/pnpm
+ENV PATH=$PNPM_HOME:$PATH
 
-COPY --from=build /workspace/package.json ./
-COPY --from=build /workspace/node_modules ./node_modules
+RUN corepack enable \
+ && corepack prepare pnpm@10.32.0 --activate
 
-COPY --from=build /workspace/apps/api/package.json ./apps/api/package.json
-COPY --from=build /workspace/apps/api/node_modules ./apps/api/node_modules
-COPY --from=build /workspace/apps/api/dist ./apps/api/dist
+COPY --from=build --chown=node:node /workspace/package.json ./
+COPY --from=build --chown=node:node /workspace/node_modules ./node_modules
 
-COPY --from=build /workspace/apps/worker/package.json ./apps/worker/package.json
-COPY --from=build /workspace/apps/worker/node_modules ./apps/worker/node_modules
-COPY --from=build /workspace/apps/worker/dist ./apps/worker/dist
+COPY --from=build --chown=node:node /workspace/apps/api/package.json ./apps/api/package.json
+COPY --from=build --chown=node:node /workspace/apps/api/node_modules ./apps/api/node_modules
+COPY --from=build --chown=node:node /workspace/apps/api/dist ./apps/api/dist
 
-COPY --from=build /workspace/packages ./packages
-COPY --from=build /workspace/infrastructure/database/prisma ./infrastructure/database/prisma
-COPY --from=build /workspace/infrastructure/database/dist ./infrastructure/database/dist
-COPY --from=build /workspace/content ./content
-COPY --from=build /workspace/assets ./assets
+COPY --from=build --chown=node:node /workspace/apps/worker/package.json ./apps/worker/package.json
+COPY --from=build --chown=node:node /workspace/apps/worker/node_modules ./apps/worker/node_modules
+COPY --from=build --chown=node:node /workspace/apps/worker/dist ./apps/worker/dist
+
+COPY --from=build --chown=node:node /workspace/packages ./packages
+COPY --from=build --chown=node:node /workspace/infrastructure/database/prisma ./infrastructure/database/prisma
+COPY --from=build --chown=node:node /workspace/infrastructure/database/dist ./infrastructure/database/dist
+COPY --from=build --chown=node:node /workspace/content ./content
+COPY --from=build --chown=node:node /workspace/assets ./assets
 
 USER node
 
