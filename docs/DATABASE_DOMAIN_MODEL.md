@@ -33,6 +33,8 @@ Wreck creation and salvage use a shared PostgreSQL advisory transaction lock so 
 - `QuartersLayout`, `MuseumExhibit`, and `MarketTransaction` persist habitat, donation, and station-trade activity.
 - Expeditions persist their selected ship and crew IDs so active assets cannot be assigned twice.
 
+`ActionCooldown` is unique on `(playerId, actionKey)` and indexed by `expiresAt`. Correctness-sensitive actions acquire a transaction-scoped PostgreSQL advisory lock derived from the same pair, read the row, reject an unexpired action, and upsert the next expiry inside the transaction that performs the protected mutation. The row survives API restarts, while the advisory lock prevents concurrent replicas from both passing the read-before-write boundary. Expired rows are reused rather than accumulated per attempt.
+
 Construction uses conditional inventory updates to prevent double-spending. Expedition resolution and claiming use conditional status transitions so rewards cannot be granted twice.
 
 ## Operations and audit
@@ -55,4 +57,4 @@ Production Compose runs migration and the compiled idempotent seed through the o
 
 ## Change rules
 
-Every schema change requires a committed SQL migration, empty-database verification, upgrade verification, schema/migration parity checks, and a rollback or restore plan. Production deployment never uses `prisma db push`.
+Every schema change requires a committed SQL migration, empty-database verification, upgrade verification, schema/migration parity checks, and a rollback or restore plan. Production deployment never uses `prisma db push`. New durable cooldown keys must be stable domain identifiers and must be enforced inside the transaction that grants the protected outcome.
