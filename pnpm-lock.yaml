@@ -79,6 +79,9 @@ importers:
       '@neon-wreckers/content':
         specifier: workspace:*
         version: link:../../packages/content
+      '@neon-wreckers/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@neon-wreckers/game-engine':
         specifier: workspace:*
         version: link:../../packages/game-engine
@@ -103,6 +106,9 @@ importers:
       '@neon-wreckers/browser-client':
         specifier: workspace:*
         version: link:../../packages/browser-client
+      '@neon-wreckers/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@neon-wreckers/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -125,6 +131,9 @@ importers:
       '@neon-wreckers/browser-client':
         specifier: workspace:*
         version: link:../../packages/browser-client
+      '@neon-wreckers/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@neon-wreckers/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -160,7 +169,14 @@ importers:
         specifier: 5.80.2
         version: 5.80.2
 
-  packages/browser-client: {}
+  packages/browser-client:
+    dependencies:
+      '@neon-wreckers/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      zod:
+        specifier: 3.25.76
+        version: 3.25.76
 
   packages/client-theme:
     dependencies:
@@ -169,6 +185,12 @@ importers:
         version: link:../ui
 
   packages/content:
+    dependencies:
+      zod:
+        specifier: 3.25.76
+        version: 3.25.76
+
+  packages/contracts:
     dependencies:
       zod:
         specifier: 3.25.76

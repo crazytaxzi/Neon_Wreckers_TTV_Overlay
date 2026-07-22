@@ -1,6 +1,7 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { requestApi } from '@neon-wreckers/browser-client';
+import { currentWreckSchema, historyRecordSchema, realtimeEventSchema, stationSnapshotSchema, type CurrentWreck, type HistoryRecord, type StationAlert, type StationSnapshot } from '@neon-wreckers/contracts';
 import { Badge, Meter, NWIcon, OverlayEventPopup, Panel, ThemeProvider, defaultTheme, type Tone } from '@neon-wreckers/ui';
 import { loadOverlayConfig, type OverlayConfig } from './config.js';
 import './overlay.css';
@@ -17,25 +18,8 @@ type Headline = {
   breaking?: boolean;
 };
 
-type StationAlert = { id?: string; severity?: string; title?: string; body?: string; createdAt?: string };
-
-type HistoryRecord = { id?: string; category?: string; title?: string; body?: string; createdAt?: string };
-
-type Station = {
-  name?: string;
-  level?: number;
-  population?: number;
-  power?: number;
-  morale?: number;
-  integrity?: number;
-  threatLevel?: string | number;
-  storageCapacity?: number;
-  storageUsed?: number;
-  resources?: Record<string, number>;
-  alerts?: StationAlert[];
-};
-
-type Wreck = { id?: string; name?: string; risk?: string; integrity?: number; description?: string; visualKey?: string };
+type Station = StationSnapshot;
+type Wreck = CurrentWreck;
 
 const API = '/api/v1';
 const MAX_HEADLINES = 40;
@@ -87,7 +71,7 @@ function fromHistory(entry: HistoryRecord): Headline {
     title,
     body,
     severity,
-    createdAt: Date.parse(entry?.createdAt || '') || Date.now(),
+    createdAt: Date.parse(String(entry?.createdAt ?? '')) || Date.now(),
     breaking: isBreaking(`${title} ${body}`, severity)
   };
 }
@@ -102,7 +86,7 @@ function fromAlert(alert: StationAlert): Headline {
     title,
     body,
     severity,
-    createdAt: Date.parse(alert?.createdAt || '') || Date.now(),
+    createdAt: Date.parse(String(alert?.createdAt ?? '')) || Date.now(),
     breaking: isBreaking(`${title} ${body}`, severity)
   };
 }
@@ -181,9 +165,9 @@ function App() {
 
   const refresh = useCallback(async () => {
     const results = await Promise.allSettled([
-      requestApi<Station>(`${API}/station`, { cache: 'no-store' }),
-      requestApi<HistoryRecord[]>(`${API}/history`, { cache: 'no-store' }),
-      requestApi<Wreck>(`${API}/wrecks/current`, { cache: 'no-store' })
+      requestApi<Station>(`${API}/station`, { cache: 'no-store' }, stationSnapshotSchema),
+      requestApi<HistoryRecord[]>(`${API}/history`, { cache: 'no-store' }, historyRecordSchema.array()),
+      requestApi<Wreck>(`${API}/wrecks/current`, { cache: 'no-store' }, currentWreckSchema)
     ]);
 
     if (results[0].status === 'fulfilled') {
@@ -265,10 +249,16 @@ function App() {
       ws.onopen = () => { reconnectAttempt.current = 0; setConnected(true); };
       ws.onmessage = (event) => {
         try {
-          const message = JSON.parse(event.data);
+          const decoded: unknown = JSON.parse(String(event.data));
+          const parsed = realtimeEventSchema.safeParse(decoded);
+          if (!parsed.success) {
+            console.warn('Overlay realtime contract validation failed', { issues: parsed.error.issues });
+            return;
+          }
+          const message = parsed.data;
           if (message.type === 'history.added' && message.entry) enqueue(fromHistory(message.entry));
           if (message.type === 'station.updated' && message.station) {
-            const next = message.station as Station;
+            const next = message.station;
             const previous = previousStation.current;
             setStation(next);
             previousStation.current = next;
@@ -289,8 +279,8 @@ function App() {
             enqueue({ id: `wreck-${message.wreck.id || Date.now()}`, label: 'SALVAGE INTELLIGENCE', title, body, severity, createdAt: Date.now(), breaking: isBreaking(`${title} ${body}`, severity) });
           }
           if (message.type === 'presence.updated' && Number(message.count) > 1) enqueue({ id: `presence-${message.count}-${Math.floor(Date.now() / 30000)}`, label: 'VIEWER NETWORK', title: `${message.count} operators linked`, body: 'Twitch crew connections are active across the station network.', severity: 'viewer', createdAt: Date.now() });
-        } catch {
-          // A malformed packet must not take down a live stream overlay.
+        } catch (error) {
+          console.warn('Overlay realtime packet could not be decoded', { error });
         }
       };
       ws.onerror = () => ws.close();

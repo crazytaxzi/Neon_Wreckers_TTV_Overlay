@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { errorMessage, requestApi } from '@neon-wreckers/browser-client';
+import { authenticatedUserSummarySchema, crewMemberSchema, currentWreckSchema, expeditionSchema, historyRecordSchema, inventoryItemSchema, realtimeEventSchema, shipSchema, stationSnapshotSchema, type RealtimeEvent } from '@neon-wreckers/contracts';
 import { useToast } from '@neon-wreckers/ui';
 import type {
   ActionCooldown,
@@ -22,22 +23,15 @@ import type {
   Wreck
 } from './model.js';
 
-type RealtimeMessage =
-  | { type: 'station.updated'; station: Station }
-  | { type: 'wreck.updated'; wreck: Wreck }
-  | { type: 'history.added'; entry: HistoryEntry };
-
-const WS_URL = (() => {
-  const url = new URL('/api/v1/ws', window.location.origin);
-  url.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return url.toString();
-})();
-function parseRealtimeMessage(value: unknown): RealtimeMessage | null {
+function parseRealtimeMessage(value: unknown): RealtimeEvent | null {
   if (typeof value !== 'string') return null;
   try {
-    const message = JSON.parse(value) as Partial<RealtimeMessage>;
-    return typeof message.type === 'string' ? message as RealtimeMessage : null;
-  } catch {
+    const decoded: unknown = JSON.parse(value);
+    const parsed = realtimeEventSchema.safeParse(decoded);
+    if (!parsed.success) console.warn('Player realtime contract validation failed', { issues: parsed.error.issues });
+    return parsed.success ? parsed.data : null;
+  } catch (error) {
+    console.warn('Player realtime packet could not be decoded', { error });
     return null;
   }
 }
@@ -78,15 +72,15 @@ export function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null |
   const refresh = useCallback(() => {
     if (refreshInFlight.current) return refreshInFlight.current;
     const pending = (async () => {
-      setMe(await requestApi<CurrentUser>('/api/v1/me'));
+      setMe(await requestApi<CurrentUser>('/api/v1/me', {}, authenticatedUserSummarySchema));
       const [stationResult, wreckResult, inventoryResult, shipsResult, crewResult, historyResult, expeditionsResult, expeditionDefinitionsResult, notificationsResult, marketplaceResult, quartersResult, catalogResult, auctionResult, recipesResult, cooldownResult] = await Promise.allSettled([
-      requestApi<Station>('/api/v1/station'),
-      requestApi<Wreck>('/api/v1/wrecks/current'),
-      requestApi<InventoryItem[]>('/api/v1/inventory'),
-      requestApi<Ship[]>('/api/v1/ships'),
-      requestApi<CrewMember[]>('/api/v1/crew'),
-      requestApi<HistoryEntry[]>('/api/v1/history'),
-      requestApi<Expedition[]>('/api/v1/expeditions'),
+      requestApi<Station>('/api/v1/station', {}, stationSnapshotSchema),
+      requestApi<Wreck>('/api/v1/wrecks/current', {}, currentWreckSchema),
+      requestApi<InventoryItem[]>('/api/v1/inventory', {}, inventoryItemSchema.array()),
+      requestApi<Ship[]>('/api/v1/ships', {}, shipSchema.array()),
+      requestApi<CrewMember[]>('/api/v1/crew', {}, crewMemberSchema.array()),
+      requestApi<HistoryEntry[]>('/api/v1/history', {}, historyRecordSchema.array()),
+      requestApi<Expedition[]>('/api/v1/expeditions', {}, expeditionSchema.array()),
       requestApi<ExpeditionDefinition[]>('/api/v1/expeditions/definitions'),
       requestApi<PlayerNotification[]>('/api/v1/notifications'),
       requestApi<Marketplace>('/api/v1/marketplace/listings'),
@@ -142,10 +136,8 @@ export function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null |
     url.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const socket = new WebSocket(url);
     socket.onmessage = event => {
-      try {
-        const message = JSON.parse(String(event.data)) as { type?: string };
-        if (message.type && message.type !== 'player.connected') void refresh();
-      } catch { /* Ignore malformed personal packets. */ }
+      const message = parseRealtimeMessage(String(event.data));
+      if (message && message.type !== 'player.connected') void refresh();
     };
     const poll = window.setInterval(() => void refresh().catch(() => undefined), 15_000);
     return () => { socket.close(); window.clearInterval(poll); };
