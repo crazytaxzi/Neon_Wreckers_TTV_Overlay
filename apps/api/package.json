@@ -15,6 +15,7 @@
     "@fastify/rate-limit": "10.3.0",
     "@fastify/websocket": "11.3.0",
     "@neon-wreckers/content": "workspace:*",
+    "@neon-wreckers/contracts": "workspace:*",
     "@neon-wreckers/game-engine": "workspace:*",
     "@neon-wreckers/integrations": "workspace:*",
     "@prisma/client": "6.19.3",
