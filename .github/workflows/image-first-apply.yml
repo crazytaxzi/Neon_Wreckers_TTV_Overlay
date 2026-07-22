@@ -1,4 +1,4 @@
-name: Apply Image First Starter Pass
+name: Apply Image First Graphics Stage
 
 on:
   push:
@@ -21,22 +21,22 @@ jobs:
           ref: agent/image-first-graphics-overhaul
           fetch-depth: 0
 
-      - name: Detect staged patch
+      - name: Detect staged graphics payload
         id: staged
         run: |
-          if [ -f tools/image-first/apply-image-first-start.mjs ]; then
+          if [ -f tools/image-first/apply-stage.mjs ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Apply reviewed image-first patch
+      - name: Apply reviewed graphics stage
         if: steps.staged.outputs.present == 'true'
-        run: node tools/image-first/apply-image-first-start.mjs
+        run: node tools/image-first/apply-stage.mjs
 
       - name: Remove staging payload
         if: steps.staged.outputs.present == 'true'
-        run: rm -f tools/image-first/apply-image-first-start.mjs tools/image-first/rustlight-tug.webp.b64
+        run: rm -f tools/image-first/apply-stage.mjs tools/image-first/raster-pack.part-*
 
       - name: Enable pnpm
         if: steps.staged.outputs.present == 'true'
@@ -48,19 +48,20 @@ jobs:
         if: steps.staged.outputs.present == 'true'
         run: pnpm install --frozen-lockfile
 
-      - name: Verify focused UI contracts
+      - name: Verify synchronized frontends
         if: steps.staged.outputs.present == 'true'
         run: |
           node --test tools/test/ui-revamp.test.mjs tools/test/ui-graphics.test.mjs
           pnpm --filter @neon-wreckers/ui run build
           pnpm --filter @neon-wreckers/web run build
+          pnpm --filter @neon-wreckers/admin run build
           pnpm --filter @neon-wreckers/overlay run build
 
-      - name: Commit verified source and artwork
+      - name: Commit verified graphics stage
         if: steps.staged.outputs.present == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apps/web apps/overlay assets/manifest.json docs/UI_ASSET_AUDIT.md tools/test/ui-revamp.test.mjs tools/image-first
-          git commit -m "feat(ui): add Rustlight and live wreck artwork"
+          git add packages/ui tools/test/ui-graphics.test.mjs tools/image-first
+          git commit -m "feat(ui): add shared raster concept chrome"
           git push origin HEAD:agent/image-first-graphics-overhaul
