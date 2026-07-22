@@ -22,7 +22,10 @@ const files = walk();
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 
 test('repository exposes exactly one deployment pipeline', () => {
-  assert.deepEqual(files.filter(file => path.basename(file) === 'Dockerfile'), ['Dockerfile']);
+  assert.deepEqual(files.filter(file => path.basename(file) === 'Dockerfile'), [
+    'Dockerfile',
+    'infrastructure/redis/Dockerfile'
+  ]);
   assert.deepEqual(files.filter(file => /^compose(?:\..+)?\.ya?ml$/.test(path.basename(file))), ['compose.yaml']);
   assert.deepEqual(files.filter(file => /nginx.*\.conf(?:\.template)?$/.test(path.basename(file))), ['infrastructure/gateway/nginx.conf.template']);
   assert.deepEqual(files.filter(file => /(?:package-lock\.json|yarn\.lock)$/.test(file)), []);
