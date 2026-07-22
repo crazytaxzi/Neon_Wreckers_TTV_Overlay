@@ -30,7 +30,7 @@ sudo bash scripts/update.sh
 
 ## Data flow and recovery
 
-The overlay performs one initial public station, wreck, and history snapshot from `/api/v1`, then treats `/api/v1/ws` as the primary update channel. A healthy connection performs one reconciliation snapshot every 90 seconds instead of three requests every 2.5 seconds. That reduces the steady request rate from roughly 1.2 requests per second to about 0.033 requests per second, a reduction of approximately 97%.
+The overlay performs one initial public station, wreck, and history snapshot from `/api/v1`, then treats `/api/v1/ws` as the primary update channel. A healthy connection performs one reconciliation snapshot every 90 seconds instead of three requests every 2.5 seconds. That reduces the steady request rate from roughly 1.2 requests per second to about 0.033 requests per second, a reduction of approximately 97.2%.
 
 When the WebSocket disconnects, the overlay waits five seconds before beginning 10-second fallback snapshots. Reconnect attempts use exponential backoff capped at 30 seconds with jitter to avoid synchronized reconnect storms. A successful reconnect triggers an immediate reconciliation so missed events are recovered quickly. Snapshot requests are guarded against overlap and are cancelled during component cleanup.
 
