@@ -67,7 +67,7 @@ async function installAdminRoutes(page) {
   });
 }
 
-async function installOverlayRoutes(page, viewerMode) {
+async function installOverlayRoutes(page, viewerMode, transparentMode = false) {
   await page.addInitScript(() => {
     window.WebSocket = class PreviewSocket {
       constructor() { this.readyState = 1; setTimeout(() => this.onopen?.({}), 100); }
@@ -78,7 +78,7 @@ async function installOverlayRoutes(page, viewerMode) {
   await page.route('**/*', async route => {
     const path = new URL(route.request().url()).pathname;
     if (path === '/overlay/overlay-config.json') {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(overlayConfig) });
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...overlayConfig, previewBackground: transparentMode ? false : overlayConfig.previewBackground }) });
       return;
     }
     if (path === '/api/v1/station') {
@@ -130,13 +130,15 @@ for (const [name, label] of [['operations', 'Operations'], ['players', 'Players'
 await captureAdmin('UI Library', { width: 1024, height: 768 }, `${outputRoot}/admin/tablet/graphics.png`, true);
 for (const [name, label] of [['operations', 'Operations'], ['players', 'Players']]) await captureAdmin(label, { width: 390, height: 844 }, `${outputRoot}/admin/mobile/${name}.png`);
 
-async function captureOverlay(name, viewport, viewerMode = false) {
+async function captureOverlay(name, viewport, viewerMode = false, transparentMode = false) {
   const context = await browser.newContext({ viewport });
   const page = await context.newPage();
-  await installOverlayRoutes(page, viewerMode);
-  await page.goto(`${overlayBase}?preview=1${viewerMode ? '&event=viewer' : ''}`, { waitUntil: 'networkidle' });
+  await installOverlayRoutes(page, viewerMode, transparentMode);
+  const previewQuery = transparentMode ? '' : '?preview=1';
+  const eventQuery = viewerMode ? `${previewQuery ? '&' : '?'}event=viewer` : '';
+  await page.goto(`${overlayBase}${previewQuery}${eventQuery}`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1300);
-  await page.screenshot({ path: `${outputRoot}/overlay/${name}.png` });
+  await page.screenshot({ path: `${outputRoot}/overlay/${name}.png`, omitBackground: transparentMode });
   await context.close();
 }
 
@@ -145,5 +147,6 @@ await captureOverlay('1080p', { width: 1920, height: 1080 });
 await captureOverlay('1440p', { width: 2560, height: 1440 });
 await captureOverlay('4k', { width: 3840, height: 2160 });
 await captureOverlay('viewer-event-1080p', { width: 1920, height: 1080 }, true);
+await captureOverlay('transparent-1080p', { width: 1920, height: 1080 }, false, true);
 
 await browser.close();
