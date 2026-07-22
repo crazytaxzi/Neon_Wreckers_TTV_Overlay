@@ -74,6 +74,7 @@ test('workspace lock contains every active package and no retired dependencies',
     '@neon-wreckers/browser-client',
     '@neon-wreckers/client-theme',
     '@neon-wreckers/content',
+    '@neon-wreckers/contracts',
     '@neon-wreckers/game-engine',
     '@neon-wreckers/integrations',
     '@neon-wreckers/overlay',
@@ -83,7 +84,7 @@ test('workspace lock contains every active package and no retired dependencies',
   ]);
 
   const lock = read('pnpm-lock.yaml');
-  for (const importer of ['apps/admin', 'apps/api', 'apps/overlay', 'apps/web', 'apps/worker', 'packages/browser-client', 'packages/client-theme', 'packages/content', 'packages/game-engine', 'packages/integrations', 'packages/ui']) {
+  for (const importer of ['apps/admin', 'apps/api', 'apps/overlay', 'apps/web', 'apps/worker', 'packages/browser-client', 'packages/client-theme', 'packages/content', 'packages/contracts', 'packages/game-engine', 'packages/integrations', 'packages/ui']) {
     assert.match(lock, new RegExp(`^  ${importer.replaceAll('/', '\\/')}:`, 'm'), `Missing lockfile importer: ${importer}`);
   }
   for (const retired of ['@neon-wreckers/game-config', '@neon-wreckers/shared-types', 'minio']) {
