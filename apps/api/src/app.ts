@@ -36,6 +36,10 @@ const apiContentSecurityPolicy = {
   }
 } as const;
 
+type MetricsRequest = {
+  metricsStartedAt?: number;
+};
+
 export async function buildApp() {
   const prisma = new PrismaClient();
   const gameQueue = new Queue('neon-wreckers-game', { connection: parseRedisConnection(env.REDIS_URL) });
@@ -72,12 +76,20 @@ export async function buildApp() {
   await app.register(websocket);
 
   app.addHook('onRequest', async (request, reply) => {
-    (request as typeof request & { metricsStartedAt: number }).metricsStartedAt = performance.now();
+    (request as typeof request & MetricsRequest).metricsStartedAt = performance.now();
+    context.metrics.begin();
     reply.header('x-request-id', request.id);
   });
   app.addHook('onResponse', async (request, reply) => {
-    const startedAt = (request as typeof request & { metricsStartedAt?: number }).metricsStartedAt ?? performance.now();
-    context.metrics.record(reply.statusCode, performance.now() - startedAt, Number(reply.getHeader('content-length') ?? 0));
+    const startedAt = (request as typeof request & MetricsRequest).metricsStartedAt ?? performance.now();
+    const route = request.routeOptions.url || 'unmatched';
+    context.metrics.record(
+      request.method,
+      route,
+      reply.statusCode,
+      performance.now() - startedAt,
+      Number(reply.getHeader('content-length') ?? 0)
+    );
   });
   app.setErrorHandler((error, request, reply) => {
     const response = errorResponse(error, isProd);
