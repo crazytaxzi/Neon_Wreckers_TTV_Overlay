@@ -23,6 +23,12 @@ import type {
   Wreck
 } from './model.js';
 
+const WS_URL = (() => {
+  const url = new URL('/api/v1/ws', window.location.origin);
+  url.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return url.toString();
+})();
+
 function parseRealtimeMessage(value: unknown): RealtimeEvent | null {
   if (typeof value !== 'string') return null;
   try {
@@ -35,6 +41,7 @@ function parseRealtimeMessage(value: unknown): RealtimeEvent | null {
     return null;
   }
 }
+
 function actionResultMessage(value: unknown) {
   if (!value || typeof value !== 'object') return 'Station records synchronized.';
   const record = value as Record<string, unknown>;
@@ -49,6 +56,7 @@ function actionResultMessage(value: unknown) {
     .map(key => `${key.replace(/([A-Z])/g, ' $1').toLowerCase()}: ${typeof record[key] === 'object' ? JSON.stringify(record[key]) : String(record[key])}`);
   return rewards.length ? rewards.join(' · ') : 'The action completed and your station data was updated.';
 }
+
 export function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null | undefined } {
   const [me, setMe] = useState<CurrentUser | null>();
   const [station, setStation] = useState<Station | null>(null);
@@ -74,21 +82,21 @@ export function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null |
     const pending = (async () => {
       setMe(await requestApi<CurrentUser>('/api/v1/me', {}, authenticatedUserSummarySchema));
       const [stationResult, wreckResult, inventoryResult, shipsResult, crewResult, historyResult, expeditionsResult, expeditionDefinitionsResult, notificationsResult, marketplaceResult, quartersResult, catalogResult, auctionResult, recipesResult, cooldownResult] = await Promise.allSettled([
-      requestApi<Station>('/api/v1/station', {}, stationSnapshotSchema),
-      requestApi<Wreck>('/api/v1/wrecks/current', {}, currentWreckSchema),
-      requestApi<InventoryItem[]>('/api/v1/inventory', {}, inventoryItemSchema.array()),
-      requestApi<Ship[]>('/api/v1/ships', {}, shipSchema.array()),
-      requestApi<CrewMember[]>('/api/v1/crew', {}, crewMemberSchema.array()),
-      requestApi<HistoryEntry[]>('/api/v1/history', {}, historyRecordSchema.array()),
-      requestApi<Expedition[]>('/api/v1/expeditions', {}, expeditionSchema.array()),
-      requestApi<ExpeditionDefinition[]>('/api/v1/expeditions/definitions'),
-      requestApi<PlayerNotification[]>('/api/v1/notifications'),
-      requestApi<Marketplace>('/api/v1/marketplace/listings'),
-      requestApi<Quarters>('/api/v1/quarters'),
-      requestApi<ItemDefinition[]>('/api/v1/items/catalog'),
-      requestApi<AuctionListing[]>('/api/v1/auction/listings'),
-      requestApi<CraftingRecipe[]>('/api/v1/crafting/recipes'),
-      requestApi<ActionCooldown[]>('/api/v1/cooldowns')
+        requestApi<Station>('/api/v1/station', {}, stationSnapshotSchema),
+        requestApi<Wreck>('/api/v1/wrecks/current', {}, currentWreckSchema),
+        requestApi<InventoryItem[]>('/api/v1/inventory', {}, inventoryItemSchema.array()),
+        requestApi<Ship[]>('/api/v1/ships', {}, shipSchema.array()),
+        requestApi<CrewMember[]>('/api/v1/crew', {}, crewMemberSchema.array()),
+        requestApi<HistoryEntry[]>('/api/v1/history', {}, historyRecordSchema.array()),
+        requestApi<Expedition[]>('/api/v1/expeditions', {}, expeditionSchema.array()),
+        requestApi<ExpeditionDefinition[]>('/api/v1/expeditions/definitions'),
+        requestApi<PlayerNotification[]>('/api/v1/notifications'),
+        requestApi<Marketplace>('/api/v1/marketplace/listings'),
+        requestApi<Quarters>('/api/v1/quarters'),
+        requestApi<ItemDefinition[]>('/api/v1/items/catalog'),
+        requestApi<AuctionListing[]>('/api/v1/auction/listings'),
+        requestApi<CraftingRecipe[]>('/api/v1/crafting/recipes'),
+        requestApi<ActionCooldown[]>('/api/v1/cooldowns')
       ]);
       if (stationResult.status === 'fulfilled') setStation(stationResult.value);
       if (wreckResult.status === 'fulfilled') setWreck(wreckResult.value);
