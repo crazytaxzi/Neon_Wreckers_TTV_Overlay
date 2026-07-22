@@ -47,10 +47,9 @@ export async function buildApp() {
       apiBase: env.STREAMELEMENTS_API_BASE,
       jwt: env.STREAMELEMENTS_JWT
     }),
-    cooldowns: new Map<string, number>(),
     realtime: new RealtimeHub(),
-    playerRealtime: new PlayerRealtimeHub()
-    ,metrics: new RequestMetrics()
+    playerRealtime: new PlayerRealtimeHub(),
+    metrics: new RequestMetrics()
   };
 
   const app = Fastify({
