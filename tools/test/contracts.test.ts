@@ -11,18 +11,22 @@ import {
 const station = {
   id: 'station-1', slug: 'station-zero', name: 'Station Zero', level: 2,
   population: 42, power: 80, morale: 75, integrity: 90,
-  storageCapacity: 500, storageUsed: 120, threatLevel: 'low',
-  resources: { scrap: 12 }, modules: [], alerts: []
+  storageCapacity: 500, storageUsed: 120, threatLevel: 'low', activeSeason: null,
+  resources: { scrap: 12 }, modules: [], alerts: [], activeModifiers: [],
+  museum: { collection: [], donatedToday: 0, dailyCapacity: 0 }
 };
 
 const wreck = {
-  id: 'wreck-1', name: 'Glass Horizon', risk: 'moderate', integrity: 63,
-  description: 'A fractured freighter.', visualKey: 'wreck-glass-horizon'
+  id: 'wreck-1', archetype: 'glass-horizon', name: 'Glass Horizon', risk: 'moderate', integrity: 63,
+  description: 'A fractured freighter.', depleted: false, visualKey: 'wreck-glass-horizon',
+  remainingLootBudget: 8, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+  salvageProfile: {}
 };
 
 const history = {
   id: 'history-1', category: 'salvage', title: 'Wreck located',
-  body: 'Scanners found a salvage target.', createdAt: new Date().toISOString()
+  body: 'Scanners found a salvage target.', actorDisplayName: null, details: {},
+  createdAt: new Date().toISOString()
 };
 
 test('API success envelopes validate their payload schema', () => {
