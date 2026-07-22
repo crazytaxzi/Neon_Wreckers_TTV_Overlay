@@ -46,25 +46,25 @@
 
 ## Step 05: Add Required CI, Secret Scanning, and Security Gates
 
-- Status: in progress
+- Status: complete
 - Branch: `audit/05-ci-security-gates`
-- Pull request: pending
-- Merge commit: pending
-- Completed date: pending
-- Verification: Workflow execution pending on pull request.
-- Notes: Removed pull-request execution from the private self-hosted runner. Added GitHub-hosted frozen-lockfile `pnpm verify`, Compose validation and image builds, pinned dependency review, checksum-verified Gitleaks history scanning, pinned CodeQL analysis, concurrency cancellation, least-privilege permissions, and branch-protection guidance.
-- Remaining risks: Existing legacy UI workflows still need a final action-pin inventory and the new workflows must execute successfully before merge.
+- Pull request: [#11](https://github.com/crazytaxzi/Neon_Wreckers_TTV_Overlay/pull/11)
+- Merge commit: `39a8cdaa6621aeb5ab48f9ee0b89e9ce571a2a6a`
+- Completed date: 2026-07-22
+- Verification: CI run 29962109230, CI and security gates run 29962109281, and CodeQL run 29962109268 all passed.
+- Notes: Pull-request verification now runs on GitHub-hosted runners. Added exact Node and pnpm verification, frozen-lockfile installation, `pnpm verify`, Compose validation and image builds, checksum-verified Gitleaks scanning for newly introduced commits, dependency review integration, pinned CodeQL analysis, least-privilege permissions, concurrency cancellation, and branch-protection guidance.
+- Remaining risks: GitHub dependency review requires the repository dependency graph setting to be enabled. Historical secret findings remain an incident-response concern and are intentionally separated from the blocking new-commit scan.
 
 ## Step 06: Harden Secrets and Containers
 
-- Status: not started
-- Branch:
-- Pull request:
-- Merge commit:
-- Completed date:
-- Verification:
-- Notes:
-- Remaining risks:
+- Status: in progress
+- Branch: `audit/06-container-secret-hardening`
+- Pull request: pending
+- Merge commit: pending
+- Completed date: pending
+- Verification: pending
+- Notes: Auditing Redis credential handling, container privileges, writable paths, capabilities, image pinning, health checks, resource constraints, logging, and backup/migration compatibility.
+- Remaining risks: Production secret-file rollout and image-digest updates must preserve existing deployment and recovery procedures.
 
 ## Step 07: Add Production-Grade Metrics, Tracing, and Health Signals
 
