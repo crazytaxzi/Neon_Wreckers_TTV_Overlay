@@ -44,6 +44,10 @@ jobs:
       - name: Run full verification gate
         run: pnpm verify
 
+      - name: Prepare sanitized Compose environment
+        shell: bash
+        run: cp .env.example .env
+
       - name: Validate production Compose model
         run: docker compose -f compose.yaml config --quiet
 
