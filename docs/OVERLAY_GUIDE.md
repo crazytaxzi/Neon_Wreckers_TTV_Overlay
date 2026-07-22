@@ -28,9 +28,23 @@ After changing the checked-in configuration, rebuild through the supported updat
 sudo bash scripts/update.sh
 ```
 
-## Data flow
+## Data flow and recovery
 
-The overlay loads public station, wreck, and history data from `/api/v1` through `@neon-wreckers/browser-client`, then subscribes to `/api/v1/ws`. Its existing reconnect, headline rotation, wake/fade timing, and breaking-news classification remain client-side presentation behavior. Nginx proxies the WebSocket with the required HTTP/1.1 upgrade settings.
+The overlay performs one initial public station, wreck, and history snapshot from `/api/v1`, then treats `/api/v1/ws` as the primary update channel. A healthy connection performs one reconciliation snapshot every 90 seconds instead of three requests every 2.5 seconds. That reduces the steady request rate from roughly 1.2 requests per second to about 0.033 requests per second, a reduction of approximately 97.2%.
+
+When the WebSocket disconnects, the overlay waits five seconds before beginning 10-second fallback snapshots. Reconnect attempts use exponential backoff capped at 30 seconds with jitter to avoid synchronized reconnect storms. A successful reconnect triggers an immediate reconciliation so missed events are recovered quickly. Snapshot requests are guarded against overlap and are cancelled during component cleanup.
+
+The feed indicator exposes five states:
+
+- `connecting`: initial socket and snapshot startup
+- `live`: WebSocket healthy and events current
+- `reconnecting`: socket unavailable but recent snapshot data is still usable
+- `stale`: socket open but no event has arrived within the stale threshold
+- `offline`: socket unavailable and the latest successful snapshot is too old
+
+The overlay stores the last successful snapshot and realtime-event timestamps on the root element as `data-last-snapshot-at` and `data-last-event-at`. The feed indicator tooltip renders the corresponding ISO timestamps for troubleshooting.
+
+Document visibility does not suspend networking because OBS browser sources may be hidden between scenes while still needing current state when shown again. Every socket, reconnect timer, polling timer, status timer, and in-flight request is cleaned up when the overlay unmounts.
 
 ## Preview query parameters
 
@@ -39,7 +53,9 @@ Existing parameters remain available for scene setup, including status and ticke
 ## Troubleshooting
 
 - A blank overlay usually indicates a browser-source URL, build, or certificate problem.
-- A frozen overlay with a working page usually indicates API or WebSocket reachability trouble.
+- A `reconnecting` indicator means the last snapshot remains recent while WebSocket recovery is underway.
+- A `stale` indicator means the socket is open but events have stopped arriving; inspect proxy and API logs.
+- An `offline` indicator means both realtime and snapshot freshness have expired.
 - A white background in a normal browser does not prove OBS transparency is broken.
 - Check `https://PUBLIC_HOST/health`, gateway logs, API logs, and the Browser Source developer console.
 

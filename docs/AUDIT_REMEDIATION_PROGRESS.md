@@ -24,25 +24,25 @@
 
 ## Step 03: Create Shared Runtime API and Realtime Contracts
 
-- Status: in progress
+- Status: complete
 - Branch: `audit/03-shared-runtime-contracts`
 - Pull request: [#9](https://github.com/crazytaxzi/Neon_Wreckers_TTV_Overlay/pull/9)
-- Merge commit: pending
-- Completed date: pending
-- Verification: Final self-hosted `pnpm verify` and existing UI/visual proof suites are running after repository workspace guardrails were updated for the new package.
-- Notes: Added `@neon-wreckers/contracts` with Zod API-envelope, core DTO, and discriminated realtime-event schemas. The shared browser client validates envelopes, core player and overlay calls validate endpoint data, and public outbound/inbound realtime messages are rejected before invalid state reaches clients.
-- Remaining risks: Lower-risk catalog, marketplace, crafting, auction, quarters, cooldown, notification, integration-admin, and action-result payloads currently receive envelope validation but retain existing local domain types. Compatibility rules and the intentional migration boundary are documented in `docs/RUNTIME_CONTRACTS.md`.
+- Merge commit: `ce5c47febb3a045ec0168a727f6c8e592d497be7`
+- Completed date: 2026-07-22
+- Verification: Self-hosted verification run 29946727855, UI Revamp Verify run 29946726974, Admin and Overlay Visual Proof run 29946725656, and UI Visual Proof run 29946725768 all passed.
+- Notes: Added `@neon-wreckers/contracts` with Zod API-envelope, public DTO, and discriminated realtime-event schemas. The shared browser client validates envelopes, core player and overlay calls validate endpoint data, and public outbound/inbound realtime messages are rejected before invalid state reaches clients.
+- Remaining risks: Lower-risk catalog, marketplace, crafting, auction, quarters, cooldown, notification, integration-admin, and action-result payloads receive envelope validation but retain existing local domain types. Compatibility rules and the intentional migration boundary are documented in `docs/RUNTIME_CONTRACTS.md`.
 
 ## Step 04: Make Overlay Networking Realtime-First with Fallback Polling
 
-- Status: not started
-- Branch:
-- Pull request:
-- Merge commit:
-- Completed date:
-- Verification:
-- Notes:
-- Remaining risks:
+- Status: in progress
+- Branch: `audit/04-adaptive-overlay-realtime`
+- Pull request: [#10](https://github.com/crazytaxzi/Neon_Wreckers_TTV_Overlay/pull/10)
+- Merge commit: pending
+- Completed date: pending
+- Verification: Final connector-authored verification trigger submitted after the WebSocket event-handler type alignment; full self-hosted and UI/visual lanes are rerunning.
+- Notes: Replaced continuous three-request polling every 2.5 seconds with one initial snapshot, WebSocket-first updates, 90-second connected reconciliation, a 5-second disconnect grace period, 10-second fallback polling, immediate reconnect reconciliation, explicit connection states, jittered exponential backoff, timestamp tracking, and deterministic cleanup.
+- Remaining risks: Production OBS sessions should be observed for real-world proxy idle timeouts and network flapping after merge.
 
 ## Step 05: Add Required CI, Secret Scanning, and Security Gates
 

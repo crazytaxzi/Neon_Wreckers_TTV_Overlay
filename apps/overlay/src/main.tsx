@@ -1,9 +1,9 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { requestApi } from '@neon-wreckers/browser-client';
-import { currentWreckSchema, historyRecordSchema, realtimeEventSchema, stationSnapshotSchema, type CurrentWreck, type HistoryRecord, type StationAlert, type StationSnapshot } from '@neon-wreckers/contracts';
+import { type CurrentWreck, type HistoryRecord, type StationAlert, type StationSnapshot } from '@neon-wreckers/contracts';
 import { Badge, Meter, NWIcon, OverlayEventPopup, Panel, ThemeProvider, defaultTheme, type Tone } from '@neon-wreckers/ui';
 import { loadOverlayConfig, type OverlayConfig } from './config.js';
+import { useAdaptiveOverlayNetwork } from './network.js';
 import './overlay.css';
 
 type Severity = 'positive' | 'info' | 'viewer' | 'warning' | 'critical';
@@ -21,14 +21,7 @@ type Headline = {
 type Station = StationSnapshot;
 type Wreck = CurrentWreck;
 
-const API = '/api/v1';
 const MAX_HEADLINES = 40;
-
-function wsUrl(): string {
-  const url = new URL(`${API}/ws`, window.location.origin);
-  url.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return url.toString();
-}
 
 function clamp(value: unknown, fallback = 0): number {
   const numeric = Number(value);
@@ -101,11 +94,9 @@ function TelemetryMeter({ label, value, tone }: { label: string; value: number; 
 
 function App() {
   const [config, setConfig] = useState<OverlayConfig | null>(null);
-  const [station, setStation] = useState<Station | null>(null);
-  const [wreck, setWreck] = useState<Wreck | null>(null);
+  const { station, wreck, history, presenceCount, connectionState, lastSnapshotAt, lastEventAt } = useAdaptiveOverlayNetwork();
   const [headlines, setHeadlines] = useState<Headline[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [connected, setConnected] = useState(false);
   const [clock, setClock] = useState(new Date());
   const [transitionKey, setTransitionKey] = useState(0);
   const [tickerAwake, setTickerAwake] = useState(true);
@@ -114,9 +105,6 @@ function App() {
   const previousWreck = useRef<Wreck | null>(null);
   const knownHistoryIds = useRef<Set<string>>(new Set());
   const snapshotLoaded = useRef(false);
-  const websocket = useRef<WebSocket | null>(null);
-  const reconnectTimer = useRef<number | undefined>(undefined);
-  const reconnectAttempt = useRef(0);
   const tickerSleepTimer = useRef<number | undefined>(undefined);
   const statusSleepTimer = useRef<number | undefined>(undefined);
   const knownHeadlineIds = useRef(new Set<string>());
@@ -163,68 +151,50 @@ function App() {
     wakeOverlay();
   }, [wakeOverlay]);
 
-  const refresh = useCallback(async () => {
-    const results = await Promise.allSettled([
-      requestApi<Station>(`${API}/station`, { cache: 'no-store' }, stationSnapshotSchema),
-      requestApi<HistoryRecord[]>(`${API}/history`, { cache: 'no-store' }, historyRecordSchema.array()),
-      requestApi<Wreck>(`${API}/wrecks/current`, { cache: 'no-store' }, currentWreckSchema)
-    ]);
-
-    if (results[0].status === 'fulfilled') {
-      const next = results[0].value;
-      const previous = previousStation.current;
-      setStation(next);
-      previousStation.current = next;
-
-      if (previous && snapshotLoaded.current) {
-        const changes: string[] = [];
-        if (Number(next.integrity) !== Number(previous.integrity)) changes.push(`integrity ${Math.round(Number(next.integrity ?? 0))}%`);
-        if (Number(next.power) !== Number(previous.power)) changes.push(`power ${Math.round(Number(next.power ?? 0))}%`);
-        if (Number(next.morale) !== Number(previous.morale)) changes.push(`morale ${Math.round(Number(next.morale ?? 0))}%`);
-        if (Number(next.population) !== Number(previous.population)) changes.push(`crew ${Math.round(Number(next.population ?? 0))}`);
-        if (changes.length) enqueue({
-          id: `station-poll-${Date.now()}`,
-          label: 'SYSTEM UPDATE',
-          title: 'Station telemetry changed',
-          body: changes.join(' • '),
-          severity: classify(changes.join(' ')),
-          createdAt: Date.now()
-        });
-      }
-      enqueue((next.alerts ?? []).slice(0, 8).map(fromAlert));
+  useEffect(() => {
+    if (!station) return;
+    const previous = previousStation.current;
+    previousStation.current = station;
+    if (previous && snapshotLoaded.current) {
+      const changes: string[] = [];
+      if (Number(station.integrity) !== Number(previous.integrity)) changes.push(`integrity ${Math.round(Number(station.integrity ?? 0))}%`);
+      if (Number(station.power) !== Number(previous.power)) changes.push(`power ${Math.round(Number(station.power ?? 0))}%`);
+      if (Number(station.morale) !== Number(previous.morale)) changes.push(`morale ${Math.round(Number(station.morale ?? 0))}%`);
+      if (Number(station.population) !== Number(previous.population)) changes.push(`crew ${Math.round(Number(station.population ?? 0))}`);
+      if (changes.length) enqueue({ id: `station-${Date.now()}`, label: 'SYSTEM UPDATE', title: 'Station telemetry changed', body: changes.join(' • '), severity: classify(changes.join(' ')), createdAt: Date.now() });
     }
-
-    if (results[1].status === 'fulfilled') {
-      const entries = results[1].value.slice(0, 40);
-      const unseen = entries.filter((entry) => !knownHistoryIds.current.has(String(entry?.id)));
-      for (const entry of entries) knownHistoryIds.current.add(String(entry?.id));
-      if (!snapshotLoaded.current) enqueue(entries.slice(0, 24).map(fromHistory));
-      else if (unseen.length) enqueue(unseen.map(fromHistory));
-    }
-
-    if (results[2].status === 'fulfilled') {
-      const next = results[2].value;
-      const previous = previousWreck.current;
-      setWreck(next);
-      previousWreck.current = next;
-      if (previous && snapshotLoaded.current && (next.id !== previous.id || Number(next.integrity) !== Number(previous.integrity))) {
-        const title = next.id !== previous.id ? String(next.name || 'New wreck located') : `${next.name || 'Wreck'} integrity changed`;
-        const body = next.id !== previous.id
-          ? String(next.description || `Risk classification: ${next.risk || 'unknown'}`)
-          : `Remaining hull integrity: ${Math.round(Number(next.integrity ?? 0))}%`;
-        const severity = classify(`${title} ${body} ${next.risk || ''}`);
-        enqueue({ id: `wreck-poll-${next.id || Date.now()}-${next.integrity}`, label: 'SALVAGE INTELLIGENCE', title, body, severity, createdAt: Date.now(), breaking: isBreaking(`${title} ${body}`, severity) });
-      }
-    }
-
-    snapshotLoaded.current = true;
-  }, [enqueue]);
+    enqueue((station.alerts ?? []).slice(0, 8).map(fromAlert));
+  }, [station, enqueue]);
 
   useEffect(() => {
-    refresh().catch(() => undefined);
-    const timer = window.setInterval(() => refresh().catch(() => undefined), 2_500);
-    return () => window.clearInterval(timer);
-  }, [refresh]);
+    const entries = history.slice(0, 40);
+    const unseen = entries.filter(entry => !knownHistoryIds.current.has(String(entry.id)));
+    for (const entry of entries) knownHistoryIds.current.add(String(entry.id));
+    if (!snapshotLoaded.current) enqueue(entries.slice(0, 24).map(fromHistory));
+    else if (unseen.length) enqueue(unseen.map(fromHistory));
+  }, [history, enqueue]);
+
+  useEffect(() => {
+    if (!wreck) return;
+    const previous = previousWreck.current;
+    previousWreck.current = wreck;
+    if (previous && snapshotLoaded.current && (wreck.id !== previous.id || Number(wreck.integrity) !== Number(previous.integrity))) {
+      const title = wreck.id !== previous.id ? String(wreck.name || 'New wreck located') : `${wreck.name || 'Wreck'} integrity changed`;
+      const body = wreck.id !== previous.id
+        ? String(wreck.description || `Risk classification: ${wreck.risk || 'unknown'}`)
+        : `Remaining hull integrity: ${Math.round(Number(wreck.integrity ?? 0))}%`;
+      const severity = classify(`${title} ${body} ${wreck.risk || ''}`);
+      enqueue({ id: `wreck-${wreck.id || Date.now()}-${wreck.integrity}`, label: 'SALVAGE INTELLIGENCE', title, body, severity, createdAt: Date.now(), breaking: isBreaking(`${title} ${body}`, severity) });
+    }
+  }, [wreck, enqueue]);
+
+  useEffect(() => {
+    if (presenceCount > 1) enqueue({ id: `presence-${presenceCount}-${Math.floor(Date.now() / 30000)}`, label: 'VIEWER NETWORK', title: `${presenceCount} operators linked`, body: 'Twitch crew connections are active across the station network.', severity: 'viewer', createdAt: Date.now() });
+  }, [presenceCount, enqueue]);
+
+  useEffect(() => {
+    if (station && wreck) snapshotLoaded.current = true;
+  }, [station, wreck]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setClock(new Date()), 1_000);
@@ -239,64 +209,6 @@ function App() {
     }, Math.max(3, config.ticker.rotationSeconds) * 1000);
     return () => window.clearInterval(timer);
   }, [config, headlines.length]);
-
-  useEffect(() => {
-    let disposed = false;
-    const connect = () => {
-      if (disposed) return;
-      const ws = new WebSocket(wsUrl());
-      websocket.current = ws;
-      ws.onopen = () => { reconnectAttempt.current = 0; setConnected(true); };
-      ws.onmessage = (event) => {
-        try {
-          const decoded: unknown = JSON.parse(String(event.data));
-          const parsed = realtimeEventSchema.safeParse(decoded);
-          if (!parsed.success) {
-            console.warn('Overlay realtime contract validation failed', { issues: parsed.error.issues });
-            return;
-          }
-          const message = parsed.data;
-          if (message.type === 'history.added' && message.entry) enqueue(fromHistory(message.entry));
-          if (message.type === 'station.updated' && message.station) {
-            const next = message.station;
-            const previous = previousStation.current;
-            setStation(next);
-            previousStation.current = next;
-            if (previous) {
-              const changes: string[] = [];
-              if (Math.abs(Number(next.integrity ?? 0) - Number(previous.integrity ?? 0)) >= 2) changes.push(`integrity ${Math.round(Number(next.integrity ?? 0))}%`);
-              if (Math.abs(Number(next.power ?? 0) - Number(previous.power ?? 0)) >= 2) changes.push(`power ${Math.round(Number(next.power ?? 0))}%`);
-              if (Math.abs(Number(next.morale ?? 0) - Number(previous.morale ?? 0)) >= 3) changes.push(`morale ${Math.round(Number(next.morale ?? 0))}%`);
-              if (changes.length) enqueue({ id: `station-${Date.now()}`, label: 'SYSTEM UPDATE', title: 'Station telemetry changed', body: changes.join(' • '), severity: classify(changes.join(' ')), createdAt: Date.now() });
-            }
-            enqueue((next.alerts ?? []).slice(0, 5).map(fromAlert));
-          }
-          if (message.type === 'wreck.updated' && message.wreck) {
-            setWreck(message.wreck);
-            const title = String(message.wreck.name || 'New wreck located');
-            const body = String(message.wreck.description || `Risk classification: ${message.wreck.risk || 'unknown'}`);
-            const severity = classify(`${title} ${body}`);
-            enqueue({ id: `wreck-${message.wreck.id || Date.now()}`, label: 'SALVAGE INTELLIGENCE', title, body, severity, createdAt: Date.now(), breaking: isBreaking(`${title} ${body}`, severity) });
-          }
-          if (message.type === 'presence.updated' && Number(message.count) > 1) enqueue({ id: `presence-${message.count}-${Math.floor(Date.now() / 30000)}`, label: 'VIEWER NETWORK', title: `${message.count} operators linked`, body: 'Twitch crew connections are active across the station network.', severity: 'viewer', createdAt: Date.now() });
-        } catch (error) {
-          console.warn('Overlay realtime packet could not be decoded', { error });
-        }
-      };
-      ws.onerror = () => ws.close();
-      ws.onclose = () => {
-        setConnected(false);
-        if (disposed) return;
-        reconnectTimer.current = window.setTimeout(connect, Math.min(30_000, 1_500 * 2 ** reconnectAttempt.current++));
-      };
-    };
-    connect();
-    return () => {
-      disposed = true;
-      if (reconnectTimer.current) window.clearTimeout(reconnectTimer.current);
-      websocket.current?.close();
-    };
-  }, [enqueue]);
 
   const current = headlines[activeIndex] ?? { id: 'online', label: 'STATION NEWS', title: 'Station Zero is online', body: 'Awaiting salvage operations and viewer activity.', severity: 'positive' as Severity, createdAt: Date.now() };
   const threatText = String(station?.threatLevel ?? 'LOW').toUpperCase();
@@ -329,12 +241,15 @@ function App() {
     '--fade-seconds': `${Math.max(0.2, config.visibility.fadeSeconds)}s`
   } as CSSProperties;
 
+  const connected = connectionState === 'live';
+  const networkLabel = connectionState === 'live' ? 'LIVE STATION FEED' : connectionState === 'stale' ? 'STALE STATION FEED' : connectionState === 'offline' ? 'STATION FEED OFFLINE' : connectionState === 'connecting' ? 'CONNECTING TO STATION' : 'RECONNECTING TO STATION';
+  const networkTitle = `Last snapshot: ${lastSnapshotAt ? new Date(lastSnapshotAt).toISOString() : 'pending'} · Last event: ${lastEventAt ? new Date(lastEventAt).toISOString() : 'pending'}`;
   const breaking = Boolean(config.breakingNews && current.breaking);
   const forceVisible = Boolean(config.previewBackground && config.visibility.keepVisibleInPreview);
   const showTicker = forceVisible || tickerAwake;
   const showStatus = forceVisible || statusAwake;
   return (
-    <main className={`broadcast-canvas ${config.previewBackground ? 'preview-background' : ''} ${config.scanlines ? 'with-scanlines' : ''} ${config.glass ? 'with-glass' : ''}`} style={cssVars}>
+    <main className={`broadcast-canvas ${config.previewBackground ? 'preview-background' : ''} ${config.scanlines ? 'with-scanlines' : ''} ${config.glass ? 'with-glass' : ''}`} style={cssVars} data-connection-state={connectionState} data-last-snapshot-at={lastSnapshotAt ?? undefined} data-last-event-at={lastEventAt ?? undefined}>
       {config.status.visible && <Panel depth="medium" tone="success" className={`telemetry-panel station-panel ${showStatus ? 'overlay-awake' : 'overlay-idle'}`} aria-label="Station telemetry">
         <header className="telemetry-header"><div className="telemetry-ident"><span className="telemetry-icon"><NWIcon name="station" size={22} /></span><div><span className="nw-eyebrow">ORBITAL COMMAND</span><h1>{station?.name || 'STATION ZERO'}</h1></div></div><Badge tone={connected ? 'success' : 'warning'} icon="network">{connected ? 'LIVE LINK' : 'LINK LOST'}</Badge></header>
         <div className="telemetry-meta"><span>ZERO-01</span><span>LEVEL {station?.level ?? 1}</span><span>CREW {compactNumber(station?.population ?? 0)}</span><Badge tone={uiTone(threatTone)}>THREAT {threatText}</Badge></div>
@@ -367,7 +282,7 @@ function App() {
         <div className="rail-cap right-cap"><span>{utc} UTC</span><span className="counter">{String(activeIndex + 1).padStart(2, '0')}/{String(Math.max(headlines.length, 1)).padStart(2, '0')}</span></div>
       </section>}
 
-      {config.feedIndicator && <div className={`feed-indicator ${connected ? 'connected' : 'reconnecting'}`}><span /> {connected ? 'LIVE STATION FEED' : 'RECONNECTING TO STATION'}</div>}
+      {config.feedIndicator && <div className={`feed-indicator ${connectionState}`} title={networkTitle}><span /> {networkLabel}</div>}
     </main>
   );
 }
