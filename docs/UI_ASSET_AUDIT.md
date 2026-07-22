@@ -1,91 +1,44 @@
-# UI Asset Audit
+# Neon Wreckers Shared Raster UI Asset Audit
 
-## Policy
+## Status
 
-The supplied Neon Wreckers concept images define composition, hierarchy, framing, tactile controls, neon accents, and broadcast language. They are not committed as flattened interface screenshots or required page backgrounds.
+Complete on branch `agent/image-first-graphics-overhaul` and documented in `docs/UI_RASTER_COMPLETION_REPORT.md`.
 
-Production game imagery continues to come from the repository's existing station, wreck, module, and ship artwork. UI copy remains live HTML and shared CSS/SVG/icon primitives provide the surrounding frame.
+The Command Core, Mobile UI, Salvage Bay, and Broadcast Overlay boards, together with the generated player, mobile, admin, and overlay target screens, were inventoried and converted into one shared raster-backed interface system owned by `packages/ui`.
 
-## Canonical artwork inventory
-
-All 30 canonical sources are WebP files with intrinsic dimensions of 1200 by 675 pixels.
-
-| Category | Canonical sources | Original transfer size | Production use |
-| --- | ---: | ---: | --- |
-| Station command center | 1 | 139,520 bytes | Home/Command Center hero |
-| Station modules | 9 | 1,133,862 bytes | Station overview and module nodes |
-| Wrecks | 12 | 1,099,004 bytes | Current salvage target imagery |
-| Base ships | 2 | 150,928 bytes | Owned-ship fallback presentation |
-| Premium ship skins | 6 | 625,558 bytes | Ship cards, management previews, and skin selection |
-| **Total** | **30** | **3,148,872 bytes (3.00 MiB)** | Player application artwork library |
-
-## Responsive variants
-
-Every canonical source now has:
-
-- a `-360w.webp` mobile variant
-- a `-600w.webp` tablet and compact-laptop variant
-- the original 1200-pixel-wide source as the desktop/high-density fallback
-
-The `GameArtwork` component supplies `srcset`, `sizes`, intrinsic width and height, async decoding, and lazy loading. The station command-center hero and current wreck hero may load eagerly because they are primary visible content. Secondary modules, ships, and skin previews load lazily.
-
-Measured totals for all 30 assets:
-
-| Variant set | Total transfer size | Reduction from originals |
-| --- | ---: | ---: |
-| 1200px canonical sources | 3,148,872 bytes (3.00 MiB) | Baseline |
-| 600px variants | 610,102 bytes (595.8 KiB) | 80.6% smaller |
-| 360px variants | 246,412 bytes (240.6 KiB) | 92.2% smaller |
-
-Representative measured files:
-
-| Asset | Original | 600px | 360px |
-| --- | ---: | ---: | ---: |
-| Station Zero | 139,520 bytes | 25,760 bytes | 10,062 bytes |
-| Orpheus Barge | 116,012 bytes | 21,574 bytes | 8,418 bytes |
-| Cargo Hauler Leviathan | 139,806 bytes | 27,662 bytes | 10,786 bytes |
-
-Actual browser transfer depends on viewport, device pixel ratio, cache state, and the rendered `sizes` value. The smaller variants prevent ordinary phones from downloading the 1200-pixel originals for compact cards.
-
-## Naming convention
-
-Canonical source:
+## Canonical implementation
 
 ```text
-<visual-key>.webp
+packages/ui/
+  assets/
+    raster/
+      core/
+      mobile/
+      salvage/
+      broadcast/
+      generated/
+  manifests/
+    raster-assets.json
+  src/
+    raster-system.css
 ```
 
-Responsive variants:
+Applications consume this package rather than copying artwork or independently recreating controls.
 
-```text
-<visual-key>-360w.webp
-<visual-key>-600w.webp
-```
+## Completed requirements
 
-Existing visual keys and API/content identifiers remain unchanged.
+- Source-board and generated-target hashes and dimensions are recorded in the manifest.
+- Transparent WebP artwork is centralized in `packages/ui/assets/raster`.
+- Painted panel, rail, button, navigation, action, rarity, alert, broadcast, event, and brand primitives are shared.
+- Player, admin, and overlay consume the same implementation.
+- Mobile layouts receive Mobile UI-specific treatments.
+- OBS overlay presentation remains noninteractive and transparently composited.
+- Existing gameplay, API, authentication, Twitch, StreamElements, WebSocket, polling, telemetry, and server-authority behavior is preserved.
+- Contract tests and all production builds pass.
+- Player, admin, overlay, viewer-event, resolution, and transparent OBS browser proofs pass.
 
-## Accessibility and alternative text
+## Deliberately excluded crops
 
-- Meaningful hero and entity images retain descriptive alternative text.
-- Decorative module-node images use empty alternative text because the adjacent live heading already names the module.
-- UI labels are never embedded into artwork.
-- Rarity, status, risk, and warning information remains live text and is not encoded only in an image or color.
+Large example cards containing baked text, sample prices, usernames, timers, or telemetry values are not used as live backgrounds because they would duplicate or contradict authoritative live data. Reusable painted chrome was extracted instead, preserving the visual language without turning the application into an inaccessible screenshot mask.
 
-## Layout rules
-
-- Artwork does not determine layout dimensions.
-- Images reserve space through intrinsic dimensions to reduce layout shift.
-- `object-fit` and container styling control presentation.
-- CSS and shared icons provide framing, telemetry, badges, and controls.
-- No concept screenshot is loaded by a production route.
-
-## Validation contract
-
-`tools/test/ui-revamp.test.mjs` verifies:
-
-- 30 canonical project sources exist
-- 30 mobile variants exist
-- 30 tablet variants exist
-- the player imports and uses `GameArtwork`
-- project station, wreck, and ship artwork is not rendered through unresponsive direct image tags
-- lazy/eager behavior, async decoding, and intrinsic dimensions remain defined
+See `packages/ui/manifests/raster-assets.json` for every extracted asset and `docs/UI_RASTER_COMPLETION_REPORT.md` for the application mapping, build results, and verification report.

@@ -85,9 +85,9 @@ test('player artwork uses responsive project assets instead of concept screensho
   const mobile = assets.filter(file => file.endsWith('-360w.webp'));
   const tablet = assets.filter(file => file.endsWith('-600w.webp'));
 
-  assert.equal(originals.length, 30, 'Expected the 30 canonical project artwork sources.');
-  assert.equal(mobile.length, 30, 'Every canonical artwork source needs a 360px mobile variant.');
-  assert.equal(tablet.length, 30, 'Every canonical artwork source needs a 600px tablet variant.');
+  assert.equal(originals.length, 31, 'Expected the 31 canonical project artwork sources.');
+  assert.equal(mobile.length, 31, 'Every canonical artwork source needs a 360px mobile variant.');
+  assert.equal(tablet.length, 31, 'Every canonical artwork source needs a 600px tablet variant.');
   assert.match(component, /srcSet=/);
   assert.match(component, /width=\{1200\}/);
   assert.match(component, /height=\{675\}/);
@@ -97,6 +97,8 @@ test('player artwork uses responsive project assets instead of concept screensho
   const artworkPages = `${stationPages}\n${fleetPages}`;
   assert.match(artworkPages, /import \{ GameArtwork \}/);
   assert.match(artworkPages, /<GameArtwork/);
+  assert.ok(originals.includes('base/rustlight-tug.webp'), 'The starter Rustlight Tug needs dedicated raster artwork.');
+  assert.match(fleetPages, /ship.visualKey/);
   assert.doesNotMatch(artworkPages, /<img[^>]+src=\{?`?\/?(?:station|wrecks|ships)\//);
 });
 
@@ -109,6 +111,9 @@ test('overlay safety behavior remains present', async () => {
   assert.match(source, /malformed packet must not take down a live stream overlay/i);
   assert.match(source, /Promise\.allSettled/);
   assert.match(source, /reconnectTimer/);
+  assert.match(source, /visualKey\?: string/);
+  assert.match(source, /wreck-schematic__art/);
+  assert.match(source, /wreckArtworkSrc/);
   assert.match(css, /pointer-events:\s*none/);
   assert.match(css, /background:\s*transparent/);
 });
