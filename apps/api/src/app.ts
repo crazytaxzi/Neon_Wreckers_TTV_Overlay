@@ -26,6 +26,16 @@ import { registerSystemRoutes } from './routes/system.js';
 import type { ApiContext } from './types.js';
 import { RequestMetrics } from './services/metrics.js';
 
+const apiContentSecurityPolicy = {
+  directives: {
+    defaultSrc: ["'none'"],
+    baseUri: ["'none'"],
+    formAction: ["'none'"],
+    frameAncestors: ["'none'"],
+    objectSrc: ["'none'"]
+  }
+} as const;
+
 export async function buildApp() {
   const prisma = new PrismaClient();
   const gameQueue = new Queue('neon-wreckers-game', { connection: parseRedisConnection(env.REDIS_URL) });
@@ -52,7 +62,7 @@ export async function buildApp() {
     }
   });
 
-  await app.register(helmet, { global: true, contentSecurityPolicy: false });
+  await app.register(helmet, { global: true, contentSecurityPolicy: apiContentSecurityPolicy });
   await app.register(cors, { origin: corsOrigins, credentials: true });
   await app.register(cookie, { secret: env.SESSION_SECRET });
   await app.register(rateLimit, {
