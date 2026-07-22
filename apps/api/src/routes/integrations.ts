@@ -25,9 +25,9 @@ export function findMissingTwitchScopes(grantedScopes: readonly string[]) {
 function eventSubFailureMessage(error: unknown) {
   if (error instanceof TwitchEventSubSubscriptionError) {
     if (error.statusCode === 401 || error.statusCode === 403) {
-      return 'Twitch rejected the subscription authorization. Reconnect the streamer account and retry.';
+      return 'Twitch rejected authorization. Reconnect the streamer account and retry.';
     }
-    return `Twitch rejected the subscription request (${error.statusCode}). Check server logs for details.`;
+    return `Twitch rejected the request (${error.statusCode}). Check server logs for details.`;
   }
   return error instanceof Error ? error.message : 'Unknown Twitch EventSub failure';
 }
@@ -76,11 +76,11 @@ export async function registerIntegrationRoutes(app: FastifyInstance, context: A
     const missingScopes = [...new Set([...missingConfiguredScopes, ...missingGrantedScopes])];
     if (missingScopes.length > 0) {
       return {
-        data: {
-          reauthorizationRequired: true,
-          missingScopes,
-          results: []
-        },
+        data: [{
+          type: 'authorization',
+          ok: false,
+          error: `Reconnect Twitch authorization. Missing scopes: ${missingScopes.join(', ')}`
+        }],
         requestId: request.id
       };
     }
@@ -114,13 +114,6 @@ export async function registerIntegrationRoutes(app: FastifyInstance, context: A
       }, 'Twitch EventSub subscription reconciliation failed');
       return { type: definitions[index].type, ok: false, error: eventSubFailureMessage(error) };
     });
-    return {
-      data: {
-        reauthorizationRequired: false,
-        missingScopes: [],
-        results: response
-      },
-      requestId: request.id
-    };
+    return { data: response, requestId: request.id };
   });
 }
