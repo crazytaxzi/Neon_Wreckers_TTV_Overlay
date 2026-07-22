@@ -13,14 +13,14 @@
 
 ## Step 02: Replace In-Memory Cooldowns with Atomic Persistent Enforcement
 
-- Status: not started
-- Branch:
-- Pull request:
+- Status: in progress
+- Branch: `audit/02-persist-cooldowns`
+- Pull request: pending
 - Merge commit:
 - Completed date:
-- Verification:
-- Notes:
-- Remaining risks:
+- Verification: Pending GitHub Actions execution of the repository test suite, builds, and `pnpm verify`.
+- Notes: Removed the process-local cooldown map from API construction and context. Correctness-sensitive actions use the existing `ActionCooldown` model and player/action PostgreSQL advisory transaction lock. Added retry metadata and focused first/repeat/restart/concurrency/expiry/player-isolation tests.
+- Remaining risks: CI must confirm TypeScript and test compatibility. The existing combined mechanics migration already introduced `ActionCooldown`; no new schema migration is required for this cleanup.
 
 ## Step 03: Create Shared Runtime API and Realtime Contracts
 
