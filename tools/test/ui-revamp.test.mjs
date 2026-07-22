@@ -103,16 +103,21 @@ test('player artwork uses responsive project assets instead of concept screensho
 });
 
 test('overlay safety behavior remains present', async () => {
-  const [source, css] = await Promise.all([
+  const [source, network, css] = await Promise.all([
     read('apps/overlay/src/main.tsx'),
+    read('apps/overlay/src/network.ts'),
     read('apps/overlay/src/overlay.css')
   ]);
 
-  assert.match(source, /realtimeEventSchema\.safeParse/);
-  assert.match(source, /contract validation failed/i);
-  assert.match(source, /Promise\.allSettled/);
-  assert.match(source, /reconnectTimer/);
-  assert.match(source, /currentWreckSchema/);
+  assert.match(source, /useAdaptiveOverlayNetwork/);
+  assert.doesNotMatch(source, /new WebSocket|requestApi|2_500/);
+  assert.match(network, /realtimeEventSchema\.safeParse/);
+  assert.match(network, /AbortController/);
+  assert.match(network, /CONNECTED_RECONCILE_MS = 90_000/);
+  assert.match(network, /DISCONNECTED_GRACE_MS = 5_000/);
+  assert.match(network, /FALLBACK_POLL_MS = 10_000/);
+  assert.match(network, /reconnectDelayMs/);
+  assert.match(network, /controller\.stop/);
   assert.match(source, /wreck-schematic__art/);
   assert.match(source, /wreckArtworkSrc/);
   assert.match(css, /pointer-events:\s*none/);

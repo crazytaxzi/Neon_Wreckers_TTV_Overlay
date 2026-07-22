@@ -103,7 +103,11 @@ body { color: var(--nw-color-text); font-family: var(--nw-font-body); text-rende
 .dispatch-rail.breaking { animation: danger-pulse 1.2s ease-in-out infinite alternate; }
 .feed-indicator { position: absolute; right: 2rem; bottom: calc(var(--ticker-top) + 7.2rem); display: flex; align-items: center; gap: .45rem; color: var(--nw-color-text-dim); font-family: var(--nw-font-mono); font-size: .5rem; font-weight: 750; letter-spacing: .14em; text-shadow: 0 1px 3px var(--nw-color-void); }
 .feed-indicator span { width: .34rem; height: .34rem; background: var(--nw-color-orange); box-shadow: 0 0 9px var(--nw-color-orange); transform: rotate(45deg); }
-.feed-indicator.connected span { background: var(--nw-color-green); box-shadow: 0 0 9px var(--nw-color-green); }
+.feed-indicator.live span { background: var(--nw-color-green); box-shadow: 0 0 9px var(--nw-color-green); }
+.feed-indicator.stale span { background: var(--nw-color-orange); box-shadow: 0 0 9px var(--nw-color-orange); }
+.feed-indicator.offline span { background: var(--nw-color-red); box-shadow: 0 0 9px var(--nw-color-red); }
+.feed-indicator.connecting span,
+.feed-indicator.reconnecting span { animation: feed-pulse 1.2s ease-in-out infinite alternate; }
 
 .telemetry-panel,
 .dispatch-rail { opacity: 1; visibility: visible; transition: opacity var(--fade-seconds) ease, filter var(--fade-seconds) ease, visibility 0s linear, translate var(--fade-seconds) ease; will-change: opacity, filter, translate; }
@@ -113,6 +117,7 @@ body { color: var(--nw-color-text); font-family: var(--nw-font-body); text-rende
 .wreck-telemetry.overlay-idle { translate: 1rem 0; }
 .dispatch-rail.overlay-idle { translate: 0 1rem; }
 
+@keyframes feed-pulse { from { opacity: .35; } to { opacity: 1; } }
 @keyframes tactical-spin { to { transform: rotate(360deg); } }
 @keyframes dispatch-in { from { opacity: 0; transform: translateX(-.8rem); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes danger-pulse { from { box-shadow: var(--nw-depth-medium), 0 0 12px rgba(var(--nw-color-red-rgb), .2); } to { box-shadow: var(--nw-depth-medium), 0 0 30px rgba(var(--nw-color-red-rgb), .45); } }

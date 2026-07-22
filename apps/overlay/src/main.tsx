@@ -21,7 +21,6 @@ type Headline = {
 type Station = StationSnapshot;
 type Wreck = CurrentWreck;
 
-const API = '/api/v1';
 const MAX_HEADLINES = 40;
 
 function clamp(value: unknown, fallback = 0): number {
