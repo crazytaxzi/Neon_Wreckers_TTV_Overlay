@@ -27,12 +27,18 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set up Node.js 22.16.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22.16.0
+          cache: pnpm
+
       - name: Verify runner toolchain
         shell: bash
         run: |
           set -euo pipefail
           echo "Runner: $RUNNER_NAME"
-          node --version
+          test "$(node --version)" = "v22.16.0"
           git --version
           mkdir -p /home/crazytaxzi/Neon_Wreckers_TTV_Overlay_Temp
           test -w /home/crazytaxzi/Neon_Wreckers_TTV_Overlay_Temp
