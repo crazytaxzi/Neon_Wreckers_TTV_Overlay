@@ -1,0 +1,425 @@
+{
+  "version": "1.0.0",
+  "sourceOfTruth": "painted raster boards plus generated final UI targets",
+  "sources": {
+    "command-core": {
+      "sha256": "12886bcd0bb9b9ad7b809ea38cc17cd9c832ff71dd7142b56ccade9a5c2b15e7",
+      "dimensions": [
+        1448,
+        1086
+      ]
+    },
+    "mobile-ui": {
+      "sha256": "e86d7a22cdf06cc3ae80e96ca358fcbb4bf274a593a6be80ae448f45dd9213ea",
+      "dimensions": [
+        1448,
+        1086
+      ]
+    },
+    "salvage-bay": {
+      "sha256": "51ebc8e5fb2b40d76157a7d861440f039220093c561ce659ba9368216c88b8a1",
+      "dimensions": [
+        1448,
+        1086
+      ]
+    },
+    "broadcast-overlay": {
+      "sha256": "ad31dcb7e3135de14e4998f423de712560ed2ead659f460ffb57ad6f2490427c",
+      "dimensions": [
+        1448,
+        1086
+      ]
+    },
+    "generated-player": {
+      "sha256": "cef37a7be30158deed3a2158650900e39ed28f13ce8f613cb8f9e9b194f7d2d2",
+      "dimensions": [
+        1672,
+        941
+      ]
+    },
+    "generated-mobile": {
+      "sha256": "7fe08df59aa0941d2bea303aec7d9cbc7fcbf6fe333fa5aab09c67344685254b",
+      "dimensions": [
+        941,
+        1672
+      ]
+    },
+    "generated-admin": {
+      "sha256": "b2b9ee4da6c367a1dbd174de1649f5b415b67f17d38111d8f80e798cd53025e0",
+      "dimensions": [
+        1672,
+        941
+      ]
+    },
+    "generated-overlay": {
+      "sha256": "48f93139857ee0f69537aab7828882675146f257cfa265fd7dc22b2ea563467",
+      "dimensions": [
+        1672,
+        941
+      ]
+    }
+  },
+  "assets": [
+    {
+      "id": "panel-frame",
+      "path": "packages/ui/assets/raster/core/panel-frame.webp",
+      "sourceGroup": "core",
+      "width": 408,
+      "height": 182,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin",
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "panel-purple-gen",
+      "path": "packages/ui/assets/raster/core/panel-purple-gen.webp",
+      "sourceGroup": "core",
+      "width": 550,
+      "height": 327,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin",
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "panel-rail",
+      "path": "packages/ui/assets/raster/core/panel-rail.webp",
+      "sourceGroup": "core",
+      "width": 407,
+      "height": 58,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin",
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "button-green",
+      "path": "packages/ui/assets/raster/core/button-green.webp",
+      "sourceGroup": "core",
+      "width": 153,
+      "height": 58,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin",
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "button-purple",
+      "path": "packages/ui/assets/raster/core/button-purple.webp",
+      "sourceGroup": "core",
+      "width": 156,
+      "height": 58,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin",
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "button-neutral",
+      "path": "packages/ui/assets/raster/core/button-neutral.webp",
+      "sourceGroup": "core",
+      "width": 155,
+      "height": 58,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin",
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "slot-common",
+      "path": "packages/ui/assets/raster/core/slot-common.webp",
+      "sourceGroup": "core",
+      "width": 85,
+      "height": 105,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin",
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "slot-green",
+      "path": "packages/ui/assets/raster/core/slot-green.webp",
+      "sourceGroup": "core",
+      "width": 85,
+      "height": 104,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin",
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "slot-purple",
+      "path": "packages/ui/assets/raster/core/slot-purple.webp",
+      "sourceGroup": "core",
+      "width": 87,
+      "height": 104,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin",
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "slot-blue",
+      "path": "packages/ui/assets/raster/core/slot-blue.webp",
+      "sourceGroup": "core",
+      "width": 88,
+      "height": 104,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin",
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "slot-gold",
+      "path": "packages/ui/assets/raster/core/slot-gold.webp",
+      "sourceGroup": "core",
+      "width": 90,
+      "height": 104,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin",
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "mobile-nav",
+      "path": "packages/ui/assets/raster/mobile/mobile-nav.webp",
+      "sourceGroup": "mobile",
+      "width": 901,
+      "height": 153,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "profile-header-gen",
+      "path": "packages/ui/assets/raster/mobile/profile-header-gen.webp",
+      "sourceGroup": "mobile",
+      "width": 432,
+      "height": 103,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "nav-green-gen",
+      "path": "packages/ui/assets/raster/mobile/nav-green-gen.webp",
+      "sourceGroup": "mobile",
+      "width": 292,
+      "height": 86,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "nav-purple-gen",
+      "path": "packages/ui/assets/raster/mobile/nav-purple-gen.webp",
+      "sourceGroup": "mobile",
+      "width": 292,
+      "height": 82,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "action-green-gen",
+      "path": "packages/ui/assets/raster/mobile/action-green-gen.webp",
+      "sourceGroup": "mobile",
+      "width": 117,
+      "height": 112,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "action-purple-gen",
+      "path": "packages/ui/assets/raster/mobile/action-purple-gen.webp",
+      "sourceGroup": "mobile",
+      "width": 121,
+      "height": 112,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "alert-red",
+      "path": "packages/ui/assets/raster/salvage/alert-red.webp",
+      "sourceGroup": "salvage",
+      "width": 359,
+      "height": 98,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin",
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "alert-red-large",
+      "path": "packages/ui/assets/raster/salvage/alert-red-large.webp",
+      "sourceGroup": "salvage",
+      "width": 307,
+      "height": 131,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin",
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "overlay-canvas-frame",
+      "path": "packages/ui/assets/raster/broadcast/overlay-canvas-frame.webp",
+      "sourceGroup": "broadcast",
+      "width": 654,
+      "height": 201,
+      "transparent": true,
+      "applications": [
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "overlay-ticker-purple",
+      "path": "packages/ui/assets/raster/broadcast/overlay-ticker-purple.webp",
+      "sourceGroup": "broadcast",
+      "width": 462,
+      "height": 49,
+      "transparent": true,
+      "applications": [
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "overlay-event-purple",
+      "path": "packages/ui/assets/raster/broadcast/overlay-event-purple.webp",
+      "sourceGroup": "broadcast",
+      "width": 145,
+      "height": 155,
+      "transparent": true,
+      "applications": [
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "overlay-breaking",
+      "path": "packages/ui/assets/raster/broadcast/overlay-breaking.webp",
+      "sourceGroup": "broadcast",
+      "width": 431,
+      "height": 206,
+      "transparent": true,
+      "applications": [
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "generated-logo",
+      "path": "packages/ui/assets/raster/generated/generated-logo.webp",
+      "sourceGroup": "generated",
+      "width": 307,
+      "height": 112,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin",
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    },
+    {
+      "id": "generated-raid",
+      "path": "packages/ui/assets/raster/generated/generated-raid.webp",
+      "sourceGroup": "generated",
+      "width": 357,
+      "height": 173,
+      "transparent": true,
+      "applications": [
+        "player",
+        "admin",
+        "overlay"
+      ],
+      "scaling": "painted frame; preserve corners and stretch center",
+      "accessibility": "decorative; live HTML retains labels and state"
+    }
+  ]
+}
