@@ -3,16 +3,22 @@ import type { ApiContext } from '../types.js';
 import { requireUser } from '../services/auth.js';
 
 export async function registerSystemRoutes(app: FastifyInstance, context: ApiContext) {
-  app.get('/health', async () => ({ ok: true, service: 'neon-wreckers-api', time: new Date().toISOString() }));
-  app.get('/ready', async () => {
-    await context.prisma.$queryRaw`SELECT 1`;
-    return { ok: true };
-  });
-  app.get('/metrics', async () => ({
-    sockets: context.realtime.connectionCount,
-    provider: context.loyaltyProvider.name,
+  app.get('/health', async () => ({
+    ok: true,
+    service: 'neon-wreckers-api',
     time: new Date().toISOString()
   }));
+
+  app.get('/ready', async () => {
+    await context.prisma.$queryRaw`SELECT 1`;
+    await context.gameQueue.getJobCounts('waiting', 'active', 'delayed', 'failed');
+    return { ok: true };
+  });
+
+  app.get('/internal/metrics', async (_request, reply) => {
+    reply.type('text/plain; version=0.0.4; charset=utf-8');
+    return context.metrics.prometheus();
+  });
 
   app.get('/api/v1/ws', { websocket: true }, async socket => {
     context.realtime.add(socket);
