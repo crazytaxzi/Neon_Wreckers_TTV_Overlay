@@ -1,5 +1,11 @@
 name: neon-wreckers
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
 x-app: &app
   build:
     context: .
@@ -7,6 +13,18 @@ x-app: &app
   image: neon-wreckers-app:${IMAGE_TAG:-2.0.0}
   env_file: .env
   networks: [internal]
+  user: node
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m,mode=1777
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+  stop_grace_period: 30s
+  logging: *default-logging
+  mem_limit: 768m
+  cpus: 1.0
 
 services:
   postgres:
@@ -23,25 +41,50 @@ services:
       retries: 30
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+      - /var/run/postgresql:size=16m,uid=70,gid=70,mode=0775
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 60s
+    logging: *default-logging
+    mem_limit: 1g
+    cpus: 1.0
     networks: [internal]
 
   redis:
-    image: redis:7.4.5-alpine
+    build:
+      context: .
+      dockerfile: infrastructure/redis/Dockerfile
+    image: neon-wreckers-redis:${IMAGE_TAG:-2.0.0}
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    secrets:
+      - redis_password
+    environment:
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a '${REDIS_PASSWORD}' ping | grep -q PONG"]
+      test: ["CMD", "/usr/local/bin/neon-redis", "healthcheck"]
       interval: 5s
       timeout: 3s
       retries: 30
     volumes:
       - redis-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,uid=999,gid=1000,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    logging: *default-logging
+    mem_limit: 512m
+    cpus: 0.5
     networks: [internal]
 
   setup:
     <<: *app
     restart: "no"
-    command: ["sh", "-c", "npm run db:migrate && npm run db:seed:production"]
+    command: ["sh", "-c", "pnpm run db:migrate && pnpm run db:seed:production"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -86,6 +129,24 @@ services:
       - "443:443"
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:size=32m,mode=0755
+      - /var/run:size=8m,mode=0755
+      - /etc/nginx/conf.d:size=8m,mode=0755
+    cap_drop: [ALL]
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - NET_BIND_SERVICE
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    logging: *default-logging
+    mem_limit: 256m
+    cpus: 0.5
     healthcheck:
       test: ["CMD-SHELL", "wget -q --no-check-certificate -O - https://127.0.0.1/health | grep -q '\"ok\":true'"]
       interval: 15s
@@ -103,3 +164,7 @@ networks:
 volumes:
   postgres-data:
   redis-data:
+
+secrets:
+  redis_password:
+    environment: REDIS_PASSWORD
