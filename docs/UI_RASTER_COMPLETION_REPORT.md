@@ -7,6 +7,7 @@ The player game, admin console, and transparent OBS overlay now consume one pain
 The generated player, mobile, admin, and overlay images are composition targets rather than flattened page backgrounds. Reusable transparent WebP chrome was extracted from those images and the Command Core, Mobile UI, Salvage Bay, and Broadcast Overlay boards. Live HTML still owns every label, value, action, interaction state, API response, WebSocket update, and accessibility behavior.
 
 Implementation commit: `4c0a265570b49961826ee146737db9daeb53d698`
+Final proof commit: `e356d9936e875fe2c68a60ea76dc4c865a7466ed`
 
 ## Shared ownership
 
@@ -80,16 +81,15 @@ No supplied reusable painted control was replaced by a new SVG or generic CSS ap
 
 ## Verification
 
-The one-time installer validated the raster archive against SHA-256 `919406b1f06313f6091ad613dde944e6f9bbc1c8a2a4fd22c1177a144d6b0831`, rejected unsafe archive paths, installed the shared assets, and then passed:
+The one-time installer validated the raster archive against SHA-256 `919406b1f06313f6091ad613dde944e6f9bbc1c8a2a4fd22c1177a144d6b0831`, rejected unsafe archive paths, installed the shared assets, and passed the raster contract tests and all four production builds before committing.
 
-- `tools/test/ui-raster-system.test.mjs`
-- `tools/test/ui-revamp.test.mjs`
-- `pnpm --filter @neon-wreckers/ui run build`
-- `pnpm --filter @neon-wreckers/web run build`
-- `pnpm --filter @neon-wreckers/admin run build`
-- `pnpm --filter @neon-wreckers/overlay run build`
+The repository's standard workflows then passed on the final proof commit:
 
-The verified implementation was committed only after every command above succeeded. The repository's standard UI verification and visual-proof workflows are triggered again by this human-authored report update so GitHub can capture the normal browser proof artifacts on the finished head.
+- UI Revamp Verify run 188: successful
+- UI Visual Proof run 80: successful, including every player destination on desktop and mobile plus tablet and full-page audits
+- Admin and Overlay Visual Proof run 62: successful, including desktop, tablet, mobile, 720p, 1080p, 1440p, 4K, viewer-event, and transparent 1080p overlay proof
+
+The transparent overlay proof uses `omitBackground` and a production-style configuration with `previewBackground` disabled. Its alpha channel contains true transparent pixels, proving that the center gameplay area remains clear for OBS.
 
 ## Functional preservation
 
