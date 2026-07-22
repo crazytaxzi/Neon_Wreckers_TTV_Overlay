@@ -87,6 +87,25 @@ The installer validates `.env`, installs Docker and Certbot when absent, validat
 - `BACKUP_RETENTION_DAYS`: positive integer controlling local backup retention.
 - `IMAGE_TAG`: exact tag assigned to both locally built Neon Wreckers images.
 
+## Content Security Policy
+
+The production gateway is the canonical CSP enforcement layer for browser documents because it serves the built player, admin, and overlay files. Fastify Helmet separately applies a deny-by-default policy to API responses.
+
+The player and overlay permit scripts and styles only from the same origin, images and fonts from the same origin plus explicit `data:` or `blob:` sources, and API or realtime connections through the same origin plus `ws:` and `wss:`. The admin policy is stricter and sets `frame-ancestors 'none'`. Player and overlay documents use `frame-ancestors 'self'`; OBS Browser Source loads the overlay as a top-level document and does not require arbitrary external framing.
+
+No surface permits `unsafe-inline`, `unsafe-eval`, plugins, or wildcard sources. Twitch OAuth remains compatible because the browser navigates to the same-origin API start route and the server performs the external redirect. Local development continues to support `ws:` while production supports `wss:`.
+
+After deployment, inspect headers with:
+
+```bash
+curl --head https://PUBLIC_HOST/
+curl --head https://PUBLIC_HOST/admin/
+curl --head https://PUBLIC_HOST/overlay/
+curl --head https://PUBLIC_HOST/api/v1/station
+```
+
+A browser console CSP violation is a release blocker unless the blocked resource is intentionally removed or added as a narrowly scoped source. Do not weaken the admin policy to solve an overlay-only requirement.
+
 ## Update process
 
 Pull or place the reviewed source revision on the host, then run from the repository root:
