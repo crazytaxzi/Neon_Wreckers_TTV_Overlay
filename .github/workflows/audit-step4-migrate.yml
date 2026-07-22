@@ -25,6 +25,10 @@ jobs:
         with:
           ref: audit/04-adaptive-overlay-realtime
           fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22.16.0
+          check-latest: false
       - name: Apply migration
         run: node tools/audit/step4-migrate.mjs
       - name: Commit migrated overlay
