@@ -51,10 +51,10 @@ type SocketLike = {
   readyState: number;
   OPEN: number;
   close(): void;
-  onopen: (() => void) | null;
-  onclose: (() => void) | null;
-  onerror: (() => void) | null;
-  onmessage: ((event: { data: unknown }) => void) | null;
+  onopen: ((event: Event) => void) | null;
+  onclose: ((event: CloseEvent) => void) | null;
+  onerror: ((event: Event) => void) | null;
+  onmessage: ((event: MessageEvent<unknown>) => void) | null;
 };
 
 export type OverlayNetworkDependencies = {
