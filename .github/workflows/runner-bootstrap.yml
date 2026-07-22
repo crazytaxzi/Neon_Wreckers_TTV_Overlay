@@ -1,4 +1,4 @@
-name: Self-hosted runner bootstrap
+name: Self-hosted verification
 
 on:
   push:
@@ -13,34 +13,42 @@ permissions:
   contents: read
 
 concurrency:
-  group: runner-bootstrap-${{ github.ref }}
+  group: self-hosted-verify-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  inspect:
+  verify:
     if: github.repository == 'crazytaxzi/Neon_Wreckers_TTV_Overlay'
     runs-on: [self-hosted, Linux, X64, neon-wreckers]
-    timeout-minutes: 15
+    timeout-minutes: 60
     steps:
       - name: Check out repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
 
-      - name: Inspect runner and toolchain
+      - name: Verify runner toolchain
         shell: bash
         run: |
           set -euo pipefail
           echo "Runner: $RUNNER_NAME"
-          echo "OS: $RUNNER_OS"
-          echo "Arch: $RUNNER_ARCH"
-          uname -a
-          id
-          pwd
+          node --version
           git --version
-          node --version || true
-          corepack --version || true
-          pnpm --version || true
-          docker --version || true
-          docker compose version || true
           mkdir -p /home/crazytaxzi/Neon_Wreckers_TTV_Overlay_Temp
           test -w /home/crazytaxzi/Neon_Wreckers_TTV_Overlay_Temp
-          echo "Target workspace is writable."
+
+      - name: Enable exact pnpm version
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@10.32.0 --activate
+          test "$(pnpm --version)" = "10.32.0"
+
+      - name: Install dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: Run repository verification
+        shell: bash
+        run: pnpm verify
