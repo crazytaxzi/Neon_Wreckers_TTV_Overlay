@@ -18,12 +18,10 @@ export class RealtimeHub {
     const before = this.sockets.size;
     this.sockets.add(socket);
     if (this.sockets.size > before) this.metrics?.increment('websocket_connections_opened_total');
-    this.metrics?.setGauge('websocket_connections', this.sockets.size);
   }
 
   remove(socket: SocketLike) {
     if (this.sockets.delete(socket)) this.metrics?.increment('websocket_disconnects_total');
-    this.metrics?.setGauge('websocket_connections', this.sockets.size);
   }
 
   broadcast(payload: unknown) {
@@ -53,6 +51,12 @@ export class RealtimeHub {
 export class PlayerRealtimeHub {
   private readonly sockets = new Map<string, Set<SocketLike>>();
   constructor(private readonly metrics?: RequestMetrics) {}
+
+  get connectionCount() {
+    let total = 0;
+    for (const group of this.sockets.values()) total += group.size;
+    return total;
+  }
 
   add(playerId: string, socket: SocketLike) {
     const group = this.sockets.get(playerId) ?? new Set<SocketLike>();
