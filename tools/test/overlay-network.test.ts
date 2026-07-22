@@ -171,6 +171,7 @@ test('disconnect waits for grace, polls faster, and reconciles immediately after
   assert.equal(h.fetches, 1);
   await h.clock.advance(1);
   assert.equal(h.fetches, 2);
+  await h.clock.advance(0);
   await h.clock.advance(FALLBACK_POLL_MS);
   assert.equal(h.fetches, 3);
   await h.clock.advance(reconnectDelayMs(0, () => 0.5));
