@@ -1,5 +1,6 @@
 import { GameRuleError } from '@neon-wreckers/game-engine';
 import { ZodError } from 'zod';
+import { CooldownError } from '../services/actions.js';
 
 export class HttpError extends Error {
   constructor(public readonly statusCode: number, message: string, public readonly code = 'HTTP_ERROR') {
@@ -13,6 +14,14 @@ export function isDatabaseError(error: unknown, code: string): error is Error & 
 }
 
 export function errorResponse(error: unknown, production: boolean) {
+  if (error instanceof CooldownError) {
+    return {
+      statusCode: 409,
+      code: error.code,
+      message: error.message,
+      details: { retryAt: error.retryAt, retryAfterSeconds: error.retryAfterSeconds }
+    };
+  }
   if (error instanceof GameRuleError) {
     return { statusCode: 409, code: error.code, message: error.message };
   }

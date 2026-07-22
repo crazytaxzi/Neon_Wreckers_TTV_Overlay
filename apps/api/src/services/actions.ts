@@ -2,6 +2,19 @@ import type { Prisma } from '@prisma/client';
 import { GameRuleError } from '@neon-wreckers/game-engine';
 import { acquireTransactionLock } from '../lib/database.js';
 
+export class CooldownError extends GameRuleError {
+  readonly retryAfterSeconds: number;
+  readonly retryAt: string;
+
+  constructor(expiresAt: Date, now: Date) {
+    const retryAfterSeconds = Math.max(1, Math.ceil((expiresAt.getTime() - now.getTime()) / 1000));
+    super('COOLDOWN', `Action cooling down for ${retryAfterSeconds} seconds.`);
+    this.name = 'CooldownError';
+    this.retryAfterSeconds = retryAfterSeconds;
+    this.retryAt = expiresAt.toISOString();
+  }
+}
+
 export async function enforceDurableCooldown(
   transaction: Prisma.TransactionClient,
   playerId: string,
@@ -14,7 +27,7 @@ export async function enforceDurableCooldown(
     where: { playerId_actionKey: { playerId, actionKey } }
   });
   if (current && current.expiresAt > now) {
-    throw new GameRuleError('COOLDOWN', `Action cooling down for ${Math.ceil((current.expiresAt.getTime() - now.getTime()) / 1000)} seconds.`);
+    throw new CooldownError(current.expiresAt, now);
   }
   const expiresAt = new Date(now.getTime() + seconds * 1000);
   await transaction.actionCooldown.upsert({

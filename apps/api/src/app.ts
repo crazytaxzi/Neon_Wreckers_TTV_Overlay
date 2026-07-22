@@ -47,10 +47,9 @@ export async function buildApp() {
       apiBase: env.STREAMELEMENTS_API_BASE,
       jwt: env.STREAMELEMENTS_JWT
     }),
-    cooldowns: new Map<string, number>(),
     realtime: new RealtimeHub(),
-    playerRealtime: new PlayerRealtimeHub()
-    ,metrics: new RequestMetrics()
+    playerRealtime: new PlayerRealtimeHub(),
+    metrics: new RequestMetrics()
   };
 
   const app = Fastify({
@@ -83,8 +82,15 @@ export async function buildApp() {
   app.setErrorHandler((error, request, reply) => {
     const response = errorResponse(error, isProd);
     request.log.error({ err: error, requestId: request.id }, 'request failed');
+    if ('details' in response && response.details?.retryAfterSeconds) {
+      reply.header('retry-after', response.details.retryAfterSeconds);
+    }
     reply.code(response.statusCode).send({
-      error: { code: response.code, message: response.message },
+      error: {
+        code: response.code,
+        message: response.message,
+        ...('details' in response ? { details: response.details } : {})
+      },
       requestId: request.id
     });
   });

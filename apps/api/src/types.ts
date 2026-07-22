@@ -33,7 +33,6 @@ export type ApiContext = {
   prisma: PrismaClient;
   gameQueue: Queue;
   loyaltyProvider: LoyaltyProvider;
-  cooldowns: Map<string, number>;
   realtime: RealtimeHub;
   playerRealtime: PlayerRealtimeHub;
   metrics: RequestMetrics;

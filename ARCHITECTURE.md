@@ -46,10 +46,13 @@ PostgreSQL is the only durable runtime datastore. The Prisma schema is authorita
 
 Database uniqueness protects Twitch identity, sessions, inventory stacks, content versions, and loyalty idempotency. PostgreSQL transaction advisory locks serialize operations that span multiple records:
 
+- player-and-action cooldown checks followed by expiry upserts;
 - current-wreck scans and salvage runs;
 - module construction plus player material deductions;
 - first-login starter ship and crew creation;
 - version-number allocation for an admin content slug.
+
+Cooldown enforcement uses `ActionCooldown` rows keyed by `(playerId, actionKey)`. The API acquires `pg_advisory_xact_lock(hashtext('cooldown:<player>:<action>'))` inside the same transaction that grants the action outcome, rejects an unexpired row, and upserts the next expiry before commit. This survives process restarts and prevents two API replicas from simultaneously approving the same reward-bearing action.
 
 Expedition resolution and claiming additionally use conditional status transitions so a worker, administrator, or repeated request cannot apply the same terminal action twice.
 
@@ -76,4 +79,4 @@ Runtime environment configuration is parsed once in `apps/api/src/env.ts`. Canon
 
 ## Extension rules
 
-New mechanics belong in `packages/game-engine` with deterministic tests. New external providers belong in `packages/integrations`. New persistent behavior requires a Prisma schema change and migration. New endpoints belong in a focused route module and call a domain service instead of another route. New visual keys must be added to `assets/manifest.json` before content references them. New reusable interface behavior belongs in `packages/ui`; app-local CSS is reserved for surface-specific composition.
+New mechanics belong in `packages/game-engine` with deterministic tests. New external providers belong in `packages/integrations`. New persistent behavior requires a Prisma schema change and migration. New correctness-sensitive cooldowns must call `enforceDurableCooldown` inside the same PostgreSQL transaction as the protected state mutation. New endpoints belong in a focused route module and call a domain service instead of another route. New visual keys must be added to `assets/manifest.json` before content references them. New reusable interface behavior belongs in `packages/ui`; app-local CSS is reserved for surface-specific composition.

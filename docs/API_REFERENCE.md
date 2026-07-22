@@ -2,6 +2,22 @@
 
 Most successful versioned endpoints return `{ "data": ..., "requestId": "..." }`. Errors return `{ "error": { "code": "...", "message": "..." }, "requestId": "..." }`.
 
+Cooldown conflicts use HTTP `409`, set `Retry-After`, and return machine-readable retry data:
+
+```json
+{
+  "error": {
+    "code": "COOLDOWN",
+    "message": "Action cooling down for 55 seconds.",
+    "details": {
+      "retryAt": "2026-07-22T12:01:00.000Z",
+      "retryAfterSeconds": 55
+    }
+  },
+  "requestId": "..."
+}
+```
+
 ## System
 
 - `GET /health` reports API process health.
@@ -38,7 +54,7 @@ Most successful versioned endpoints return `{ "data": ..., "requestId": "..." }`
 - `POST /api/v1/construction/contribute` with a module slug and nonnegative scrap, electronics, and alloys.
 - `POST /api/v1/construction/start` with an upgrade or repair project.
 
-Wreck-changing operations use one PostgreSQL transaction lock. Construction contributions serialize module progress and the contributing player's inventory deductions.
+Wreck-changing operations use one PostgreSQL transaction lock. Scan and salvage cooldowns are stored in `ActionCooldown` and enforced with a player-and-action advisory transaction lock before any protected reward or state mutation. Construction contributions serialize module progress and the contributing player's inventory deductions.
 
 ## Point-funded actions
 
