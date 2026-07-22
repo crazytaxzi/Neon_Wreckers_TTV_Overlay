@@ -1,5 +1,5 @@
 import { apiErrorEnvelopeSchema, apiSuccessEnvelopeSchema } from '@neon-wreckers/contracts';
-import { z, type ZodType } from 'zod';
+import { z, type ZodTypeAny } from 'zod';
 
 export class ContractValidationError extends Error {
   constructor(message: string, readonly issues: z.ZodIssue[]) {
@@ -8,7 +8,7 @@ export class ContractValidationError extends Error {
   }
 }
 
-export async function requestApi<T>(path: string, init: RequestInit = {}, schema?: ZodType<T>): Promise<T> {
+export async function requestApi<T>(path: string, init: RequestInit = {}, schema?: ZodTypeAny): Promise<T> {
   const headers = new Headers(init.headers);
   if (init.body != null && !headers.has('content-type')) {
     headers.set('content-type', 'application/json');
