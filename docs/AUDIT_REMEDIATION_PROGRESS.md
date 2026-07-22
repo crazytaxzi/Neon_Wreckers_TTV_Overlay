@@ -35,25 +35,25 @@
 
 ## Step 04: Make Overlay Networking Realtime-First with Fallback Polling
 
-- Status: in progress
+- Status: complete
 - Branch: `audit/04-adaptive-overlay-realtime`
 - Pull request: [#10](https://github.com/crazytaxzi/Neon_Wreckers_TTV_Overlay/pull/10)
-- Merge commit: pending
-- Completed date: pending
-- Verification: Final connector-authored verification trigger submitted after the WebSocket event-handler type alignment; full self-hosted and UI/visual lanes are rerunning.
+- Merge commit: `70ee7336d68368c0638ca7787a6c51fbd4aa2fa5`
+- Completed date: 2026-07-22
+- Verification: Self-hosted verification run 29960310707, UI Revamp Verify run 29960310747, Admin and Overlay Visual Proof run 29960310708, and UI Visual Proof run 29960310717 all passed.
 - Notes: Replaced continuous three-request polling every 2.5 seconds with one initial snapshot, WebSocket-first updates, 90-second connected reconciliation, a 5-second disconnect grace period, 10-second fallback polling, immediate reconnect reconciliation, explicit connection states, jittered exponential backoff, timestamp tracking, and deterministic cleanup.
 - Remaining risks: Production OBS sessions should be observed for real-world proxy idle timeouts and network flapping after merge.
 
 ## Step 05: Add Required CI, Secret Scanning, and Security Gates
 
-- Status: not started
-- Branch:
-- Pull request:
-- Merge commit:
-- Completed date:
-- Verification:
-- Notes:
-- Remaining risks:
+- Status: in progress
+- Branch: `audit/05-ci-security-gates`
+- Pull request: pending
+- Merge commit: pending
+- Completed date: pending
+- Verification: pending
+- Notes: Inspecting current workflows and hardening fork safety, pinned actions, secret scanning, dependency review, CodeQL, Docker/Compose validation, and branch-protection guidance.
+- Remaining risks: pending
 
 ## Step 06: Harden Secrets and Containers
 
