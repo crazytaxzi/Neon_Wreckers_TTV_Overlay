@@ -23,6 +23,21 @@ export interface TwitchConfig {
   scopes: string[];
 }
 
+export class TwitchEventSubSubscriptionError extends Error {
+  constructor(
+    public readonly statusCode: number,
+    public readonly responsePayload: unknown
+  ) {
+    super(`Twitch EventSub subscription failed with ${statusCode}`);
+    this.name = 'TwitchEventSubSubscriptionError';
+  }
+}
+
+export type TwitchEventSubSubscriptionResult = {
+  status: 'created' | 'existing';
+  response: unknown;
+};
+
 export function buildTwitchAuthorizeUrl(config: TwitchConfig, state: string) {
   const url = new URL('https://id.twitch.tv/oauth2/authorize');
   url.searchParams.set('client_id', config.clientId);
@@ -78,9 +93,10 @@ export async function fetchTwitchAppToken(clientId: string, clientSecret: string
   return response.body.json() as Promise<{ access_token: string; expires_in: number; token_type: string }>;
 }
 
-export async function createTwitchEventSubSubscription(args: { clientId: string; accessToken: string; type: string; version: string; condition: Record<string, string>; callback: string; secret: string }) {
+export async function createTwitchEventSubSubscription(args: { clientId: string; accessToken: string; type: string; version: string; condition: Record<string, string>; callback: string; secret: string }): Promise<TwitchEventSubSubscriptionResult> {
   const response = await request('https://api.twitch.tv/helix/eventsub/subscriptions', { method: 'POST', headers: { 'Client-Id': args.clientId, Authorization: `Bearer ${args.accessToken}`, 'content-type': 'application/json' }, body: JSON.stringify({ type: args.type, version: args.version, condition: args.condition, transport: { method: 'webhook', callback: args.callback, secret: args.secret } }), headersTimeout: 10_000, bodyTimeout: 10_000 });
   const payload = await response.body.json() as unknown;
-  if (response.statusCode >= 400) throw new Error(`Twitch EventSub subscription failed with ${response.statusCode}: ${JSON.stringify(payload)}`);
-  return payload;
+  if (response.statusCode === 409) return { status: 'existing', response: payload };
+  if (response.statusCode >= 400) throw new TwitchEventSubSubscriptionError(response.statusCode, payload);
+  return { status: 'created', response: payload };
 }
