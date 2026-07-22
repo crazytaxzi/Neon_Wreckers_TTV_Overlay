@@ -165,7 +165,7 @@
     },
     {
       "key": "ship-rustlight-tug",
-      "type": "svg-css",
+      "type": "webp-raster",
       "tags": [
         "ship"
       ],

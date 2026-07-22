@@ -8,16 +8,16 @@ Production game imagery continues to come from the repository's existing station
 
 ## Canonical artwork inventory
 
-All 30 canonical sources are WebP files with intrinsic dimensions of 1200 by 675 pixels.
+All 31 canonical sources are WebP files with intrinsic dimensions of 1200 by 675 pixels.
 
 | Category | Canonical sources | Original transfer size | Production use |
 | --- | ---: | ---: | --- |
 | Station command center | 1 | 139,520 bytes | Home/Command Center hero |
 | Station modules | 9 | 1,133,862 bytes | Station overview and module nodes |
 | Wrecks | 12 | 1,099,004 bytes | Current salvage target imagery |
-| Base ships | 2 | 150,928 bytes | Owned-ship fallback presentation |
+| Base ships | 3 | 162,928 bytes | Owned-ship fallback presentation |
 | Premium ship skins | 6 | 625,558 bytes | Ship cards, management previews, and skin selection |
-| **Total** | **30** | **3,148,872 bytes (3.00 MiB)** | Player application artwork library |
+| **Total** | **31** | **3,160,872 bytes (3.01 MiB)** | Player application artwork library |
 
 ## Responsive variants
 
@@ -33,9 +33,9 @@ Measured totals for all 30 assets:
 
 | Variant set | Total transfer size | Reduction from originals |
 | --- | ---: | ---: |
-| 1200px canonical sources | 3,148,872 bytes (3.00 MiB) | Baseline |
-| 600px variants | 610,102 bytes (595.8 KiB) | 80.6% smaller |
-| 360px variants | 246,412 bytes (240.6 KiB) | 92.2% smaller |
+| 1200px canonical sources | 3,160,872 bytes (3.01 MiB) | Baseline |
+| 600px variants | 622,102 bytes (607.5 KiB) | 80.3% smaller |
+| 360px variants | 258,412 bytes (252.4 KiB) | 91.8% smaller |
 
 Representative measured files:
 
@@ -44,6 +44,7 @@ Representative measured files:
 | Station Zero | 139,520 bytes | 25,760 bytes | 10,062 bytes |
 | Orpheus Barge | 116,012 bytes | 21,574 bytes | 8,418 bytes |
 | Cargo Hauler Leviathan | 139,806 bytes | 27,662 bytes | 10,786 bytes |
+| Rustlight Tug | 12,000 bytes | 12,000 bytes | 12,000 bytes |
 
 Actual browser transfer depends on viewport, device pixel ratio, cache state, and the rendered `sizes` value. The smaller variants prevent ordinary phones from downloading the 1200-pixel originals for compact cards.
 
@@ -83,9 +84,9 @@ Existing visual keys and API/content identifiers remain unchanged.
 
 `tools/test/ui-revamp.test.mjs` verifies:
 
-- 30 canonical project sources exist
-- 30 mobile variants exist
-- 30 tablet variants exist
+- 31 canonical project sources exist
+- 31 mobile variants exist
+- 31 tablet variants exist
 - the player imports and uses `GameArtwork`
 - project station, wreck, and ship artwork is not rendered through unresponsive direct image tags
 - lazy/eager behavior, async decoding, and intrinsic dimensions remain defined

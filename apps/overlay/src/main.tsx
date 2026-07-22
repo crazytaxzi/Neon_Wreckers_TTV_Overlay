@@ -35,7 +35,7 @@ type Station = {
   alerts?: StationAlert[];
 };
 
-type Wreck = { id?: string; name?: string; risk?: string; integrity?: number; description?: string };
+type Wreck = { id?: string; name?: string; risk?: string; integrity?: number; description?: string; visualKey?: string };
 
 const API = '/api/v1';
 const MAX_HEADLINES = 40;
@@ -55,6 +55,13 @@ function compactNumber(value: unknown): string {
   const numeric = Number(value ?? 0);
   if (!Number.isFinite(numeric)) return '0';
   return Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(numeric);
+}
+
+function wreckArtworkSrc(wreck: Wreck | null): string | null {
+  const visualKey = String(wreck?.visualKey ?? '').trim();
+  if (!visualKey) return null;
+  const slug = visualKey.startsWith('wreck-') ? visualKey.slice('wreck-'.length) : visualKey;
+  return `/wrecks/${slug}.webp`;
 }
 
 function classify(input: string, explicit?: string): Severity {
@@ -307,6 +314,7 @@ function App() {
   const storagePercent = station?.storageCapacity ? (Number(station.storageUsed ?? 0) / Number(station.storageCapacity)) * 100 : 0;
   const scrap = station?.resources?.scrap ?? station?.resources?.salvage ?? 0;
   const credits = station?.resources?.credits ?? station?.resources?.credit ?? 0;
+  const wreckArtwork = wreckArtworkSrc(wreck);
   const utc = useMemo(() => clock.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }), [clock]);
 
   if (!config) return null;
@@ -352,7 +360,7 @@ function App() {
 
       {config.status.visible && <Panel depth="medium" tone={uiTone(classify(String(wreck?.risk ?? '')))} className={`telemetry-panel wreck-telemetry ${showStatus ? 'overlay-awake' : 'overlay-idle'}`} aria-label="Active wreck telemetry">
         <header className="telemetry-header"><div className="telemetry-ident"><span className="telemetry-icon wreck-icon"><NWIcon name="wreck" size={22} /></span><div><span className="nw-eyebrow">SALVAGE TARGET</span><h2>{wreck?.name || 'SCANNING FIELD'}</h2></div></div><Badge tone={uiTone(classify(String(wreck?.risk ?? '')))}>{wreck?.risk || 'UNKNOWN'}</Badge></header>
-        <div className="wreck-schematic" aria-hidden="true"><div className="scan-grid" /><span className="scan-ring scan-ring-outer" /><span className="scan-ring scan-ring-inner" /><NWIcon name="wreck" size={48} /></div>
+        <div className="wreck-schematic" aria-hidden="true"><div className="scan-grid" /><span className="scan-ring scan-ring-outer" /><span className="scan-ring scan-ring-inner" />{wreckArtwork ? <img className="wreck-schematic__art" src={wreckArtwork} srcSet={`${wreckArtwork.replace('.webp', '-360w.webp')} 360w, ${wreckArtwork.replace('.webp', '-600w.webp')} 600w, ${wreckArtwork} 1200w`} sizes="(max-width: 1280px) 18rem, 24rem" alt="" loading="eager" decoding="async" /> : <NWIcon name="wreck" size={48} />}</div>
         <p>{wreck?.description || 'Awaiting server telemetry from the local debris field.'}</p>
         <TelemetryMeter label="REMAINING HULL" value={clamp(wreck?.integrity)} tone={clamp(wreck?.integrity) <= 25 ? 'critical' : clamp(wreck?.integrity) <= 50 ? 'warning' : 'positive'} />
         <footer className="wreck-footer"><span>OBJECT ID</span><strong className="nw-numeric">{wreck?.id ? wreck.id.slice(0, 12).toUpperCase() : 'NO CONTACT'}</strong></footer>
