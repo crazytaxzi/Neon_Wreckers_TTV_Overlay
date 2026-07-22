@@ -5,8 +5,8 @@ import fs from 'node:fs';
 const nginx = fs.readFileSync('infrastructure/gateway/nginx.conf.template', 'utf8');
 const app = fs.readFileSync('apps/api/src/app.ts', 'utf8');
 
-function locationBlock(marker, nextMarker) {
-  const start = nginx.indexOf(marker);
+function locationBlock(marker, nextMarker, fromEnd = false) {
+  const start = fromEnd ? nginx.lastIndexOf(marker) : nginx.indexOf(marker);
   assert.notEqual(start, -1, `Missing location marker: ${marker}`);
   const end = nextMarker ? nginx.indexOf(nextMarker, start + marker.length) : nginx.length;
   assert.notEqual(end, -1, `Missing next location marker: ${nextMarker}`);
@@ -48,7 +48,7 @@ test('API enables a deny-by-default Helmet CSP', () => {
 test('player, admin, and overlay receive explicit CSP headers', () => {
   const admin = csp(locationBlock('location ^~ /admin/', 'location = /overlay'));
   const overlay = csp(locationBlock('location ^~ /overlay/', 'location / {'));
-  const player = csp(locationBlock('location / {'));
+  const player = csp(locationBlock('location / {', undefined, true));
 
   for (const policy of [admin, overlay, player]) assertCoreDirectives(policy);
   assert.ok(admin.includes("frame-ancestors 'none'"));
