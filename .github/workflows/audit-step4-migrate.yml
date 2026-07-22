@@ -1,9 +1,13 @@
 name: Step 4 overlay migration
 
 on:
-  push:
+  pull_request:
     branches:
-      - audit/04-adaptive-overlay-realtime
+      - main
+    paths:
+      - apps/overlay/src/network.ts
+      - tools/audit/step4-migrate.mjs
+      - .github/workflows/audit-step4-migrate.yml
 
 permissions:
   contents: write
@@ -14,7 +18,7 @@ concurrency:
 
 jobs:
   migrate:
-    if: ${{ github.actor != 'github-actions[bot]' }}
+    if: ${{ github.head_ref == 'audit/04-adaptive-overlay-realtime' }}
     runs-on: [self-hosted, Linux, X64, neon-wreckers]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
