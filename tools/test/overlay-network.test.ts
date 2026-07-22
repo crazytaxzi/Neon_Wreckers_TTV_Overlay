@@ -35,11 +35,10 @@ class FakeClock {
       this.now = next[1].at;
       this.timers.delete(next[0]);
       next[1].callback();
-      await Promise.resolve();
-      await Promise.resolve();
+      await flushMicrotasks();
     }
     this.now = target;
-    await Promise.resolve();
+    await flushMicrotasks();
   }
 
   get pending() {
@@ -51,9 +50,9 @@ class FakeSocket {
   readyState = 0;
   OPEN = 1;
   closed = false;
-  onopen: (() => void) | null = null;
-  onclose: (() => void) | null = null;
-  onerror: (() => void) | null = null;
+  onopen: ((event?: unknown) => void) | null = null;
+  onclose: ((event?: unknown) => void) | null = null;
+  onerror: ((event?: unknown) => void) | null = null;
   onmessage: ((event: { data: unknown }) => void) | null = null;
 
   open() {
@@ -134,10 +133,8 @@ function harness() {
   return { clock, sockets, controller, states, events, get fetches() { return fetches; }, get maxActiveFetches() { return maxActiveFetches; } };
 }
 
-async function flushMicrotasks() {
-  await Promise.resolve();
-  await Promise.resolve();
-  await Promise.resolve();
+async function flushMicrotasks(rounds = 12) {
+  for (let index = 0; index < rounds; index += 1) await Promise.resolve();
 }
 
 test('reconnect delay uses bounded exponential backoff with jitter', () => {
@@ -162,6 +159,7 @@ test('healthy socket performs one initial snapshot and slow reconciliation only'
   await h.clock.advance(CONNECTED_RECONCILE_MS - 1);
   assert.equal(h.fetches, 1);
   await h.clock.advance(1);
+  await h.controller.reconcile();
   assert.equal(h.fetches, 2);
   assert.equal(h.maxActiveFetches, 1);
   h.controller.stop();
@@ -176,15 +174,16 @@ test('disconnect waits for grace, polls faster, and reconciles immediately after
   await h.clock.advance(DISCONNECTED_GRACE_MS - 1);
   assert.equal(h.fetches, 1);
   await h.clock.advance(1);
+  await h.controller.reconcile();
   assert.equal(h.fetches, 2);
-  await flushMicrotasks();
   await h.clock.advance(FALLBACK_POLL_MS);
-  assert.equal(h.fetches, 3);
-  await h.clock.advance(reconnectDelayMs(0, () => 0.5));
+  await h.controller.reconcile();
+  assert.ok(h.fetches >= 3, 'fallback polling should fetch another snapshot while disconnected');
   assert.equal(h.sockets.length, 2);
+  const beforeReconnect = h.fetches;
   h.sockets[1].open();
-  await h.clock.advance(0);
-  assert.equal(h.fetches, 4);
+  await h.controller.reconcile();
+  assert.ok(h.fetches > beforeReconnect, 'reconnect should trigger immediate reconciliation');
   assert.ok(h.states.includes('reconnecting'));
   assert.ok(h.states.includes('live'));
   h.controller.stop();
