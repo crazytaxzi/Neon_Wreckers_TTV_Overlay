@@ -82,8 +82,15 @@ export async function buildApp() {
   app.setErrorHandler((error, request, reply) => {
     const response = errorResponse(error, isProd);
     request.log.error({ err: error, requestId: request.id }, 'request failed');
+    if ('details' in response && response.details?.retryAfterSeconds) {
+      reply.header('retry-after', response.details.retryAfterSeconds);
+    }
     reply.code(response.statusCode).send({
-      error: { code: response.code, message: response.message },
+      error: {
+        code: response.code,
+        message: response.message,
+        ...('details' in response ? { details: response.details } : {})
+      },
       requestId: request.id
     });
   });
