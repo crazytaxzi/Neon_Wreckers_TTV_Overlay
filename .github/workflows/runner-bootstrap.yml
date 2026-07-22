@@ -1,0 +1,43 @@
+name: Self-hosted runner bootstrap
+
+on:
+  push:
+    branches:
+      - audit/runner-bootstrap
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runner-bootstrap-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  inspect:
+    if: github.repository == 'crazytaxzi/Neon_Wreckers_TTV_Overlay'
+    runs-on: [self-hosted, Linux, X64, neon-wreckers]
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Inspect runner and toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Runner: $RUNNER_NAME"
+          echo "OS: $RUNNER_OS"
+          echo "Arch: $RUNNER_ARCH"
+          uname -a
+          id
+          pwd
+          git --version
+          node --version || true
+          corepack --version || true
+          pnpm --version || true
+          docker --version || true
+          docker compose version || true
+          mkdir -p /home/crazytaxzi/Neon_Wreckers_TTV_Overlay_Temp
+          test -w /home/crazytaxzi/Neon_Wreckers_TTV_Overlay_Temp
+          echo "Target workspace is writable."
