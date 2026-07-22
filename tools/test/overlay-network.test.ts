@@ -159,7 +159,7 @@ test('healthy socket performs one initial snapshot and slow reconciliation only'
   await h.clock.advance(CONNECTED_RECONCILE_MS - 1);
   assert.equal(h.fetches, 1);
   await h.clock.advance(1);
-  await h.controller.reconcile();
+  await flushMicrotasks();
   assert.equal(h.fetches, 2);
   assert.equal(h.maxActiveFetches, 1);
   h.controller.stop();
@@ -174,15 +174,15 @@ test('disconnect waits for grace, polls faster, and reconciles immediately after
   await h.clock.advance(DISCONNECTED_GRACE_MS - 1);
   assert.equal(h.fetches, 1);
   await h.clock.advance(1);
-  await h.controller.reconcile();
+  await flushMicrotasks();
   assert.equal(h.fetches, 2);
   await h.clock.advance(FALLBACK_POLL_MS);
-  await h.controller.reconcile();
+  await flushMicrotasks();
   assert.ok(h.fetches >= 3, 'fallback polling should fetch another snapshot while disconnected');
   assert.equal(h.sockets.length, 2);
   const beforeReconnect = h.fetches;
   h.sockets[1].open();
-  await h.controller.reconcile();
+  await flushMicrotasks();
   assert.ok(h.fetches > beforeReconnect, 'reconnect should trigger immediate reconciliation');
   assert.ok(h.states.includes('reconnecting'));
   assert.ok(h.states.includes('live'));
