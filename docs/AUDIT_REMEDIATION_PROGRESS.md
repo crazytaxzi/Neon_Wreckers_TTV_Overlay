@@ -57,25 +57,25 @@
 
 ## Step 06: Harden Secrets and Containers
 
-- Status: in progress
+- Status: complete
 - Branch: `audit/06-container-secret-hardening`
+- Pull request: [#12](https://github.com/crazytaxzi/Neon_Wreckers_TTV_Overlay/pull/12)
+- Merge commit: `7e05e6ba3c5444951c077efa4f606b3b38d556c5`
+- Completed date: 2026-07-22
+- Verification: CI run 29966732527, CI and security gates run 29966732496, and CodeQL run 29966732502 all passed, including `pnpm verify`, Compose validation, and production image builds.
+- Notes: Redis credentials now enter through a Compose secret and restricted runtime config instead of process arguments. Application and Redis containers run non-root, root filesystems are read-only where compatible, writable paths are explicit, capabilities are minimized, no-new-privileges is enabled, logs and resources are bounded, graceful stop periods are declared, and setup uses pnpm.
+- Remaining risks: Operators must provide a non-empty `REDIS_PASSWORD` during deployment. PostgreSQL and gateway retain narrowly documented startup privileges required by their upstream images. Production rollout should verify host resource limits and backup/restore procedures.
+
+## Step 07: Add Production-Grade Metrics, Tracing, and Health Signals
+
+- Status: in progress
+- Branch: `audit/07-observability`
 - Pull request: pending
 - Merge commit: pending
 - Completed date: pending
 - Verification: pending
-- Notes: Auditing Redis credential handling, container privileges, writable paths, capabilities, image pinning, health checks, resource constraints, logging, and backup/migration compatibility.
-- Remaining risks: Production secret-file rollout and image-digest updates must preserve existing deployment and recovery procedures.
-
-## Step 07: Add Production-Grade Metrics, Tracing, and Health Signals
-
-- Status: not started
-- Branch:
-- Pull request:
-- Merge commit:
-- Completed date:
-- Verification:
-- Notes:
-- Remaining risks:
+- Notes: Inventorying current request metrics, logging, health/readiness routes, WebSocket telemetry, BullMQ instrumentation, database failures, and external-integration visibility.
+- Remaining risks: Metrics must avoid sensitive or unbounded labels and the internal scrape endpoint must not be exposed publicly.
 
 ## Step 08: Decompose and Stabilize the Overlay Application
 
