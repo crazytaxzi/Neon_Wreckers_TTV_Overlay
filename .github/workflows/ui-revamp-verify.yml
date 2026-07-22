@@ -9,9 +9,13 @@ on:
       - 'apps/web/**'
       - 'apps/admin/**'
       - 'apps/overlay/**'
+      - 'apps/api/**'
       - 'packages/ui/**'
+      - 'infrastructure/gateway/**'
       - 'tools/test/ui-revamp.test.mjs'
+      - 'tools/test/content-security-policy.test.mjs'
       - 'docs/UI_*.md'
+      - 'docs/DEPLOYMENT.md'
       - '.github/workflows/ui-revamp-verify.yml'
 
 permissions:
@@ -41,6 +45,9 @@ jobs:
 
       - name: Run revamp contract tests
         run: node --test tools/test/ui-revamp.test.mjs
+
+      - name: Run security policy contract tests
+        run: node --test tools/test/content-security-policy.test.mjs
 
       - name: Run existing repository guardrails
         run: node --test tools/test/repository.test.mjs

@@ -68,6 +68,7 @@ server {
     root /srv;
     try_files $uri $uri/ /admin/index.html;
     add_header Cache-Control "no-cache";
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" always;
   }
 
   location = /overlay { return 308 /overlay/; }
@@ -75,11 +76,13 @@ server {
     root /srv;
     try_files $uri $uri/ /overlay/index.html;
     add_header Cache-Control "no-store";
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" always;
   }
 
   location / {
     root /srv/web;
     try_files $uri $uri/ /index.html;
     add_header Cache-Control "no-cache";
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" always;
   }
 }
