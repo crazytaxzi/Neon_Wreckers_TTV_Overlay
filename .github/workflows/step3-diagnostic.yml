@@ -1,0 +1,47 @@
+name: Step 3 verification diagnostic
+
+on:
+  push:
+    branches:
+      - audit/03-shared-runtime-contracts
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    if: github.repository == 'crazytaxzi/Neon_Wreckers_TTV_Overlay'
+    runs-on: [self-hosted, Linux, X64, neon-wreckers]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: audit/03-shared-runtime-contracts
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22.16.0
+      - name: Capture verification tail
+        shell: bash
+        run: |
+          set -uo pipefail
+          corepack enable
+          corepack prepare pnpm@10.32.0 --activate
+          pnpm install --frozen-lockfile
+          status=0
+          pnpm verify > /tmp/step3-verify.log 2>&1 || status=$?
+          {
+            echo '# Step 3 verification diagnostic'
+            echo
+            echo "Exit status: $status"
+            echo
+            echo '```text'
+            tail -n 240 /tmp/step3-verify.log
+            echo '```'
+          } > docs/STEP3_VERIFY_DIAGNOSTIC.md
+          rm .github/workflows/step3-diagnostic.yml
+          git config user.name 'neon-wreckers-audit-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add --all
+          git commit -m 'test(contracts): capture verification diagnostics'
+          git push origin HEAD:audit/03-shared-runtime-contracts
