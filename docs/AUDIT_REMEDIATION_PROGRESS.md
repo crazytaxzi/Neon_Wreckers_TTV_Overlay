@@ -51,9 +51,9 @@
 - Pull request: pending
 - Merge commit: pending
 - Completed date: pending
-- Verification: pending
-- Notes: Inspecting current workflows and hardening fork safety, pinned actions, secret scanning, dependency review, CodeQL, Docker/Compose validation, and branch-protection guidance.
-- Remaining risks: pending
+- Verification: Workflow execution pending on pull request.
+- Notes: Removed pull-request execution from the private self-hosted runner. Added GitHub-hosted frozen-lockfile `pnpm verify`, Compose validation and image builds, pinned dependency review, checksum-verified Gitleaks history scanning, pinned CodeQL analysis, concurrency cancellation, least-privilege permissions, and branch-protection guidance.
+- Remaining risks: Existing legacy UI workflows still need a final action-pin inventory and the new workflows must execute successfully before merge.
 
 ## Step 06: Harden Secrets and Containers
 
