@@ -1,92 +1,126 @@
-# UI Asset Audit
+# Neon Wreckers Shared Raster UI Asset Audit
 
-## Policy
+## Status
 
-The supplied Neon Wreckers concept images define composition, hierarchy, framing, tactile controls, neon accents, and broadcast language. They are not committed as flattened interface screenshots or required page backgrounds.
+The shared raster UI correction is **not complete**.
 
-Production game imagery continues to come from the repository's existing station, wreck, module, and ship artwork. UI copy remains live HTML and shared CSS/SVG/icon primitives provide the surrounding frame.
+The repository currently contains gameplay artwork for stations, modules, wrecks, ships, and skins, including the Rustlight Tug additions on this branch. It does **not** contain the four required painted UI source boards or extracted UI chrome from them:
 
-## Canonical artwork inventory
+1. Command Core Board
+2. Mobile UI Board
+3. Salvage Bay Board
+4. Broadcast Overlay Board
 
-All 31 canonical sources are WebP files with intrinsic dimensions of 1200 by 675 pixels.
+No implementation may claim completion until those four source images are present, inventoried, extracted, and consumed through the shared UI package by the player, admin, and overlay applications.
 
-| Category | Canonical sources | Original transfer size | Production use |
-| --- | ---: | ---: | --- |
-| Station command center | 1 | 139,520 bytes | Home/Command Center hero |
-| Station modules | 9 | 1,133,862 bytes | Station overview and module nodes |
-| Wrecks | 12 | 1,099,004 bytes | Current salvage target imagery |
-| Base ships | 3 | 162,928 bytes | Owned-ship fallback presentation |
-| Premium ship skins | 6 | 625,558 bytes | Ship cards, management previews, and skin selection |
-| **Total** | **31** | **3,160,872 bytes (3.01 MiB)** | Player application artwork library |
+## Invalid prior approach
 
-## Responsive variants
+The previous graphics pass treated the concept boards as visual direction and surrounded existing artwork with CSS and SVG framing. That conflicts with the corrected requirement that the painted raster artwork itself is the visual source of truth.
 
-Every canonical source now has:
+The following do not satisfy the corrected requirement:
 
-- a `-360w.webp` mobile variant
-- a `-600w.webp` tablet and compact-laptop variant
-- the original 1200-pixel-wide source as the desktop/high-density fallback
+- CSS-drawn panel chrome
+- SVG replacement frames or controls
+- generic bordered rectangles
+- application-specific replicas
+- a placeholder `raster-skin.css`
+- an overlay-only treatment
 
-The `GameArtwork` component supplies `srcset`, `sizes`, intrinsic width and height, async decoding, and lazy loading. The station command-center hero and current wreck hero may load eagerly because they are primary visible content. Secondary modules, ships, and skin previews load lazily.
+The placeholder raster stylesheet and its temporary staging workflow were removed from this branch.
 
-Measured totals for all 30 assets:
+## Existing raster gameplay artwork that remains valid
 
-| Variant set | Total transfer size | Reduction from originals |
-| --- | ---: | ---: |
-| 1200px canonical sources | 3,160,872 bytes (3.01 MiB) | Baseline |
-| 600px variants | 622,102 bytes (607.5 KiB) | 80.3% smaller |
-| 360px variants | 258,412 bytes (252.4 KiB) | 91.8% smaller |
+Existing station, module, wreck, ship, and skin WebP files remain valid as entity artwork. They are not substitutes for the missing UI boards.
 
-Representative measured files:
+The current branch also retains:
 
-| Asset | Original | 600px | 360px |
-| --- | ---: | ---: | ---: |
-| Station Zero | 139,520 bytes | 25,760 bytes | 10,062 bytes |
-| Orpheus Barge | 116,012 bytes | 21,574 bytes | 8,418 bytes |
-| Cargo Hauler Leviathan | 139,806 bytes | 27,662 bytes | 10,786 bytes |
-| Rustlight Tug | 12,000 bytes | 12,000 bytes | 12,000 bytes |
+- dedicated Rustlight Tug artwork and responsive variants
+- player fleet use of the ship `visualKey`
+- selected-ship artwork in the management console
+- overlay preservation of the current wreck `visualKey`
+- current salvage-target artwork in the OBS wreck telemetry
 
-Actual browser transfer depends on viewport, device pixel ratio, cache state, and the rendered `sizes` value. The smaller variants prevent ordinary phones from downloading the 1200-pixel originals for compact cards.
+These changes solve entity-art gaps but do not establish the required shared raster UI system.
 
-## Naming convention
+## Required canonical asset structure
 
-Canonical source:
+After the source boards are available, extracted assets must live under the existing shared UI package rather than inside individual applications.
 
 ```text
-<visual-key>.webp
+packages/ui/
+  assets/
+    raster/
+      command-core/
+      mobile-ui/
+      salvage-bay/
+      broadcast-overlay/
+  manifests/
+    raster-assets.json
+  components/
+    raster/
+  styles/
+    raster/
+  tokens/
 ```
 
-Responsive variants:
+The final structure may be adjusted to the package's established TypeScript and stylesheet organization, but asset files and component implementations must remain owned by `packages/ui`.
 
-```text
-<visual-key>-360w.webp
-<visual-key>-600w.webp
-```
+## Manifest requirements
 
-Existing visual keys and API/content identifiers remain unchanged.
+Every extracted raster asset must record:
 
-## Accessibility and alternative text
+- stable asset identifier
+- source board
+- source crop coordinates or extraction note
+- file path
+- intrinsic width and height
+- transparent-background status
+- intended component mapping
+- consuming application surfaces
+- supported interaction states
+- safe stretch region or nine-slice insets
+- minimum and maximum intended render sizes
+- responsive variant relationships
+- preload priority
+- accessibility role
 
-- Meaningful hero and entity images retain descriptive alternative text.
-- Decorative module-node images use empty alternative text because the adjacent live heading already names the module.
-- UI labels are never embedded into artwork.
-- Rarity, status, risk, and warning information remains live text and is not encoded only in an image or color.
+## Required shared primitives
 
-## Layout rules
+The shared package must provide raster-backed implementations for at least:
 
-- Artwork does not determine layout dimensions.
-- Images reserve space through intrinsic dimensions to reduce layout shift.
-- `object-fit` and container styling control presentation.
-- CSS and shared icons provide framing, telemetry, badges, and controls.
-- No concept screenshot is loaded by a production route.
+- panel
+- button
+- tab
+- meter and progress display
+- slot and inventory frame
+- rarity frame
+- resource display
+- section header
+- alert frame
+- loot card
+- salvage control
+- telemetry widget
+- broadcast ticker
+- event popup
 
-## Validation contract
+Player, admin, and overlay code must import these implementations from the same package. Application CSS may position and compose them, but it must not redraw their painted chrome.
 
-`tools/test/ui-revamp.test.mjs` verifies:
+## Completion gate
 
-- 31 canonical project sources exist
-- 31 mobile variants exist
-- 31 tablet variants exist
-- the player imports and uses `GameArtwork`
-- project station, wreck, and ship artwork is not rendered through unresponsive direct image tags
-- lazy/eager behavior, async decoding, and intrinsic dimensions remain defined
+Do not mark this work complete until all of the following are verified:
+
+- all four source boards are present and hash-recorded
+- every usable board element is inventoried
+- extracted assets preserve transparency and painted detail
+- shared raster components exist and are exported from `packages/ui`
+- player, admin, and overlay consume those shared components
+- desktop and mobile variants use the appropriate board treatments
+- the overlay remains transparent, pointer-events free, configurable, and OBS-safe
+- no supplied painted control is replaced by SVG or generic CSS geometry
+- production builds and repository tests pass
+- real screenshots are captured for all three surfaces
+- the final report lists assets, board sources, mappings, consumers, unused assets, changed files, builds, tests, and screenshots
+
+## Current blocker
+
+The actual Command Core, Mobile UI, Salvage Bay, and Broadcast Overlay board image files are not present in the repository or connected project storage available to this branch. Asset extraction, pixel-accurate slicing, nine-slice measurements, manifest dimensions, and visual integration cannot be performed honestly without those source pixels.
