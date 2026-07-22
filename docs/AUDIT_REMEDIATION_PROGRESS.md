@@ -13,25 +13,25 @@
 
 ## Step 02: Replace In-Memory Cooldowns with Atomic Persistent Enforcement
 
-- Status: in progress
+- Status: complete
 - Branch: `audit/02-persist-cooldowns`
-- Pull request: pending
-- Merge commit:
-- Completed date:
-- Verification: Pending GitHub Actions execution of the repository test suite, builds, and `pnpm verify`.
+- Pull request: implementation landed on `main` before a dedicated PR was opened
+- Merge commit: `cb49939cb919f3b149d877116fc0a519360dc0b7`
+- Completed date: 2026-07-22
+- Verification: Self-hosted verification run 29943419802 passed the frozen-lockfile install, complete test suite, all builds, and `pnpm verify`.
 - Notes: Removed the process-local cooldown map from API construction and context. Correctness-sensitive actions use the existing `ActionCooldown` model and player/action PostgreSQL advisory transaction lock. Added retry metadata and focused first/repeat/restart/concurrency/expiry/player-isolation tests.
-- Remaining risks: CI must confirm TypeScript and test compatibility. The existing combined mechanics migration already introduced `ActionCooldown`; no new schema migration is required for this cleanup.
+- Remaining risks: The existing combined mechanics migration already introduced `ActionCooldown`; no new schema migration was required. Production PostgreSQL lock contention should be observed under real traffic.
 
 ## Step 03: Create Shared Runtime API and Realtime Contracts
 
-- Status: not started
-- Branch:
-- Pull request:
-- Merge commit:
-- Completed date:
-- Verification:
-- Notes:
-- Remaining risks:
+- Status: in progress
+- Branch: `audit/03-shared-runtime-contracts`
+- Pull request: [#9](https://github.com/crazytaxzi/Neon_Wreckers_TTV_Overlay/pull/9)
+- Merge commit: pending
+- Completed date: pending
+- Verification: Final self-hosted `pnpm verify` and existing UI/visual proof suites are running after repository workspace guardrails were updated for the new package.
+- Notes: Added `@neon-wreckers/contracts` with Zod API-envelope, core DTO, and discriminated realtime-event schemas. The shared browser client validates envelopes, core player and overlay calls validate endpoint data, and public outbound/inbound realtime messages are rejected before invalid state reaches clients.
+- Remaining risks: Lower-risk catalog, marketplace, crafting, auction, quarters, cooldown, notification, integration-admin, and action-result payloads currently receive envelope validation but retain existing local domain types. Compatibility rules and the intentional migration boundary are documented in `docs/RUNTIME_CONTRACTS.md`.
 
 ## Step 04: Make Overlay Networking Realtime-First with Fallback Polling
 
