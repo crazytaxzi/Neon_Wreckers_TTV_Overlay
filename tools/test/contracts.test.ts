@@ -16,11 +16,22 @@ const station = {
   museum: { collection: [], donatedToday: 0, dailyCapacity: 0 }
 };
 
+const salvageMode = {
+  successChance: 0.8,
+  scrapRange: [2, 5],
+  electronicsChance: 0.1,
+  fuelChance: 0.05,
+  relicChance: 0.01,
+  wreckLootRolls: 1,
+  wreckLootChancePerRoll: 0.25,
+  wreckLootPool: []
+};
+
 const wreck = {
   id: 'wreck-1', archetype: 'glass-horizon', name: 'Glass Horizon', risk: 'moderate', integrity: 63,
   description: 'A fractured freighter.', depleted: false, visualKey: 'wreck-glass-horizon',
   remainingLootBudget: 8, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-  salvageProfile: {}
+  salvageProfile: { cutters: salvageMode, cargo: salvageMode }
 };
 
 const history = {
