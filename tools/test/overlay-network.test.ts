@@ -134,6 +134,12 @@ function harness() {
   return { clock, sockets, controller, states, events, get fetches() { return fetches; }, get maxActiveFetches() { return maxActiveFetches; } };
 }
 
+async function flushMicrotasks() {
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
 test('reconnect delay uses bounded exponential backoff with jitter', () => {
   assert.equal(reconnectDelayMs(0, () => 0), 1125);
   assert.equal(reconnectDelayMs(0, () => 1), 1875);
@@ -171,7 +177,7 @@ test('disconnect waits for grace, polls faster, and reconciles immediately after
   assert.equal(h.fetches, 1);
   await h.clock.advance(1);
   assert.equal(h.fetches, 2);
-  await h.clock.advance(0);
+  await flushMicrotasks();
   await h.clock.advance(FALLBACK_POLL_MS);
   assert.equal(h.fetches, 3);
   await h.clock.advance(reconnectDelayMs(0, () => 0.5));
