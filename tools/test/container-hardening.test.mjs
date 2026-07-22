@@ -41,7 +41,7 @@ test('services declare bounded logs, graceful shutdown, and resource constraints
 
 test('setup uses the canonical package manager and redis runs unprivileged', () => {
   assert.match(compose, /pnpm run db:migrate && pnpm run db:seed:production/);
-  assert.doesNotMatch(compose, /npm run db:migrate/);
+  assert.doesNotMatch(compose, /(^|[^p])npm run db:migrate/);
   assert.match(redisDockerfile, /USER redis/);
   assert.match(redisDockerfile, /ENTRYPOINT \["\/usr\/local\/bin\/neon-redis"\]/);
 });
