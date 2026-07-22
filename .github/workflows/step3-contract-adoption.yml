@@ -1,0 +1,56 @@
+name: Step 3 contract adoption
+
+on:
+  push:
+    branches:
+      - audit/03-shared-runtime-contracts
+
+permissions:
+  contents: write
+
+concurrency:
+  group: step3-contract-adoption
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: github.repository == 'crazytaxzi/Neon_Wreckers_TTV_Overlay'
+    runs-on: [self-hosted, Linux, X64, neon-wreckers]
+    timeout-minutes: 20
+    steps:
+      - name: Check out trusted branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: audit/03-shared-runtime-contracts
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22.16.0
+
+      - name: Apply contract adoption and refresh lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@10.32.0 --activate
+          node tools/apply-step3-contract-adoption.mjs
+          pnpm install --lockfile-only
+          rm tools/apply-step3-contract-adoption.mjs
+          rm .github/workflows/step3-contract-adoption.yml
+
+      - name: Commit generated adoption changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'neon-wreckers-audit-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add --all
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'No generated changes to commit.'
+            exit 0
+          fi
+          git commit -m 'feat(contracts): adopt runtime validation across network clients'
+          git push origin HEAD:audit/03-shared-runtime-contracts
