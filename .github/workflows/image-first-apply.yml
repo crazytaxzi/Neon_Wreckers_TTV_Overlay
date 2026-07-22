@@ -1,0 +1,66 @@
+name: Apply Image First Starter Pass
+
+on:
+  push:
+    branches: [agent/image-first-graphics-overhaul]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: image-first-apply
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out graphics branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/image-first-graphics-overhaul
+          fetch-depth: 0
+
+      - name: Detect staged patch
+        id: staged
+        run: |
+          if [ -f tools/image-first/apply-image-first-start.mjs ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Apply reviewed image-first patch
+        if: steps.staged.outputs.present == 'true'
+        run: node tools/image-first/apply-image-first-start.mjs
+
+      - name: Remove staging payload
+        if: steps.staged.outputs.present == 'true'
+        run: rm -f tools/image-first/apply-image-first-start.mjs tools/image-first/rustlight-tug.webp.b64
+
+      - name: Enable pnpm
+        if: steps.staged.outputs.present == 'true'
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.32.0 --activate
+
+      - name: Install dependencies
+        if: steps.staged.outputs.present == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify focused UI contracts
+        if: steps.staged.outputs.present == 'true'
+        run: |
+          node --test tools/test/ui-revamp.test.mjs tools/test/ui-graphics.test.mjs
+          pnpm --filter @neon-wreckers/ui run build
+          pnpm --filter @neon-wreckers/web run build
+          pnpm --filter @neon-wreckers/overlay run build
+
+      - name: Commit verified source and artwork
+        if: steps.staged.outputs.present == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/web apps/overlay assets/manifest.json docs/UI_ASSET_AUDIT.md tools/test/ui-revamp.test.mjs tools/image-first
+          git commit -m "feat(ui): add Rustlight and live wreck artwork"
+          git push origin HEAD:agent/image-first-graphics-overhaul
