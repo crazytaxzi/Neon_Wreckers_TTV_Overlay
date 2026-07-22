@@ -21,33 +21,7 @@ No raster asset or component implementation is copied into an individual applica
 
 ## Extracted assets and consumers
 
-| Asset | Source | Shared use | Applications |
-| --- | --- | --- | --- |
-| `panel-frame.webp` | Command Core / generated player | Primary painted panel frame | Player, Admin, Overlay |
-| `panel-purple-gen.webp` | Generated player/admin targets | Purple emphasis panel | Player, Admin, Overlay |
-| `panel-rail.webp` | Command Core | Section header and compact rail | Player, Admin, Overlay |
-| `button-green.webp` | Command Core | Primary, confirm, deploy, active controls | Player, Admin, Overlay |
-| `button-purple.webp` | Command Core | Secondary and selected controls | Player, Admin, Overlay |
-| `button-neutral.webp` | Command Core | Disabled, ghost, and neutral controls | Player, Admin, Overlay |
-| `slot-common.webp` | Command Core | Common rarity and empty inventory shell | Player, Admin, Overlay |
-| `slot-green.webp` | Command Core | Uncommon rarity shell | Player, Admin, Overlay |
-| `slot-purple.webp` | Command Core | Epic rarity shell | Player, Admin, Overlay |
-| `slot-blue.webp` | Command Core | Rare rarity shell | Player, Admin, Overlay |
-| `slot-gold.webp` | Command Core | Legendary rarity shell | Player, Admin, Overlay |
-| `mobile-nav.webp` | Mobile UI / generated mobile | Five-destination mobile navigation frame | Player, Admin |
-| `profile-header-gen.webp` | Generated mobile | Compact player/admin identity framing | Player, Admin |
-| `nav-green-gen.webp` | Generated player/mobile | Active navigation treatment | Player, Admin |
-| `nav-purple-gen.webp` | Generated player/mobile | Secondary navigation treatment | Player, Admin |
-| `action-green-gen.webp` | Mobile UI / generated mobile | Touch action control | Player, Admin |
-| `action-purple-gen.webp` | Mobile UI / generated mobile | Touch secondary action control | Player, Admin |
-| `alert-red.webp` | Salvage Bay | Critical hazard and validation alert | Player, Admin, Overlay |
-| `alert-red-large.webp` | Salvage Bay | Large danger and breaking state | Player, Admin, Overlay |
-| `overlay-canvas-frame.webp` | Broadcast Overlay | OBS-safe outer canvas framing | Overlay |
-| `overlay-ticker-purple.webp` | Broadcast Overlay | Ticker, dispatch, and live-feed rail | Overlay |
-| `overlay-event-purple.webp` | Broadcast Overlay | Follower, donation, and event popup | Overlay |
-| `overlay-breaking.webp` | Broadcast Overlay | Breaking alert presentation | Overlay |
-| `generated-logo.webp` | Generated player/admin/overlay targets | Shared Neon Wreckers brand raster | Player, Admin, Overlay |
-| `generated-raid.webp` | Generated overlay target | Raid and major-event presentation | Player, Admin, Overlay |
+The complete asset inventory, source mapping, dimensions, scaling rules, transparency, and application consumers are recorded in `packages/ui/manifests/raster-assets.json`.
 
 ## Application integration
 
@@ -75,7 +49,7 @@ The overlay receives the shared product chrome plus the Broadcast Overlay canvas
 
 ## Deliberately unused artwork
 
-Large composed cards containing baked labels, numbers, example usernames, prices, or example telemetry were not placed behind live data. Doing so would duplicate text, show false values, damage localization and accessibility, and turn the interface into a brittle screenshot mask. Only reusable painted borders, shells, controls, alert frames, navigation, telemetry chrome, branding, and event treatments were extracted.
+Large composed cards containing baked labels, numbers, example usernames, prices, or telemetry values were not placed behind live data. Doing so would duplicate text, show false values, damage localization and accessibility, and turn the interface into a brittle screenshot mask. Only reusable painted borders, shells, controls, alert frames, navigation, telemetry chrome, branding, and event treatments were extracted.
 
 No supplied reusable painted control was replaced by a new SVG or generic CSS approximation in this implementation.
 
@@ -83,13 +57,13 @@ No supplied reusable painted control was replaced by a new SVG or generic CSS ap
 
 The one-time installer validated the raster archive against SHA-256 `919406b1f06313f6091ad613dde944e6f9bbc1c8a2a4fd22c1177a144d6b0831`, rejected unsafe archive paths, installed the shared assets, and passed the raster contract tests and all four production builds before committing.
 
-The repository's standard workflows then passed on the final proof commit:
+The repository's standard workflows passed on the proof commit:
 
 - UI Revamp Verify run 188: successful
-- UI Visual Proof run 80: successful, including every player destination on desktop and mobile plus tablet and full-page audits
-- Admin and Overlay Visual Proof run 62: successful, including desktop, tablet, mobile, 720p, 1080p, 1440p, 4K, viewer-event, and transparent 1080p overlay proof
+- UI Visual Proof run 80: successful
+- Admin and Overlay Visual Proof run 62: successful
 
-The transparent overlay proof uses `omitBackground` and a production-style configuration with `previewBackground` disabled. Its alpha channel contains true transparent pixels, proving that the center gameplay area remains clear for OBS.
+The browser proofs cover every player destination, desktop/mobile/tablet layouts, full-page audits, admin surfaces, 720p through 4K overlays, viewer events, and a true-alpha transparent 1080p OBS capture.
 
 ## Functional preservation
 
