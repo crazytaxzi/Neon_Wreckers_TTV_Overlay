@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { chromium } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
 const adminBase = process.env.NW_ADMIN_PREVIEW_URL ?? 'http://127.0.0.1:4174/admin/';
