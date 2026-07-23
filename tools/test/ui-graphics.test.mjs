@@ -93,17 +93,22 @@ test('admin UI Library documents graphic language and rarity hardware', async ()
   assert.match(showcaseCss, /\.nw-rarity-demo/);
 });
 
-test('viewer event popups use real classified overlay history', async () => {
-  const [overlaySource, networkSource, viewerCss] = await Promise.all([
+test('viewer event popups use real classified overlay history through focused components', async () => {
+  const [overlaySource, componentsSource, headlinesSource, networkSource, viewerCss] = await Promise.all([
     read('apps/overlay/src/main.tsx'),
+    read('apps/overlay/src/components.tsx'),
+    read('apps/overlay/src/use-overlay-headlines.ts'),
     read('apps/overlay/src/network.ts'),
     read('packages/ui/src/viewer-event.css')
   ]);
 
-  assert.match(overlaySource, /OverlayEventPopup/);
-  assert.match(overlaySource, /current\.severity === 'viewer'/);
-  assert.match(overlaySource, /className="viewer-event-region"/);
+  assert.match(overlaySource, /ViewerEventRegion/);
+  assert.match(overlaySource, /useOverlayHeadlines/);
   assert.match(overlaySource, /useAdaptiveOverlayNetwork/);
+  assert.match(componentsSource, /OverlayEventPopup/);
+  assert.match(componentsSource, /headline\.severity === 'viewer'/);
+  assert.match(componentsSource, /className="viewer-event-region"/);
+  assert.match(headlinesSource, /fromHistory/);
   assert.match(networkSource, /event\.type === 'presence\.updated'/);
   assert.match(networkSource, /event\.type === 'history\.added'/);
   assert.match(viewerCss, /\.viewer-event-region/);
