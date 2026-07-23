@@ -9,13 +9,13 @@ permissions:
 
 jobs:
   refresh:
-    if: github.head_ref == 'audit/10-browser-integration-tests-final'
+    if: github.head_ref == 'audit/10-browser-integration-tests-final2'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: audit/10-browser-integration-tests-final
+          ref: audit/10-browser-integration-tests-final2
           persist-credentials: true
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
@@ -58,4 +58,4 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add tests/browser/__snapshots__
           git commit -m "test(browser): freeze deterministic visual baselines"
-          git push origin HEAD:audit/10-browser-integration-tests-final
+          git push origin HEAD:audit/10-browser-integration-tests-final2
