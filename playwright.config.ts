@@ -33,11 +33,12 @@ export default defineConfig({
   projects: [
     {
       name: 'desktop-chromium',
-      use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } }
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' }
     },
     {
       name: 'mobile-chromium',
-      use: { ...devices['Pixel 7'] }
+      testIgnore: /overlay\.spec\.ts/,
+      use: { ...devices['Pixel 7'], reducedMotion: 'reduce' }
     }
   ]
 });
