@@ -1,6 +1,6 @@
-import type { HistoryRecord, StationAlert } from '@neon-wreckers/contracts';
+import type { EventSeverity, HistoryRecord, StationAlert } from '@neon-wreckers/contracts';
 
-export type Severity = 'positive' | 'info' | 'viewer' | 'warning' | 'critical';
+export type Severity = EventSeverity;
 
 export type Headline = {
   id: string;
@@ -30,30 +30,30 @@ export function isBreakingHeadline(input: string, severity: Severity): boolean {
 export function headlineFromHistory(entry: HistoryRecord, now = Date.now()): Headline {
   const title = String(entry.title || 'Station dispatch');
   const body = String(entry.body || 'New activity recorded aboard Station Zero.');
-  const severity = classifyHeadline(`${title} ${body}`, entry.category);
+  const severity = entry.presentation?.severity ?? classifyHeadline(`${title} ${body}`, entry.category);
   return {
     id: String(entry.id || `${entry.createdAt || now}-${title}-${body}`),
-    label: String(entry.category || 'STATION NEWS').replaceAll('_', ' ').toUpperCase(),
+    label: String(entry.presentation?.category || entry.category || 'STATION NEWS').replaceAll('_', ' ').toUpperCase(),
     title,
     body,
     severity,
     createdAt: Date.parse(String(entry.createdAt ?? '')) || now,
-    breaking: isBreakingHeadline(`${title} ${body}`, severity)
+    breaking: entry.presentation?.breaking ?? isBreakingHeadline(`${title} ${body}`, severity)
   };
 }
 
 export function headlineFromAlert(alert: StationAlert, now = Date.now()): Headline {
   const title = String(alert.title || 'Station alert');
   const body = String(alert.body || 'New station alert received.');
-  const severity = classifyHeadline(`${title} ${body}`, alert.severity);
+  const severity = alert.presentation?.severity ?? classifyHeadline(`${title} ${body}`, alert.severity);
   return {
     id: String(alert.id || `${alert.createdAt || now}-${title}`),
-    label: severity === 'critical' ? 'BREAKING ALERT' : 'STATION ALERT',
+    label: alert.presentation?.category?.replaceAll('_', ' ').toUpperCase() ?? (severity === 'critical' ? 'BREAKING ALERT' : 'STATION ALERT'),
     title,
     body,
     severity,
     createdAt: Date.parse(String(alert.createdAt ?? '')) || now,
-    breaking: isBreakingHeadline(`${title} ${body}`, severity)
+    breaking: alert.presentation?.breaking ?? isBreakingHeadline(`${title} ${body}`, severity)
   };
 }
 
