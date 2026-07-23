@@ -9,8 +9,8 @@ export type OverlayVisibilityOptions = {
 export function useOverlayVisibility(options: OverlayVisibilityOptions) {
   const [tickerAwake, setTickerAwake] = useState(true);
   const [statusAwake, setStatusAwake] = useState(true);
-  const tickerTimer = useRef<number>();
-  const statusTimer = useRef<number>();
+  const tickerTimer = useRef<number | undefined>(undefined);
+  const statusTimer = useRef<number | undefined>(undefined);
 
   const clearTimers = useCallback(() => {
     if (tickerTimer.current !== undefined) window.clearTimeout(tickerTimer.current);
