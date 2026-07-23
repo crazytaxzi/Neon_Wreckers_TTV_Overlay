@@ -33,7 +33,7 @@ const expectedRoutes = [
   'GET /api/v1/wrecks/current',
   'GET /api/v1/ws',
   'GET /health',
-  'GET /metrics',
+  'GET /internal/metrics',
   'GET /ready',
   'POST /api/v1/admin/actions/spawn-wreck',
   'POST /api/v1/admin/config',
