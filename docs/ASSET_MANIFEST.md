@@ -14,3 +14,5 @@ The current catalog is CSS-owned. This reflects the files actually committed to 
 `pnpm test:content` validates duplicate keys, normalized paths, supported formats, required variants, path uniqueness, referenced visual keys, orphaned records, and declared file existence across browser public roots.
 
 Adding a raster asset requires committing the source and every required responsive variant under a browser public root, then declaring all paths in the manifest. Variant generation is intentionally not automatic because this repository does not currently own a deterministic image-optimization pipeline.
+
+The committed browser baselines were refreshed after the overlay stopped rendering fabricated wreck raster paths. Future baseline changes require the same source-ownership review.
