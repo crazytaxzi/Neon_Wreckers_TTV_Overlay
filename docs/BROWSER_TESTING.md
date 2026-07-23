@@ -55,7 +55,7 @@ pnpm test:browser:update
 
 Snapshot changes must be committed with the code change that intentionally alters rendering. Do not update snapshots merely to silence an unexplained difference. Reduced motion, UTC time, a fixed locale, disabled screenshot animations, and deterministic route fixtures keep comparisons stable.
 
-The committed Linux Chromium baselines live under `tests/browser/__snapshots__` and are reviewed repository artifacts, not transient CI output.
+The committed Linux Chromium baselines live under `tests/browser/__snapshots__` and are reviewed repository artifacts, not transient CI output. Overlay screenshots install a fixed browser clock before rendering so the visible UTC dispatch timestamp cannot create pixel drift between otherwise identical runs.
 
 ## External verification boundary
 
