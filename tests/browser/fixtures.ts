@@ -54,10 +54,10 @@ export async function installControllableSocket(page: Page) {
       onerror: ((event: Event) => void) | null = null;
       constructor() {
         TestSocket.instances.push(this);
-        setTimeout(() => {
+        queueMicrotask(() => {
           this.readyState = 1;
           this.onopen?.(new Event('open'));
-        }, 20);
+        });
       }
       send() {}
       close() {
