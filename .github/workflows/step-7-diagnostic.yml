@@ -8,17 +8,23 @@ permissions:
   contents: read
 
 jobs:
-  diagnose:
+  repository-test:
     if: github.head_ref == 'audit/07-observability'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        command:
-          - "pnpm exec tsx --test tools/test/observability.test.ts"
-          - "pnpm run test:repository"
-          - "pnpm run build"
+        file:
+          - tools/test/api-routes.test.mjs
+          - tools/test/container-hardening.test.mjs
+          - tools/test/content-security-policy.test.mjs
+          - tools/test/database.test.mjs
+          - tools/test/repository.test.mjs
+          - tools/test/twitch-eventsub.test.mjs
+          - tools/test/ui-graphics.test.mjs
+          - tools/test/ui-raster-system.test.mjs
+          - tools/test/ui-revamp.test.mjs
     steps:
       - name: Check out repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -36,5 +42,5 @@ jobs:
           node-version: 22.16.0
       - name: Install frozen dependencies
         run: pnpm install --frozen-lockfile
-      - name: Run diagnostic command
-        run: ${{ matrix.command }}
+      - name: Run ${{ matrix.file }}
+        run: node --test "${{ matrix.file }}"
