@@ -44,3 +44,27 @@ jobs:
 
       - name: Run repository verification
         run: pnpm verify
+
+  step12-finalize-license:
+    if: github.event_name == 'pull_request' && github.head_ref == 'audit/12-docs-license-consistency'
+    permissions:
+      contents: write
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: audit/12-docs-license-consistency
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Apply proprietary notice and remove scaffolding
+        run: |
+          set -euo pipefail
+          python tools/step12-finalize-license.py
+          git fetch origin main
+          git checkout origin/main -- .github/workflows/ci.yml
+          git rm --ignore-unmatch .github/workflows/step12-finalize-license.yml tools/step12-finalize-license.py LICENSE_STATUS.md
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add README.md LICENSE tools/test/docs-consistency.test.mjs .github/workflows/ci.yml
+          git commit -m "docs(license): formalize proprietary all-rights-reserved posture"
+          git push origin HEAD:audit/12-docs-license-consistency
