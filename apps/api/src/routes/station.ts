@@ -8,6 +8,7 @@ import { requireUser } from '../services/auth.js';
 import { getOrCreateCurrentWreck } from '../services/salvage.js';
 import { stationDto } from '../services/station.js';
 import { enforceDurableCooldown } from '../services/actions.js';
+import { withEventPresentation } from '../services/event-presentation.js';
 
 export async function registerStationRoutes(app: FastifyInstance, context: ApiContext) {
   app.get('/api/v1/station', async request => ({ data: stationSnapshotSchema.parse(await stationDto(context.prisma)), requestId: request.id }));
@@ -23,10 +24,7 @@ export async function registerStationRoutes(app: FastifyInstance, context: ApiCo
 
   app.get('/api/v1/inventory', async request => {
     const user = await requireUser(context.prisma, request);
-    const inventory = await context.prisma.inventoryStack.findMany({
-      where: { playerId: user.player.id },
-      orderBy: { name: 'asc' }
-    });
+    const inventory = await context.prisma.inventoryStack.findMany({ where: { playerId: user.player.id }, orderBy: { name: 'asc' } });
     return { data: inventoryItemSchema.array().parse(inventory), requestId: request.id };
   });
 
@@ -42,31 +40,18 @@ export async function registerStationRoutes(app: FastifyInstance, context: ApiCo
 
   app.get('/api/v1/cooldowns', async request => {
     const user = await requireUser(context.prisma, request);
-    return {
-      data: await context.prisma.actionCooldown.findMany({
-        where: { playerId: user.player.id, expiresAt: { gt: new Date() } },
-        select: { actionKey: true, expiresAt: true },
-        orderBy: { expiresAt: 'asc' }
-      }),
-      requestId: request.id
-    };
+    return { data: await context.prisma.actionCooldown.findMany({ where: { playerId: user.player.id, expiresAt: { gt: new Date() } }, select: { actionKey: true, expiresAt: true }, orderBy: { expiresAt: 'asc' } }), requestId: request.id };
   });
 
   app.get('/api/v1/history', async request => {
     const query = z.object({ limit: z.coerce.number().int().min(1).max(5000).default(2000) }).parse(request.query ?? {});
-    return { data: historyRecordSchema.array().parse(await context.prisma.historyEntry.findMany({ orderBy: { createdAt: 'desc' }, take: query.limit })), requestId: request.id };
+    const history = await context.prisma.historyEntry.findMany({ orderBy: { createdAt: 'desc' }, take: query.limit });
+    return { data: historyRecordSchema.array().parse(history.map(entry => withEventPresentation(entry))), requestId: request.id };
   });
 
   app.get('/api/v1/notifications', async request => {
     const user = await requireUser(context.prisma, request);
-    return {
-      data: await context.prisma.notification.findMany({
-        where: { playerId: user.player.id },
-        orderBy: { createdAt: 'desc' },
-        take: 40
-      }),
-      requestId: request.id
-    };
+    return { data: await context.prisma.notification.findMany({ where: { playerId: user.player.id }, orderBy: { createdAt: 'desc' }, take: 40 }), requestId: request.id };
   });
 
   app.post('/api/v1/station/refine', async request => {
