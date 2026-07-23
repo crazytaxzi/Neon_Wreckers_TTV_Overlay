@@ -1,5 +1,7 @@
 # Test report
 
+> Historical evidence snapshot. This document records checks performed on 2026-07-13 and must not be read as proof for the current commit or a later deployment. Current releases require a new record based on `docs/RELEASE_EVIDENCE_TEMPLATE.md`.
+
 Verification date: 2026-07-13.
 
 ## Completed checks

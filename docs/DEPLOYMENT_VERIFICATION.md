@@ -1,5 +1,7 @@
 # Deployment verification
 
+> Historical evidence snapshot. This document records the 2026-07-13 archive review and is not evidence that the current commit was deployed or that external integrations succeeded. Record each release using `docs/RELEASE_EVIDENCE_TEMPLATE.md`.
+
 Verification date: 2026-07-13.
 
 ## Pipeline preservation

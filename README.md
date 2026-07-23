@@ -614,8 +614,11 @@ The restore process rejects unsafe archive paths and verifies stored checksums b
 | [Database Domain Model](docs/DATABASE_DOMAIN_MODEL.md) | Persistent entities and relationships |
 | [Visual Guide](docs/FRONTEND_VISUAL_GUIDE.md) | Frontend visual structure and asset conventions |
 | [Dependency Audit](docs/DEPENDENCY_AUDIT.md) | Purpose and status of retained dependencies |
-| [Test Report](docs/TEST_REPORT.md) | Automated verification results |
-| [Deployment Verification](docs/DEPLOYMENT_VERIFICATION.md) | Environment-dependent release evidence |
+| [Test Report](docs/TEST_REPORT.md) | Historical and current source-level verification evidence |
+| [Deployment Verification](docs/DEPLOYMENT_VERIFICATION.md) | Historical deployment-evidence boundary and target-host requirements |
+| [Verification Boundaries](docs/VERIFICATION_BOUNDARIES.md) | Defines source, deployment, and external-integration evidence |
+| [Release Evidence Template](docs/RELEASE_EVIDENCE_TEMPLATE.md) | Required evidence record for releases and deployments |
+| [Security Policy](SECURITY.md) | Private reporting, credential rotation, and incident response |
 | [Change Summary](docs/CHANGE_SUMMARY.md) | Stabilization and release changes |
 | [Changelog](CHANGELOG.md) | Version history |
 
@@ -632,7 +635,7 @@ The restore process rejects unsafe archive paths and verifies stored checksums b
 
 The source imported before Version 2.0 contained committed environment files with live-looking credentials. Rotate every database, Redis, session, Twitch, StreamElements, and related credential that appeared in an earlier package before deploying this version.
 
-For security-sensitive reports, use a private channel rather than a public issue.
+For security-sensitive reports, follow [SECURITY.md](SECURITY.md) and use a private channel rather than a public issue. The credential-rotation checklist there is mandatory before deploying any environment derived from an earlier source package.
 
 ## Development rules
 
@@ -653,6 +656,6 @@ For security-sensitive reports, use a private channel rather than a public issue
 
 ## License and distribution
 
-This repository is private and does not include an open-source license.
+This repository is publicly visible on GitHub. Public visibility is not a software license and does not grant permission to copy, modify, redistribute, sublicense, or commercially use the source code, artwork, content, branding, or deployment materials.
 
-Unless the project owner publishes separate terms, the source code, artwork, content, branding, and deployment materials are proprietary and may not be redistributed or reused outside the authorized Neon Wreckers project.
+Neon Wreckers is proprietary software and all rights are reserved. Public visibility does not grant permission to copy, modify, redistribute, sublicense, host, deploy, sell, or create derivative works from the source code, artwork, game content, branding, documentation, configuration, or deployment materials. See [LICENSE](LICENSE) for the controlling notice. Third-party dependencies remain governed by their own licenses.
