@@ -112,22 +112,22 @@
 
 ## Step 11: Harden Asset Manifest and Responsive Image Validation
 
-- Status: in progress
+- Status: complete
 - Branch: `audit/11-asset-manifest-hardening`
+- Pull request: [#20](https://github.com/crazytaxzi/Neon_Wreckers_TTV_Overlay/pull/20)
+- Merge commit: `6912349883b2b995b74b66fab78899a2b1c6e4d9`
+- Completed date: 2026-07-23
+- Verification: CI run 29997488556, CI and security gates run 29997488548, CodeQL run 29997488569, Browser integration run 29997488546, UI Revamp Verify run 29997488550, Admin and Overlay Visual Proof run 29997488542, and UI Visual Proof run 29997488552 all passed.
+- Notes: Made `assets/manifest.json` the explicit source owner for every visual key, added strict duplicate/path/format/variant/file-existence validation, wired the shared validator into content checks, removed overlay filename invention, preserved CSS-owned fallbacks without broken network requests, documented adoption rules, and refreshed reviewed browser baselines for the intentional rendering correction.
+- Remaining risks: The current catalog is CSS-owned because no canonical responsive raster set is committed. Future raster adoption must include explicit source plus `360w` and `600w` variants and pass content validation.
+
+## Step 12: Resolve Documentation, Licensing, and Release-Evidence Contradictions
+
+- Status: in progress
+- Branch: `audit/12-docs-license-consistency`
 - Pull request: pending
 - Merge commit: pending
 - Completed date: pending
 - Verification: pending
-- Notes: Auditing the canonical manifest, every visual-key consumer, responsive variants, and build-time validation. Runtime filename derivation will be removed in favor of explicit manifest-owned URLs.
-- Remaining risks: Current overlay wreck rendering still derives `-360w.webp` and `-600w.webp` filenames and can request nonexistent variants until this step lands.
-
-## Step 12: Resolve Documentation, Licensing, and Release-Evidence Contradictions
-
-- Status: not started
-- Branch:
-- Pull request:
-- Merge commit:
-- Completed date:
-- Verification:
-- Notes:
-- Remaining risks:
+- Notes: Auditing repository visibility claims, verification language, credential-rotation guidance, release-evidence requirements, stale links, and version references. Licensing posture will not be selected without explicit owner intent.
+- Remaining risks: Repository distribution rights remain ambiguous until the owner chooses either an open-source license or an explicit proprietary/all-rights-reserved posture.
