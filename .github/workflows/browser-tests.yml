@@ -34,7 +34,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   playwright:
@@ -43,8 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: true
+          persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 22.16.0
@@ -80,24 +79,7 @@ jobs:
           NW_BROWSER_BASE_URL: http://127.0.0.1:4173
           NW_ADMIN_BASE_URL: http://127.0.0.1:4174/admin/
           NW_OVERLAY_BASE_URL: http://127.0.0.1:4175/overlay/?preview=1
-        run: |
-          if [ "$GITHUB_HEAD_REF" = "ui/generated-art-cohesive-pass" ]; then
-            pnpm test:browser:update
-          else
-            pnpm test:browser
-          fi
-      - name: Commit reviewed generated-art baselines
-        if: github.head_ref == 'ui/generated-art-cohesive-pass'
-        run: |
-          git add tests/browser/__snapshots__
-          if git diff --cached --quiet; then
-            echo 'Visual baselines are already current.'
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'chore(test): refresh generated-art snapshots'
-          git push origin HEAD:ui/generated-art-cohesive-pass
+        run: pnpm test:browser
       - name: Upload browser report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
