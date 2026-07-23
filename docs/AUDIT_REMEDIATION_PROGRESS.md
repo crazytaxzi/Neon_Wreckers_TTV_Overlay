@@ -123,11 +123,11 @@
 
 ## Step 12: Resolve Documentation, Licensing, and Release-Evidence Contradictions
 
-- Status: in progress
+- Status: complete
 - Branch: `audit/12-docs-license-consistency`
-- Pull request: pending
-- Merge commit: pending
-- Completed date: pending
-- Verification: pending
-- Notes: Auditing repository visibility claims, verification language, credential-rotation guidance, release-evidence requirements, stale links, and version references. Licensing posture will not be selected without explicit owner intent.
-- Remaining risks: Repository distribution rights remain ambiguous until the owner chooses either an open-source license or an explicit proprietary/all-rights-reserved posture.
+- Pull request: [#21](https://github.com/crazytaxzi/Neon_Wreckers_TTV_Overlay/pull/21)
+- Merge commit: `9d8a72f3d3becfbc0f960ea34d137a072397338e`
+- Completed date: 2026-07-23
+- Verification: CI run 30000339066, CI and security gates run 30000338919, and CodeQL run 30000338915 all passed on final head `92a1ce27a632f710ddad9c3e82034c69c94eba97`.
+- Notes: Corrected public/private visibility claims, formalized the owner-approved proprietary all-rights-reserved posture in `LICENSE`, separated source, deployment, and external-integration evidence, marked old reports as historical snapshots, added actionable credential-rotation guidance, added a release-evidence template, and added documentation consistency tests.
+- Remaining risks: Real Twitch OAuth completion, StreamElements transactions, public DNS/TLS, OBS Browser Source behavior, and production deployment health still require dated target-environment evidence. Public repository visibility does not grant reuse or distribution rights.
