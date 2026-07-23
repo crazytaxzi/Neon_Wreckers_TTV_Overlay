@@ -45,15 +45,15 @@ jobs:
             done
             if [ "$ready" -ne 1 ]; then cat /tmp/*-preview.log; exit 1; fi
           done
-      - name: Generate reviewed baseline candidates
+      - name: Generate reviewed visual baselines
         env:
           NW_BROWSER_BASE_URL: http://127.0.0.1:4173
           NW_ADMIN_BASE_URL: http://127.0.0.1:4174/admin/
           NW_OVERLAY_BASE_URL: http://127.0.0.1:4175/overlay/?preview=1
-        run: pnpm test:browser:update
+        run: pnpm exec playwright test --update-snapshots --grep 'captures|visually stable'
       - name: Commit baselines and remove temporary workflows
         run: |
-          git rm .github/workflows/step10-snapshot-generator.yml .github/workflows/step10-verify-diagnostic.yml
+          git rm .github/workflows/step10-snapshot-generator.yml .github/workflows/step10-verify-diagnostic.yml .github/workflows/step10-browser-diagnostic.yml
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add tests/browser/__snapshots__
