@@ -7,7 +7,11 @@
       "tags": [
         "item"
       ],
-      "alt": "Stack of refined alloy ingots"
+      "alt": "Stack of refined alloy ingots",
+      "source": {
+        "kind": "css",
+        "token": "item-alloys"
+      }
     },
     {
       "key": "item-credit-chip",
@@ -16,7 +20,11 @@
         "item",
         "currency"
       ],
-      "alt": "Neon station credit chip"
+      "alt": "Neon station credit chip",
+      "source": {
+        "kind": "css",
+        "token": "item-credit-chip"
+      }
     },
     {
       "key": "item-electronics",
@@ -24,7 +32,11 @@
       "tags": [
         "item"
       ],
-      "alt": "Glowing circuit board fragments"
+      "alt": "Glowing circuit board fragments",
+      "source": {
+        "kind": "css",
+        "token": "item-electronics"
+      }
     },
     {
       "key": "item-fuel-cells",
@@ -32,7 +44,11 @@
       "tags": [
         "item"
       ],
-      "alt": "Orange fuel cell canisters"
+      "alt": "Orange fuel cell canisters",
+      "source": {
+        "kind": "css",
+        "token": "item-fuel-cells"
+      }
     },
     {
       "key": "item-hull-scrap",
@@ -40,7 +56,11 @@
       "tags": [
         "item"
       ],
-      "alt": "Jagged hull scrap shard"
+      "alt": "Jagged hull scrap shard",
+      "source": {
+        "kind": "css",
+        "token": "item-hull-scrap"
+      }
     },
     {
       "key": "item-research-data",
@@ -48,7 +68,11 @@
       "tags": [
         "item"
       ],
-      "alt": "Data prism full of research fragments"
+      "alt": "Data prism full of research fragments",
+      "source": {
+        "kind": "css",
+        "token": "item-research-data"
+      }
     },
     {
       "key": "item-rubber-rat",
@@ -56,7 +80,11 @@
       "tags": [
         "item"
       ],
-      "alt": "Rubber rat mascot artifact"
+      "alt": "Rubber rat mascot artifact",
+      "source": {
+        "kind": "css",
+        "token": "item-rubber-rat"
+      }
     },
     {
       "key": "item-unknown-relic",
@@ -64,28 +92,252 @@
       "tags": [
         "item"
       ],
-      "alt": "Sealed unknown relic with violet glow"
+      "alt": "Sealed unknown relic with violet glow",
+      "source": {
+        "kind": "css",
+        "token": "item-unknown-relic"
+      }
     },
-    { "key": "item-algae-culture", "type": "svg-css", "tags": ["item"], "alt": "Sealed green algae culture" },
-    { "key": "item-biofiber", "type": "svg-css", "tags": ["item"], "alt": "Sterile biofiber spool" },
-    { "key": "item-chemical-gel", "type": "svg-css", "tags": ["item"], "alt": "Reactive chemical gel canister" },
-    { "key": "item-copper-coil", "type": "svg-css", "tags": ["item"], "alt": "High-current copper coil" },
-    { "key": "item-drone-chassis", "type": "svg-css", "tags": ["item"], "alt": "Unfinished salvage drone chassis" },
-    { "key": "item-grid-relay", "type": "svg-css", "tags": ["item"], "alt": "Smart station grid relay" },
-    { "key": "item-hull-plate", "type": "svg-css", "tags": ["item"], "alt": "Pressure-rated hull plate" },
-    { "key": "item-ice-crystal", "type": "svg-css", "tags": ["item"], "alt": "Clean blue ice crystal" },
-    { "key": "item-medical-supplies", "type": "svg-css", "tags": ["item"], "alt": "Sealed medical field kit" },
-    { "key": "item-navigation-chart", "type": "svg-css", "tags": ["item"], "alt": "Holographic navigation chart" },
-    { "key": "item-nutrient-paste", "type": "svg-css", "tags": ["item"], "alt": "Station nutrient paste cartridge" },
-    { "key": "item-plasma-conduit", "type": "svg-css", "tags": ["item"], "alt": "Shielded plasma conduit" },
-    { "key": "item-polymer", "type": "svg-css", "tags": ["item"], "alt": "Industrial polymer bale" },
-    { "key": "item-power-core", "type": "svg-css", "tags": ["item"], "alt": "Glowing compact power core" },
-    { "key": "item-quantum-key", "type": "svg-css", "tags": ["item"], "alt": "Entangled legendary quantum key" },
-    { "key": "item-ration-pack", "type": "svg-css", "tags": ["item"], "alt": "Sealed station ration pack" },
-    { "key": "item-reactor-coolant", "type": "svg-css", "tags": ["item"], "alt": "Cryogenic reactor coolant canister" },
-    { "key": "item-sealant-foam", "type": "svg-css", "tags": ["item"], "alt": "Pressure sealant foam cartridge" },
-    { "key": "item-sensor-lens", "type": "svg-css", "tags": ["item"], "alt": "Precision salvage sensor lens" },
-    { "key": "item-water-cartridge", "type": "svg-css", "tags": ["item"], "alt": "Purified water cartridge" },
+    {
+      "key": "item-algae-culture",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Sealed green algae culture",
+      "source": {
+        "kind": "css",
+        "token": "item-algae-culture"
+      }
+    },
+    {
+      "key": "item-biofiber",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Sterile biofiber spool",
+      "source": {
+        "kind": "css",
+        "token": "item-biofiber"
+      }
+    },
+    {
+      "key": "item-chemical-gel",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Reactive chemical gel canister",
+      "source": {
+        "kind": "css",
+        "token": "item-chemical-gel"
+      }
+    },
+    {
+      "key": "item-copper-coil",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "High-current copper coil",
+      "source": {
+        "kind": "css",
+        "token": "item-copper-coil"
+      }
+    },
+    {
+      "key": "item-drone-chassis",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Unfinished salvage drone chassis",
+      "source": {
+        "kind": "css",
+        "token": "item-drone-chassis"
+      }
+    },
+    {
+      "key": "item-grid-relay",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Smart station grid relay",
+      "source": {
+        "kind": "css",
+        "token": "item-grid-relay"
+      }
+    },
+    {
+      "key": "item-hull-plate",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Pressure-rated hull plate",
+      "source": {
+        "kind": "css",
+        "token": "item-hull-plate"
+      }
+    },
+    {
+      "key": "item-ice-crystal",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Clean blue ice crystal",
+      "source": {
+        "kind": "css",
+        "token": "item-ice-crystal"
+      }
+    },
+    {
+      "key": "item-medical-supplies",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Sealed medical field kit",
+      "source": {
+        "kind": "css",
+        "token": "item-medical-supplies"
+      }
+    },
+    {
+      "key": "item-navigation-chart",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Holographic navigation chart",
+      "source": {
+        "kind": "css",
+        "token": "item-navigation-chart"
+      }
+    },
+    {
+      "key": "item-nutrient-paste",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Station nutrient paste cartridge",
+      "source": {
+        "kind": "css",
+        "token": "item-nutrient-paste"
+      }
+    },
+    {
+      "key": "item-plasma-conduit",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Shielded plasma conduit",
+      "source": {
+        "kind": "css",
+        "token": "item-plasma-conduit"
+      }
+    },
+    {
+      "key": "item-polymer",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Industrial polymer bale",
+      "source": {
+        "kind": "css",
+        "token": "item-polymer"
+      }
+    },
+    {
+      "key": "item-power-core",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Glowing compact power core",
+      "source": {
+        "kind": "css",
+        "token": "item-power-core"
+      }
+    },
+    {
+      "key": "item-quantum-key",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Entangled legendary quantum key",
+      "source": {
+        "kind": "css",
+        "token": "item-quantum-key"
+      }
+    },
+    {
+      "key": "item-ration-pack",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Sealed station ration pack",
+      "source": {
+        "kind": "css",
+        "token": "item-ration-pack"
+      }
+    },
+    {
+      "key": "item-reactor-coolant",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Cryogenic reactor coolant canister",
+      "source": {
+        "kind": "css",
+        "token": "item-reactor-coolant"
+      }
+    },
+    {
+      "key": "item-sealant-foam",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Pressure sealant foam cartridge",
+      "source": {
+        "kind": "css",
+        "token": "item-sealant-foam"
+      }
+    },
+    {
+      "key": "item-sensor-lens",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Precision salvage sensor lens",
+      "source": {
+        "kind": "css",
+        "token": "item-sensor-lens"
+      }
+    },
+    {
+      "key": "item-water-cartridge",
+      "type": "svg-css",
+      "tags": [
+        "item"
+      ],
+      "alt": "Purified water cartridge",
+      "source": {
+        "kind": "css",
+        "token": "item-water-cartridge"
+      }
+    },
     {
       "key": "module-cargo-bay",
       "type": "svg-css",
@@ -93,7 +345,11 @@
         "module",
         "station"
       ],
-      "alt": "Armored cargo bay with crate rails"
+      "alt": "Armored cargo bay with crate rails",
+      "source": {
+        "kind": "css",
+        "token": "module-cargo-bay"
+      }
     },
     {
       "key": "module-command-pod",
@@ -102,7 +358,11 @@
         "module",
         "station"
       ],
-      "alt": "Compact command pod with neon antennae"
+      "alt": "Compact command pod with neon antennae",
+      "source": {
+        "kind": "css",
+        "token": "module-command-pod"
+      }
     },
     {
       "key": "module-habitat-ring",
@@ -111,7 +371,11 @@
         "module",
         "station"
       ],
-      "alt": "Partially built habitat ring around Station Zero"
+      "alt": "Partially built habitat ring around Station Zero",
+      "source": {
+        "kind": "css",
+        "token": "module-habitat-ring"
+      }
     },
     {
       "key": "module-marketplace",
@@ -119,7 +383,11 @@
       "tags": [
         "module"
       ],
-      "alt": "Station marketplace with dock stalls"
+      "alt": "Station marketplace with dock stalls",
+      "source": {
+        "kind": "css",
+        "token": "module-marketplace"
+      }
     },
     {
       "key": "module-medical-bay",
@@ -127,7 +395,11 @@
       "tags": [
         "module"
       ],
-      "alt": "Medical bay with sterile neon panels"
+      "alt": "Medical bay with sterile neon panels",
+      "source": {
+        "kind": "css",
+        "token": "module-medical-bay"
+      }
     },
     {
       "key": "module-museum",
@@ -136,7 +408,11 @@
         "module",
         "station"
       ],
-      "alt": "Station museum with illuminated artifact bays"
+      "alt": "Station museum with illuminated artifact bays",
+      "source": {
+        "kind": "css",
+        "token": "module-museum"
+      }
     },
     {
       "key": "module-refinery",
@@ -145,7 +421,11 @@
         "module",
         "station"
       ],
-      "alt": "Industrial refinery with hot plasma stacks"
+      "alt": "Industrial refinery with hot plasma stacks",
+      "source": {
+        "kind": "css",
+        "token": "module-refinery"
+      }
     },
     {
       "key": "module-research-lab",
@@ -153,7 +433,11 @@
       "tags": [
         "module"
       ],
-      "alt": "Research lab with scanner dish"
+      "alt": "Research lab with scanner dish",
+      "source": {
+        "kind": "css",
+        "token": "module-research-lab"
+      }
     },
     {
       "key": "module-shipyard",
@@ -161,15 +445,23 @@
       "tags": [
         "module"
       ],
-      "alt": "Shipyard repair gantry"
+      "alt": "Shipyard repair gantry",
+      "source": {
+        "kind": "css",
+        "token": "module-shipyard"
+      }
     },
     {
       "key": "ship-rustlight-tug",
-      "type": "webp-raster",
+      "type": "svg-css",
       "tags": [
         "ship"
       ],
-      "alt": "Starter Rustlight salvage tug"
+      "alt": "Starter Rustlight salvage tug",
+      "source": {
+        "kind": "css",
+        "token": "ship-rustlight-tug"
+      }
     },
     {
       "key": "wreck-ashfall-cutter",
@@ -177,7 +469,11 @@
       "tags": [
         "wreck"
       ],
-      "alt": "Damaged Ashfall patrol cutter"
+      "alt": "Damaged Ashfall patrol cutter",
+      "source": {
+        "kind": "css",
+        "token": "wreck-ashfall-cutter"
+      }
     },
     {
       "key": "wreck-helios-courier",
@@ -185,7 +481,11 @@
       "tags": [
         "wreck"
       ],
-      "alt": "Broken courier ship with fractured cargo spine"
+      "alt": "Broken courier ship with fractured cargo spine",
+      "source": {
+        "kind": "css",
+        "token": "wreck-helios-courier"
+      }
     },
     {
       "key": "wreck-morrowline-freighter",
@@ -193,7 +493,11 @@
       "tags": [
         "wreck"
       ],
-      "alt": "Morrowline commercial freighter"
+      "alt": "Morrowline commercial freighter",
+      "source": {
+        "kind": "css",
+        "token": "wreck-morrowline-freighter"
+      }
     },
     {
       "key": "wreck-orpheus-barge",
@@ -201,7 +505,11 @@
       "tags": [
         "wreck"
       ],
-      "alt": "Slag-bitten Orpheus mining barge"
+      "alt": "Slag-bitten Orpheus mining barge",
+      "source": {
+        "kind": "css",
+        "token": "wreck-orpheus-barge"
+      }
     },
     {
       "key": "wreck-research-skiff",
@@ -209,7 +517,11 @@
       "tags": [
         "wreck"
       ],
-      "alt": "Unmarked black research skiff"
+      "alt": "Unmarked black research skiff",
+      "source": {
+        "kind": "css",
+        "token": "wreck-research-skiff"
+      }
     }
   ]
 }
