@@ -79,25 +79,25 @@
 
 ## Step 08: Decompose and Stabilize the Overlay Application
 
-- Status: in progress
+- Status: complete
 - Branch: `audit/08-overlay-decomposition`
+- Pull request: [#14](https://github.com/crazytaxzi/Neon_Wreckers_TTV_Overlay/pull/14)
+- Merge commit: `004e654b0db5ca29ee0a3b4054c172ef72741a8b`
+- Completed date: 2026-07-23
+- Verification: CI run 29978206073, CI and security gates run 29978206084, CodeQL run 29978206070, UI Revamp Verify run 29978206074, Admin and Overlay Visual Proof run 29978206072, and UI Visual Proof run 29978206075 all passed.
+- Notes: Reduced the overlay entry file to a composition root; extracted bounded headline deduplication, classification, reconciliation, queue and visibility hooks, and focused station, wreck, dispatch, viewer-popup, and feed-indicator components. Timer and socket cleanup remain deterministic, shared runtime contracts are preserved, and no deliberate visual change was introduced.
+- Remaining risks: Long-running production OBS sessions should still be observed for environment-specific memory behavior and browser-source lifecycle quirks.
+
+## Step 09: Move Event Severity and Presentation Metadata to the Server
+
+- Status: in progress
+- Branch: `audit/09-server-event-presentation`
 - Pull request: pending
 - Merge commit: pending
 - Completed date: pending
 - Verification: pending
-- Notes: Establishing behavior-preserving tests, then extracting overlay hooks, bounded headline deduplication, connection utilities, and focused rendering components.
-- Remaining risks: Refactoring must preserve transparent OBS rendering, reduced-motion behavior, network cleanup, and supported canvas layouts.
-
-## Step 09: Move Event Severity and Presentation Metadata to the Server
-
-- Status: not started
-- Branch:
-- Pull request:
-- Merge commit:
-- Completed date:
-- Verification:
-- Notes:
-- Remaining risks:
+- Notes: Inventorying event producers and introducing a shared presentation contract before migrating server persistence, realtime payloads, and overlay compatibility fallback.
+- Remaining risks: Existing history rows require backward-compatible defaults and no new producer may silently omit canonical presentation metadata.
 
 ## Step 10: Add Browser, Accessibility, and Visual Regression Tests
 
