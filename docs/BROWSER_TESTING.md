@@ -8,18 +8,18 @@ The browser suite is owned by the repository and uses exact dependencies:
 
 ## Authentication boundary
 
-The suite verifies the public and anonymous boundaries only. It does not add a production authentication bypass, forge Twitch sessions, or claim that real Twitch OAuth succeeds. The OAuth test verifies that the player starts authentication through the server-owned Twitch route. The admin test verifies that anonymous browsers cannot see authenticated controls.
+The suite verifies the public and anonymous boundaries only. It does not add a production authentication bypass, forge Twitch sessions, or claim that real Twitch OAuth succeeds. The OAuth test navigates the server-owned Twitch start route and verifies its browser redirect contract without assuming that the anonymous landing page renders a sign-in link. The admin test verifies that anonymous browsers cannot see authenticated controls.
 
 ## Covered behavior
 
 - unauthenticated player landing state
-- Twitch OAuth-start link contract
+- Twitch OAuth-start route contract
 - anonymous admin boundary
 - public station, wreck, and history snapshot rendering
 - validated WebSocket station updates
-- disconnect and reconnect presentation
+- disconnect, reconnect, and stale presentation
 - reduced-motion media behavior
-- keyboard focusability
+- keyboard behavior on the public and anonymous surfaces, including focus verification when controls exist
 - automated serious/critical accessibility checks
 - overlay screenshots at 1280x720, 1920x1080, and 2560x1440
 - mobile player and desktop anonymous-admin screenshots
