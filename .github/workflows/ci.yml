@@ -44,26 +44,3 @@ jobs:
 
       - name: Run repository verification
         run: pnpm verify
-
-  step12-docs-patch:
-    if: github.event_name == 'pull_request' && github.head_ref == 'audit/12-docs-license-consistency'
-    permissions:
-      contents: write
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: audit/12-docs-license-consistency
-          fetch-depth: 0
-          persist-credentials: true
-      - name: Apply documentation patch and restore trusted workflow
-        run: |
-          python tools/step12-docs-patch.py
-          git fetch origin main
-          git checkout origin/main -- .github/workflows/ci.yml
-          git rm .github/workflows/step12-docs-patch.yml tools/step12-docs-patch.py
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add README.md LICENSE_STATUS.md SECURITY.md docs/TEST_REPORT.md docs/DEPLOYMENT_VERIFICATION.md docs/VERIFICATION_BOUNDARIES.md docs/RELEASE_EVIDENCE_TEMPLATE.md tools/test/docs-consistency.test.mjs .github/workflows/ci.yml
-          git commit -m "docs(release): align visibility security and evidence claims"
-          git push origin HEAD:audit/12-docs-license-consistency
