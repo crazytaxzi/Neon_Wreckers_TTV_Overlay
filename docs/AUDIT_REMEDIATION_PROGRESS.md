@@ -68,25 +68,25 @@
 
 ## Step 07: Add Production-Grade Metrics, Tracing, and Health Signals
 
-- Status: in progress
+- Status: complete
 - Branch: `audit/07-observability`
+- Pull request: [#13](https://github.com/crazytaxzi/Neon_Wreckers_TTV_Overlay/pull/13)
+- Merge commit: `6dab5a04ceef45a766461e9d160540e19d4ad82f`
+- Completed date: 2026-07-23
+- Verification: CI run 29970498274, CI and security gates run 29970498281, CodeQL run 29970498291, and UI Revamp Verify run 29970498257 all passed.
+- Notes: Added Prometheus-compatible HTTP, WebSocket, queue, database, and domain metric foundations with normalized bounded labels; separated liveness from PostgreSQL and Redis readiness; retained the admin snapshot; added structured request correlation; and kept the internal scrape endpoint off the public gateway.
+- Remaining risks: Real Twitch and StreamElements latency/error instrumentation still requires configured external services. Production dashboards and thresholds must be tuned against observed traffic baselines.
+
+## Step 08: Decompose and Stabilize the Overlay Application
+
+- Status: in progress
+- Branch: `audit/08-overlay-decomposition`
 - Pull request: pending
 - Merge commit: pending
 - Completed date: pending
 - Verification: pending
-- Notes: Inventorying current request metrics, logging, health/readiness routes, WebSocket telemetry, BullMQ instrumentation, database failures, and external-integration visibility.
-- Remaining risks: Metrics must avoid sensitive or unbounded labels and the internal scrape endpoint must not be exposed publicly.
-
-## Step 08: Decompose and Stabilize the Overlay Application
-
-- Status: not started
-- Branch:
-- Pull request:
-- Merge commit:
-- Completed date:
-- Verification:
-- Notes:
-- Remaining risks:
+- Notes: Establishing behavior-preserving tests, then extracting overlay hooks, bounded headline deduplication, connection utilities, and focused rendering components.
+- Remaining risks: Refactoring must preserve transparent OBS rendering, reduced-motion behavior, network cleanup, and supported canvas layouts.
 
 ## Step 09: Move Event Severity and Presentation Metadata to the Server
 
