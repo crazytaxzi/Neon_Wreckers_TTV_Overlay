@@ -1,0 +1,27 @@
+name: Step 12 apply documentation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'audit/12-docs-license-consistency'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: audit/12-docs-license-consistency
+          persist-credentials: true
+      - name: Apply and commit documentation
+        run: |
+          python tools/step12-docs-patch.py
+          git rm -f --ignore-unmatch .github/workflows/step12-apply.yml tools/step12-docs-patch.py
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add README.md LICENSE_STATUS.md SECURITY.md docs/TEST_REPORT.md docs/DEPLOYMENT_VERIFICATION.md docs/VERIFICATION_BOUNDARIES.md docs/RELEASE_EVIDENCE_TEMPLATE.md tools/test/docs-consistency.test.mjs
+          git commit -m "docs(release): align visibility security and evidence claims"
+          git push origin HEAD:audit/12-docs-license-consistency
