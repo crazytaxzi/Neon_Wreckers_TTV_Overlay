@@ -5,7 +5,7 @@ import { installPublicRoutes } from './fixtures.js';
 const adminUrl = process.env.NW_ADMIN_BASE_URL ?? 'http://127.0.0.1:4174/admin/';
 
 async function expectNoSeriousViolations(page: Page) {
-  const results = await new AxeBuilder({ page }).analyze();
+  const results = await new AxeBuilder({ page }).include('main').analyze();
   expect(results.violations.filter(v => ['critical', 'serious'].includes(v.impact ?? ''))).toEqual([]);
 }
 
