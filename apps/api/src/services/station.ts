@@ -1,6 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
 import type { ModuleState } from '@neon-wreckers/game-engine';
 import { modulesBySlug } from '@neon-wreckers/content';
+import { withEventPresentation } from './event-presentation.js';
 
 type StationResourceRecord = { slug: string; amount: number };
 type PlaqueRecord = { id: string; title: string; body: string; playerName: string | null; createdAt: Date };
@@ -65,9 +66,7 @@ export async function stationDto(prisma: Pick<PrismaClient, 'station' | 'runtime
     storageUsed: station.storageUsed,
     threatLevel: station.threatLevel,
     activeSeason: station.activeSeason,
-    resources: Object.fromEntries(
-      (station.resources as StationResourceRecord[]).map(resource => [resource.slug, resource.amount])
-    ),
+    resources: Object.fromEntries((station.resources as StationResourceRecord[]).map(resource => [resource.slug, resource.amount])),
     museum: {
       collection: museumCollection.map(entry => ({ itemSlug: entry.itemSlug, name: entry.name, quantity: entry._sum.quantity ?? 0 })),
       donatedToday: museumDaily._sum.quantity ?? 0,
@@ -77,35 +76,28 @@ export async function stationDto(prisma: Pick<PrismaClient, 'station' | 'runtime
       const definition = modulesBySlug[module.slug];
       const level = Math.max(0, module.level);
       const effects = Object.fromEntries(Object.entries(definition?.effects ?? module.effects).map(([key, value]) => [key, typeof value === 'number' ? value * level : value]));
-      const nextLevelRequirements = definition && level < definition.maxLevel
-        ? Object.fromEntries(Object.entries(definition.construction.resources).map(([slug, amount]) => [slug, Math.ceil(amount * (level + 1))]))
-        : null;
+      const nextLevelRequirements = definition && level < definition.maxLevel ? Object.fromEntries(Object.entries(definition.construction.resources).map(([slug, amount]) => [slug, Math.ceil(amount * (level + 1))])) : null;
       return {
-      slug: module.slug,
-      name: module.name,
-      description: definition?.description ?? '',
-      maxLevel: definition?.maxLevel ?? level,
-      prerequisites: definition?.prerequisites ?? [],
-      level: module.level,
-      state: module.state,
-      progress: module.progress,
-      integrity: module.integrity,
-      visualKey: module.visualKey,
-      effects,
-      perLevelEffects: definition?.effects ?? module.effects,
-      nextLevelRequirements,
-      project: module.projects[0] ? { id: module.projects[0].id, kind: module.projects[0].kind, targetLevel: module.projects[0].targetLevel, requirements: module.projects[0].requirements, contributed: module.projects[0].contributed } : null,
-      plaques: module.plaques.map(plaque => ({
-        id: plaque.id,
-        title: plaque.title,
-        body: plaque.body,
-        playerDisplayName: plaque.playerName,
-        createdAt: plaque.createdAt.toISOString()
-      }))
+        slug: module.slug,
+        name: module.name,
+        description: definition?.description ?? '',
+        maxLevel: definition?.maxLevel ?? level,
+        prerequisites: definition?.prerequisites ?? [],
+        level: module.level,
+        state: module.state,
+        progress: module.progress,
+        integrity: module.integrity,
+        visualKey: module.visualKey,
+        effects,
+        perLevelEffects: definition?.effects ?? module.effects,
+        nextLevelRequirements,
+        project: module.projects[0] ? { id: module.projects[0].id, kind: module.projects[0].kind, targetLevel: module.projects[0].targetLevel, requirements: module.projects[0].requirements, contributed: module.projects[0].contributed } : null,
+        plaques: module.plaques.map(plaque => ({ id: plaque.id, title: plaque.title, body: plaque.body, playerDisplayName: plaque.playerName, createdAt: plaque.createdAt.toISOString() }))
       };
     }),
-    alerts: (station.alerts as StationAlertRecord[]).map(alert => ({
+    alerts: (station.alerts as StationAlertRecord[]).map(alert => withEventPresentation({
       id: alert.id,
+      category: 'event',
       severity: alert.severity,
       title: alert.title,
       body: alert.body,

@@ -19,11 +19,24 @@ export function apiSuccessEnvelopeSchema<T extends z.ZodTypeAny>(data: T) {
   return z.object({ data, requestId: z.string().optional() }).passthrough();
 }
 
+export const eventSeveritySchema = z.enum(['positive', 'info', 'viewer', 'warning', 'critical']);
+export const eventPresentationSchema = z.object({
+  severity: eventSeveritySchema,
+  category: z.string().min(1),
+  priority: z.number().int().min(0).max(100),
+  breaking: z.boolean(),
+  iconKey: z.string().min(1).optional(),
+  visualKey: z.string().min(1).optional(),
+  localizationKey: z.string().min(1).optional(),
+  fallbackText: z.string().min(1).optional()
+}).strict();
+
 export const stationAlertSchema = z.object({
   id: z.string(),
   severity: z.string(),
   title: z.string(),
   body: z.string(),
+  presentation: eventPresentationSchema.optional(),
   createdAt: serializedDateTimeSchema
 }).passthrough();
 
@@ -49,6 +62,7 @@ export const historyRecordSchema = z.object({
   category: z.string(),
   title: z.string(),
   body: z.string(),
+  presentation: eventPresentationSchema.optional(),
   createdAt: serializedDateTimeSchema,
   actorDisplayName: z.string().nullable().default(null),
   details: historyDetailsSchema
@@ -240,6 +254,8 @@ export const realtimeEventSchema = z.discriminatedUnion('type', [
 ]);
 
 export type ApiError = z.infer<typeof apiErrorSchema>;
+export type EventSeverity = z.infer<typeof eventSeveritySchema>;
+export type EventPresentation = z.infer<typeof eventPresentationSchema>;
 export type StationAlert = z.infer<typeof stationAlertSchema>;
 export type HistoryRecord = z.infer<typeof historyRecordSchema>;
 export type StationSnapshot = z.infer<typeof stationSnapshotSchema>;
