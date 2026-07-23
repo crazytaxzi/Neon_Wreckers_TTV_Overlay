@@ -1,0 +1,99 @@
+name: Step 11 implementation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  implement:
+    if: github.head_ref == 'audit/11-asset-manifest-hardening'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: audit/11-asset-manifest-hardening
+          persist-credentials: true
+      - name: Apply manifest ownership migration
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest_path = Path('assets/manifest.json')
+          manifest = json.loads(manifest_path.read_text())
+          for asset in manifest['assets']:
+              asset['type'] = 'svg-css'
+              asset['source'] = {'kind': 'css', 'token': asset['key']}
+          manifest_path.write_text(json.dumps(manifest, indent=2) + '\n')
+
+          validate_path = Path('tools/validate-content.mjs')
+          text = validate_path.read_text()
+          text = text.replace("import path from 'node:path';\n", "import path from 'node:path';\nimport { loadAndValidateAssetManifest } from './lib/asset-manifest.mjs';\n")
+          old = "const assets = JSON.parse(fs.readFileSync('assets/manifest.json', 'utf8'));\nassert.equal(typeof assets.version, 'string', 'Asset manifest version is required.');\nassert.ok(Array.isArray(assets.assets), 'Asset manifest must contain an assets array.');\nconst visualKeys = new Set();\nfor (const asset of assets.assets) {\n  assert.match(asset.key, /^[a-z0-9]+(?:-[a-z0-9]+)*$/, `Invalid asset key: ${asset.key}`);\n  assert.ok(!visualKeys.has(asset.key), `Duplicate asset key: ${asset.key}`);\n  assert.ok(asset.alt?.trim(), `Asset ${asset.key} is missing alt text.`);\n  visualKeys.add(asset.key);\n}\n"
+          new = "const { manifest: assets, byKey: assetByKey } = loadAndValidateAssetManifest('assets/manifest.json', {\n  publicRoots: ['apps/web/public', 'apps/admin/public', 'apps/overlay/public']\n});\nconst visualKeys = new Set(assetByKey.keys());\n"
+          if old not in text:
+              raise SystemExit('validate-content source did not match')
+          validate_path.write_text(text.replace(old, new, 1))
+
+          component_path = Path('apps/overlay/src/components.tsx')
+          text = component_path.read_text()
+          text = text.replace("import { classifyHeadline, type Headline, type Severity } from './headlines.js';\n", "import { classifyHeadline, type Headline, type Severity } from './headlines.js';\nimport { resolveRasterAsset } from './asset-manifest.js';\n")
+          old_func = "function wreckArtworkSrc(wreck: CurrentWreck | null): string | null {\n  const visualKey = String(wreck?.visualKey ?? '').trim();\n  if (!visualKey) return null;\n  const slug = visualKey.startsWith('wreck-') ? visualKey.slice('wreck-'.length) : visualKey;\n  return `/wrecks/${slug}.webp`;\n}\n"
+          if old_func not in text:
+              raise SystemExit('wreck artwork function did not match')
+          text = text.replace(old_func, '', 1)
+          text = text.replace("  const artwork = wreckArtworkSrc(wreck);", "  const artwork = resolveRasterAsset(wreck?.visualKey);")
+          old_img = "{artwork ? <img className=\"wreck-schematic__art\" src={artwork} srcSet={`${artwork.replace('.webp', '-360w.webp')} 360w, ${artwork.replace('.webp', '-600w.webp')} 600w, ${artwork} 1200w`} sizes=\"(max-width: 1280px) 18rem, 24rem\" alt=\"\" loading=\"eager\" decoding=\"async\" /> : <NWIcon name=\"wreck\" size={48} />}"
+          new_img = "{artwork ? <img className=\"wreck-schematic__art\" src={artwork.src} srcSet={artwork.srcSet} sizes=\"(max-width: 1280px) 18rem, 24rem\" alt=\"\" loading=\"eager\" decoding=\"async\" /> : <NWIcon name=\"wreck\" size={48} />}"
+          if old_img not in text:
+              raise SystemExit('wreck img source did not match')
+          component_path.write_text(text.replace(old_img, new_img, 1))
+          PY
+
+          cat > apps/overlay/src/asset-manifest.ts <<'EOF'
+          import manifest from '../../../assets/manifest.json';
+
+          type CssSource = { kind: 'css'; token: string };
+          type RasterSource = { kind: 'raster'; path: string; variants: Record<string, string> };
+          type AssetRecord = { key: string; source: CssSource | RasterSource };
+
+          const assets = new Map((manifest.assets as AssetRecord[]).map(asset => [asset.key, asset]));
+
+          export function resolveRasterAsset(key: string | null | undefined): { src: string; srcSet: string } | null {
+            if (!key) return null;
+            const asset = assets.get(key);
+            if (!asset || asset.source.kind !== 'raster') return null;
+            const srcSet = Object.entries(asset.source.variants)
+              .sort(([left], [right]) => Number.parseInt(left, 10) - Number.parseInt(right, 10))
+              .map(([width, source]) => `${source} ${width}`)
+              .join(', ');
+            return { src: asset.source.path, srcSet };
+          }
+          EOF
+
+          cat > docs/ASSET_MANIFEST.md <<'EOF'
+          # Asset Manifest
+
+          `assets/manifest.json` is the canonical registry for every content-facing visual key.
+
+          Each record declares exactly one source owner:
+
+          - `source.kind: "css"` with a stable design token for visuals rendered by the shared icon and CSS system.
+          - `source.kind: "raster"` with an explicit root-relative `path` and responsive `variants` such as `360w` and `600w`.
+
+          Runtime code must never derive responsive filenames. Raster consumers use the declared source and variants. CSS-owned records render through the icon/CSS fallback and make no image request.
+
+          `pnpm test:content` validates duplicate keys, normalized paths, supported formats, required variants, path uniqueness, referenced visual keys, orphaned records, and declared file existence across browser public roots.
+
+          Adding a raster asset requires committing the source and every required responsive variant under a browser public root, then declaring all paths in the manifest. Variant generation is intentionally not automatic because this repository does not currently own a deterministic image-optimization pipeline.
+          EOF
+
+          git rm .github/workflows/step11-implementation.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add assets/manifest.json tools/validate-content.mjs apps/overlay/src/components.tsx apps/overlay/src/asset-manifest.ts docs/ASSET_MANIFEST.md
+          git commit -m "feat(assets): make manifest authoritative at runtime"
+          git push origin HEAD:audit/11-asset-manifest-hardening
