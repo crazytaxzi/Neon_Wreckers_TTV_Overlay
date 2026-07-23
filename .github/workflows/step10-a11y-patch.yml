@@ -1,0 +1,36 @@
+name: Step 10 accessibility patch
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'audit/10-browser-integration-tests'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: audit/10-browser-integration-tests
+          persist-credentials: true
+      - name: Apply ARIA fix and remove patch workflow
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('packages/ui/src/components.tsx')
+          text = path.read_text()
+          old = '<div className="nw-toast-viewport" aria-live="polite" aria-label="Notifications">'
+          new = '<div className="nw-toast-viewport" role="region" aria-live="polite" aria-label="Notifications">'
+          if old not in text:
+              raise SystemExit('toast viewport source did not match expected text')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          git rm .github/workflows/step10-a11y-patch.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add packages/ui/src/components.tsx
+          git commit -m "fix(ui): give toast viewport a valid landmark role"
+          git push origin HEAD:audit/10-browser-integration-tests
