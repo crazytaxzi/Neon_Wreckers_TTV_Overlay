@@ -1,0 +1,77 @@
+name: Step 12 documentation implementation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  implement:
+    if: github.head_ref == 'audit/12-docs-license-consistency'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: audit/12-docs-license-consistency
+          persist-credentials: true
+      - name: Apply documentation and licensing consistency changes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          readme = Path('README.md')
+          text = readme.read_text()
+          old = '''## License and distribution
+
+This repository is private and does not include an open-source license.
+
+Unless the project owner publishes separate terms, the source code, artwork, content, branding, and deployment materials are proprietary and may not be redistributed or reused outside the authorized Neon Wreckers project.'''
+          new = '''## License and distribution
+
+This repository is publicly visible, but public access to the source does not grant permission to copy, modify, redistribute, deploy, sublicense, or reuse the project.
+
+The repository does not include an open-source license. The existing project intent is proprietary and all rights reserved. See [LICENSE](LICENSE) for the controlling notice. Third-party dependencies remain governed by their own licenses.'''
+          if old not in text:
+              raise SystemExit('README license section did not match the expected source text')
+          text = text.replace(old, new, 1)
+          security_old = 'For security-sensitive reports, use a private channel rather than a public issue.'
+          security_new = 'For the credential-rotation checklist, prior-exposure response guidance, and private reporting expectations, see [SECURITY.md](SECURITY.md). Do not publish credentials or sensitive incident details in a public issue.'
+          if security_old not in text:
+              raise SystemExit('README security sentence did not match the expected source text')
+          readme.write_text(text.replace(security_old, security_new, 1))
+
+          Path('LICENSE').write_text('''Neon Wreckers Proprietary Notice\n\nCopyright (c) 2026 the Neon Wreckers project owner. All rights reserved.\n\nThis repository is publicly visible for review and authorized collaboration. No open-source license or other permission is granted to copy, modify, distribute, sublicense, sell, host, deploy, or create derivative works from the source code, artwork, game content, branding, documentation, configuration, or deployment materials, except with prior written permission from the project owner.\n\nThird-party software and assets, if any, remain subject to their respective license terms.\n''')
+
+          Path('SECURITY.md').write_text('''# Security Policy\n\n## Reporting\n\nDo not open a public issue containing credentials, tokens, private logs, database data, backups, certificates, or exploitable details. Contact the repository owner through a private channel and include the affected commit or release, impact, reproduction steps, and any containment already performed.\n\n## Prior credential exposure\n\nSource imported before Version 2.0 reportedly contained live-looking credentials. Treat every value that appeared in an earlier source package or commit as compromised, even when it is no longer present in the current tree.\n\n## Rotation checklist\n\n1. Inventory every exposed environment file, backup, support bundle, commit, artifact, and deployment host.\n2. Rotate PostgreSQL users and passwords, then verify old credentials fail.\n3. Rotate the Redis password or ACL secret and restart dependent services with the new secret file.\n4. Rotate session secrets and invalidate all existing application sessions.\n5. Rotate Twitch client secrets and review authorized callback URLs.\n6. Rotate StreamElements JWTs or provider credentials and review transaction history.\n7. Replace TLS private keys or certificates when exposure is possible.\n8. Rotate registry, host, SSH, CI, webhook, and backup credentials that may have shared the affected environment.\n9. Remove exposed artifacts from active distribution channels while preserving necessary incident evidence in restricted storage.\n10. Review access logs, authentication records, database activity, provider transactions, and deployment history for misuse.\n11. Record the rotation date, responsible operator, affected environments, evidence reviewed, and residual risk.\n\nRewriting Git history alone does not revoke a credential. Rotation and invalidation are mandatory.\n\n## Verification limits\n\nRepository tests can verify source, builds, schemas, security invariants, and simulated browser boundaries. They do not prove real Twitch OAuth completion, StreamElements transactions, public DNS, TLS issuance, OBS Browser Source behavior, or production deployment health. Record those checks using `docs/RELEASE_EVIDENCE_TEMPLATE.md`.\n''')
+
+          Path('docs/VERIFICATION_BOUNDARIES.md').write_text('''# Verification Boundaries\n\n## Source-level verification\n\nSource-level evidence includes frozen dependency installation, linting, type checking, unit and contract tests, migrations and schema parity, content and asset validation, production builds, Compose validation, container builds, browser tests with deterministic fixtures, accessibility scanning, and visual regression checks. Passing these proves only the tested source revision and CI environment.\n\n## Deployment verification\n\nDeployment evidence must identify the deployed commit, host or environment, deployment command, migration result, container health, readiness checks, HTTPS response, WebSocket upgrade, backup status, and rollback plan. A passing source build is not deployment proof.\n\n## External integration verification\n\nTwitch OAuth, StreamElements, DNS, public TLS, OBS Browser Source, and other external systems require real configured services. Simulated routes, intercepted browser traffic, local certificates, or fixture payloads must never be described as successful production integration. Record the credentials scope without recording secret values.\n\n## Claim language\n\nUse `verified` only when dated evidence exists for the named commit and environment. Use `source-tested`, `simulated`, `not configured`, or `not verified` for narrower evidence. Every release claim should link to a completed release-evidence record.\n''')
+
+          Path('docs/RELEASE_EVIDENCE_TEMPLATE.md').write_text('''# Release Evidence Template\n\nCopy this file for each release or deployment verification record. Do not overwrite the template and do not include secrets.\n\n## Identity\n\n- Date and time (UTC):\n- Commit SHA:\n- Release or tag:\n- Operator:\n- Environment and host class:\n- Deployment method:\n\n## Source verification\n\n- Node version:\n- pnpm version:\n- Commands executed:\n- CI workflow and run links:\n- Result:\n- Known warnings or exclusions:\n\n## Deployment verification\n\n- Configuration validation result:\n- Image digests or build identifiers:\n- Database migration result:\n- Seed result:\n- Container health result:\n- API liveness result:\n- Dependency readiness result:\n- HTTPS and security-header result:\n- WebSocket upgrade result:\n- Backup created and restore procedure reviewed:\n- Rollback point and command:\n\n## External integration evidence\n\nFor each integration, record `verified`, `not configured`, or `not verified`. Never record secret values.\n\n- Twitch OAuth start:\n- Twitch OAuth callback with a real account:\n- StreamElements health:\n- StreamElements transaction or compensation behavior:\n- DNS resolution:\n- Public TLS certificate and renewal:\n- OBS Browser Source rendering and reconnect behavior:\n\n## Outcome\n\n- Overall decision: pass | conditional pass | fail\n- Evidence attachments or links:\n- Remaining risks:\n- Follow-up owner and due date:\n''')
+
+          report = Path('docs/TEST_REPORT.md')
+          report_text = report.read_text()
+          marker = '# Verification scope\n'
+          notice = '> This document records source-level verification unless a section explicitly identifies a deployed environment and real external service. Simulated OAuth, fixture traffic, local browser previews, and source builds are not production-integration evidence. See [VERIFICATION_BOUNDARIES.md](VERIFICATION_BOUNDARIES.md) and [RELEASE_EVIDENCE_TEMPLATE.md](RELEASE_EVIDENCE_TEMPLATE.md).\n\n'
+          if notice not in report_text:
+              if marker in report_text:
+                  report_text = report_text.replace(marker, marker + '\n' + notice, 1)
+              else:
+                  report_text = notice + report_text
+              report.write_text(report_text)
+
+          deployment = Path('docs/DEPLOYMENT_VERIFICATION.md')
+          deployment_text = deployment.read_text()
+          deployment_notice = '> A checklist or source-level test is not evidence that a production environment passed. Complete a dated copy of [RELEASE_EVIDENCE_TEMPLATE.md](RELEASE_EVIDENCE_TEMPLATE.md) for the exact commit and target environment.\n\n'
+          if deployment_notice not in deployment_text:
+              deployment.write_text(deployment_notice + deployment_text)
+
+          Path('tools/test/docs-consistency.test.mjs').write_text('''import assert from 'node:assert/strict';\nimport fs from 'node:fs';\nimport test from 'node:test';\n\nconst read = path => fs.readFileSync(path, 'utf8');\n\ntest('public visibility and proprietary distribution language agree', () => {\n  const readme = read('README.md');\n  const license = read('LICENSE');\n  assert.doesNotMatch(readme, /repository is private/i);\n  assert.match(readme, /publicly visible/i);\n  assert.match(readme, /does not include an open-source license/i);\n  assert.match(license, /All rights reserved/);\n  assert.match(license, /No open-source license/);\n});\n\ntest('security and release evidence guidance is actionable', () => {\n  const security = read('SECURITY.md');\n  const boundaries = read('docs/VERIFICATION_BOUNDARIES.md');\n  const template = read('docs/RELEASE_EVIDENCE_TEMPLATE.md');\n  for (const term of ['PostgreSQL', 'Redis', 'session', 'Twitch', 'StreamElements', 'TLS']) assert.match(security, new RegExp(term));\n  for (const term of ['Source-level verification', 'Deployment verification', 'External integration verification']) assert.match(boundaries, new RegExp(term));\n  for (const field of ['Commit SHA:', 'Commands executed:', 'Database migration result:', 'OBS Browser Source']) assert.match(template, new RegExp(field));\n});\n\ntest('verification reports do not imply fixture success is production proof', () => {\n  assert.match(read('docs/TEST_REPORT.md'), /not production-integration evidence/);\n  assert.match(read('docs/DEPLOYMENT_VERIFICATION.md'), /not evidence that a production environment passed/);\n});\n''')
+          PY
+          git rm .github/workflows/step12-docs-implementation.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add README.md LICENSE SECURITY.md docs/VERIFICATION_BOUNDARIES.md docs/RELEASE_EVIDENCE_TEMPLATE.md docs/TEST_REPORT.md docs/DEPLOYMENT_VERIFICATION.md tools/test/docs-consistency.test.mjs
+          git commit -m "docs(release): align visibility licensing and evidence claims"
+          git push origin HEAD:audit/12-docs-license-consistency
