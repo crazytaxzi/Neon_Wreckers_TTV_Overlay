@@ -32,6 +32,13 @@ test.describe('public OBS overlay', () => {
     await expect(page.locator('main')).toHaveAttribute('data-connection-state', 'live', { timeout: 5_000 });
   });
 
+  test('marks a healthy but silent socket as stale', async ({ page }) => {
+    await page.clock.install({ time: new Date('2026-07-23T00:00:00Z') });
+    await openOverlay(page);
+    await page.clock.fastForward(50_000);
+    await expect(page.locator('main')).toHaveAttribute('data-connection-state', 'stale');
+  });
+
   test('honors reduced motion and has no serious accessibility violations', async ({ page }) => {
     await openOverlay(page);
     expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
@@ -44,7 +51,8 @@ test.describe('public OBS overlay', () => {
     { name: 'overlay-1920x1080', width: 1920, height: 1080 },
     { name: 'overlay-2560x1440', width: 2560, height: 1440 }
   ]) {
-    test(`captures ${viewport.name}`, async ({ page }) => {
+    test(`captures ${viewport.name}`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop-chromium', 'desktop-only overlay baseline');
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await openOverlay(page);
       await expect(page).toHaveScreenshot(`${viewport.name}.png`, { fullPage: true });
