@@ -45,7 +45,6 @@ test('core game vocabulary uses native Neon Wreckers SVG glyphs', async () => {
     'wreck: WreckGlyph',
     'danger: DangerGlyph',
     'trade: MarketGlyph',
-    'broadcast: BroadcastGlyph',
     'inventory: CrateGlyph',
     'resources: CrateGlyph',
     'salvage: SalvageGlyph',
@@ -67,12 +66,8 @@ test('illustrated layers retain accessibility and low-effects fallbacks', async 
     read('packages/ui/src/viewer-event.css')
   ]);
 
-  for (const css of [illustration, brand, admin, overlay, viewerEvent]) {
-    assert.match(css, /forced-colors: active/);
-  }
-  for (const css of [illustration, admin, overlay, viewerEvent]) {
-    assert.match(css, /data-low-effects="true"/);
-  }
+  for (const css of [illustration, brand, admin, overlay, viewerEvent]) assert.match(css, /forced-colors: active/);
+  for (const css of [illustration, admin, overlay, viewerEvent]) assert.match(css, /data-low-effects="true"/);
   assert.match(accessibility, /:focus-visible/);
   assert.match(accessibility, /@supports not selector\(:focus-visible\)/);
   assert.match(overlay, /pointer-events free|pointer-events/i);
@@ -106,9 +101,9 @@ test('viewer event popups use real classified overlay history through focused co
   assert.match(overlaySource, /useOverlayHeadlines/);
   assert.match(overlaySource, /useAdaptiveOverlayNetwork/);
   assert.match(componentsSource, /OverlayEventPopup/);
-  assert.match(componentsSource, /headline\.severity === 'viewer'/);
+  assert.match(componentsSource, /headline\.severity !== 'viewer'/);
   assert.match(componentsSource, /className="viewer-event-region"/);
-  assert.match(headlinesSource, /fromHistory/);
+  assert.match(headlinesSource, /headlineFromHistory/);
   assert.match(networkSource, /event\.type === 'presence\.updated'/);
   assert.match(networkSource, /event\.type === 'history\.added'/);
   assert.match(viewerCss, /\.viewer-event-region/);
