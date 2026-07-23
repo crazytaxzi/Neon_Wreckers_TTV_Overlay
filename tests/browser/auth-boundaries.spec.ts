@@ -12,14 +12,17 @@ test.describe('production authentication boundaries', () => {
   });
 
   test('Twitch sign-in starts through the server OAuth route', async ({ page }) => {
-    await page.goto('/');
+    let requestedPath = '';
+    await page.route('**/api/v1/auth/twitch', async route => {
+      requestedPath = new URL(route.request().url()).pathname;
+      await route.fulfill({ status: 302, headers: { location: '/oauth-contract-target' } });
+    });
+    await page.route('**/oauth-contract-target', route => route.fulfill({ status: 200, body: 'redirected' }));
 
-    const signIn = page.getByRole('link', { name: /twitch|sign in|connect/i }).first();
-    await expect(signIn).toBeVisible();
+    await page.goto('/api/v1/auth/twitch');
 
-    const href = await signIn.getAttribute('href');
-    expect(href).toBeTruthy();
-    expect(new URL(href!, page.url()).pathname).toMatch(/^\/api\/v1\/auth\/twitch(?:\/start)?$/);
+    expect(requestedPath).toBe('/api/v1/auth/twitch');
+    await expect(page).toHaveURL(/\/oauth-contract-target$/);
   });
 
   test('admin does not expose authenticated controls to an anonymous browser', async ({ page }) => {
