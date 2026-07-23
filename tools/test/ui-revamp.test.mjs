@@ -74,7 +74,7 @@ test('player artwork uses responsive project assets instead of concept screensho
 });
 
 test('overlay safety behavior remains present after decomposition', async () => {
-  const [entry, components, network, css] = await Promise.all([read('apps/overlay/src/main.tsx'), read('apps/overlay/src/components.tsx'), read('apps/overlay/src/network.ts'), read('apps/overlay/src/overlay.css')]);
+  const [entry, components, assetManifest, network, css] = await Promise.all([read('apps/overlay/src/main.tsx'), read('apps/overlay/src/components.tsx'), read('apps/overlay/src/asset-manifest.ts'), read('apps/overlay/src/network.ts'), read('apps/overlay/src/overlay.css')]);
   assert.ok(entry.split('\n').length <= 120, 'Overlay entry should remain a small composition root.');
   assert.match(entry, /useAdaptiveOverlayNetwork/);
   assert.match(entry, /useOverlayHeadlines/);
@@ -89,7 +89,10 @@ test('overlay safety behavior remains present after decomposition', async () => 
   assert.match(network, /reconnectDelayMs/);
   assert.match(network, /controller\.stop/);
   assert.match(components, /wreck-schematic__art/);
-  assert.match(components, /wreckArtworkSrc/);
+  assert.match(components, /resolveRasterAsset/);
+  assert.match(assetManifest, /manifest\.assets/);
+  assert.match(assetManifest, /asset\.source\.kind !== 'raster'/);
+  assert.doesNotMatch(components, /replace\('\.webp', '-(?:360|600)w\.webp'\)/);
   for (const component of ['StationTelemetry', 'WreckTelemetry', 'ViewerEventRegion', 'DispatchRail', 'FeedIndicator']) assert.match(components, new RegExp(`export function ${component}`));
   assert.match(css, /pointer-events:\s*none/);
   assert.match(css, /background:\s*transparent/);
