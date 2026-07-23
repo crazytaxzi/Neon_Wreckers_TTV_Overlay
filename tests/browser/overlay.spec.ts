@@ -1,10 +1,10 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { disconnectSocket, emitRealtime, installControllableSocket, installPublicRoutes, station, wreck } from './fixtures.js';
 
 const overlayUrl = process.env.NW_OVERLAY_BASE_URL ?? 'http://127.0.0.1:4175/overlay/?preview=1';
 
-async function openOverlay(page: Parameters<typeof test>[0] extends never ? never : any) {
+async function openOverlay(page: Page) {
   await installControllableSocket(page);
   await installPublicRoutes(page);
   await page.goto(overlayUrl, { waitUntil: 'networkidle' });
