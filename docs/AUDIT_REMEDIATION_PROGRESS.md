@@ -90,25 +90,25 @@
 
 ## Step 09: Move Event Severity and Presentation Metadata to the Server
 
-- Status: in progress
+- Status: complete
 - Branch: `audit/09-server-event-presentation`
+- Pull request: [#15](https://github.com/crazytaxzi/Neon_Wreckers_TTV_Overlay/pull/15)
+- Merge commit: `18c3c7c53f0549c4cb1b92e3e81324c2c12e733d`
+- Completed date: 2026-07-23
+- Verification: CI run 29983578761, CI and security gates run 29983578781, CodeQL run 29983578765, UI Revamp Verify run 29983578827, and Admin and Overlay Visual Proof run 29983578763 all passed.
+- Notes: Added a strict shared presentation contract, deterministic API-owned classification, history and station-alert enrichment, localization-ready fallback text, and overlay precedence for explicit server metadata. Legacy records remain displayable through API-boundary enrichment and a conservative client fallback.
+- Remaining risks: Presentation metadata is not persisted on every historical row. The API enrichment layer remains canonical until a future schema migration is justified.
+
+## Step 10: Add Browser, Accessibility, and Visual Regression Tests
+
+- Status: in progress
+- Branch: `audit/10-browser-integration-tests`
 - Pull request: pending
 - Merge commit: pending
 - Completed date: pending
 - Verification: pending
-- Notes: Inventorying event producers and introducing a shared presentation contract before migrating server persistence, realtime payloads, and overlay compatibility fallback.
-- Remaining risks: Existing history rows require backward-compatible defaults and no new producer may silently omit canonical presentation metadata.
-
-## Step 10: Add Browser, Accessibility, and Visual Regression Tests
-
-- Status: not started
-- Branch:
-- Pull request:
-- Merge commit:
-- Completed date:
-- Verification:
-- Notes:
-- Remaining risks:
+- Notes: Establishing an exact-version Playwright test workspace, deterministic public/auth-boundary fixtures, accessibility checks, and visual baselines without adding production-auth bypasses.
+- Remaining risks: Real Twitch OAuth completion remains outside the deterministic browser-test boundary; only redirect and unauthenticated contracts will be exercised.
 
 ## Step 11: Harden Asset Manifest and Responsive Image Validation
 
