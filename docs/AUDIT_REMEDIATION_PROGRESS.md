@@ -101,25 +101,25 @@
 
 ## Step 10: Add Browser, Accessibility, and Visual Regression Tests
 
+- Status: complete
+- Branch: `audit/10-browser-integration-tests-clean`
+- Pull request: [#19](https://github.com/crazytaxzi/Neon_Wreckers_TTV_Overlay/pull/19)
+- Merge commit: `607dcc462334d0346c51060295f2b887e45ce27d`
+- Completed date: 2026-07-23
+- Verification: Browser integration run 29994057735, CI and security gates run 29994059509, CodeQL run 29994057702, Admin and Overlay Visual Proof run 29994057693, and CI verification job 89163400011 all passed.
+- Notes: Added exact-version Playwright and axe ownership, deterministic public API and WebSocket fixtures, anonymous player/admin authentication boundaries, reconnect/stale/reduced-motion/keyboard/accessibility coverage, fixed-time Linux Chromium visual baselines for three overlay canvases plus mobile player and desktop admin, and retained failure artifacts. No production-authentication bypass was introduced.
+- Remaining risks: Passing Chromium CI proves source-level browser behavior only. Real Twitch OAuth completion, OBS Browser Source behavior, TLS termination, StreamElements, and production deployment still require separate environment evidence.
+
+## Step 11: Harden Asset Manifest and Responsive Image Validation
+
 - Status: in progress
-- Branch: `audit/10-browser-integration-tests`
+- Branch: `audit/11-asset-manifest-hardening`
 - Pull request: pending
 - Merge commit: pending
 - Completed date: pending
 - Verification: pending
-- Notes: Establishing an exact-version Playwright test workspace, deterministic public/auth-boundary fixtures, accessibility checks, and visual baselines without adding production-auth bypasses.
-- Remaining risks: Real Twitch OAuth completion remains outside the deterministic browser-test boundary; only redirect and unauthenticated contracts will be exercised.
-
-## Step 11: Harden Asset Manifest and Responsive Image Validation
-
-- Status: not started
-- Branch:
-- Pull request:
-- Merge commit:
-- Completed date:
-- Verification:
-- Notes:
-- Remaining risks:
+- Notes: Auditing the canonical manifest, every visual-key consumer, responsive variants, and build-time validation. Runtime filename derivation will be removed in favor of explicit manifest-owned URLs.
+- Remaining risks: Current overlay wreck rendering still derives `-360w.webp` and `-600w.webp` filenames and can request nonexistent variants until this step lands.
 
 ## Step 12: Resolve Documentation, Licensing, and Release-Evidence Contradictions
 
