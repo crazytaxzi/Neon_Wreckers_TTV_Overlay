@@ -39,10 +39,8 @@ jobs:
           pnpm --filter @neon-wreckers/overlay run build
           node --test tools/test/ui-graphics.test.mjs
 
-      - name: Install ephemeral browser harness
-        run: |
-          pnpm add -Dw playwright@1.55.0 --lockfile=false
-          pnpm exec playwright install --with-deps chromium
+      - name: Install workspace-owned browser
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Start built previews
         run: |
