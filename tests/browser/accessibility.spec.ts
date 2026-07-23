@@ -26,7 +26,8 @@ test('mobile player viewport remains accessible and visually stable', async ({ p
   await expectNoSeriousViolations(page);
 });
 
-test('anonymous admin boundary remains keyboard accessible and visually stable', async ({ page }) => {
+test('anonymous admin boundary remains keyboard accessible and visually stable', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-chromium', 'desktop-only admin baseline');
   await page.goto(adminUrl);
   await page.keyboard.press('Tab');
   await expect(page.locator(':focus')).toBeVisible();
