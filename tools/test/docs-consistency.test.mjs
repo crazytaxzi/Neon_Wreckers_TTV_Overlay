@@ -4,14 +4,14 @@ import test from 'node:test';
 
 const read = file => fs.readFileSync(file, 'utf8');
 
-test('public visibility and license status are described without inventing reuse rights', () => {
+test('public visibility and proprietary license are consistent', () => {
   const readme = read('README.md');
-  const status = read('LICENSE_STATUS.md');
+  const license = read('LICENSE');
   assert.doesNotMatch(readme, /This repository is private/i);
   assert.match(readme, /publicly visible on GitHub/i);
   assert.match(readme, /Public visibility is not a software license/i);
-  assert.match(status, /does not currently contain an open-source license/i);
-  assert.match(status, /not itself a license/i);
+  assert.match(license, /proprietary/i);
+  assert.match(license, /All rights reserved/);
 });
 
 test('historical reports cannot masquerade as current release evidence', () => {

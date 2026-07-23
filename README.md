@@ -658,4 +658,4 @@ For security-sensitive reports, follow [SECURITY.md](SECURITY.md) and use a priv
 
 This repository is publicly visible on GitHub. Public visibility is not a software license and does not grant permission to copy, modify, redistribute, sublicense, or commercially use the source code, artwork, content, branding, or deployment materials.
 
-No open-source license is currently present. Third-party reuse must be treated as unauthorized unless the project owner publishes explicit terms. The owner must deliberately choose either an open-source license or a proprietary distribution notice before broader reuse rights are granted. See [LICENSE_STATUS.md](LICENSE_STATUS.md).
+Neon Wreckers is proprietary software and all rights are reserved. Public visibility does not grant permission to copy, modify, redistribute, sublicense, host, deploy, sell, or create derivative works from the source code, artwork, game content, branding, documentation, configuration, or deployment materials. See [LICENSE](LICENSE) for the controlling notice. Third-party dependencies remain governed by their own licenses.
