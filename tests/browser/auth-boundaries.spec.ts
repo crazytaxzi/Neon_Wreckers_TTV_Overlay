@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+const adminUrl = process.env.NW_ADMIN_BASE_URL ?? 'http://127.0.0.1:4174/admin/';
+
 test.describe('production authentication boundaries', () => {
   test('unauthenticated player sees the public landing surface', async ({ page }) => {
     await page.goto('/');
@@ -21,7 +23,7 @@ test.describe('production authentication boundaries', () => {
   });
 
   test('admin does not expose authenticated controls to an anonymous browser', async ({ page }) => {
-    await page.goto('/admin/');
+    await page.goto(adminUrl);
 
     await expect(page.locator('body')).toBeVisible();
     await expect(page.getByText(/unauthorized|sign in|admin access/i).first()).toBeVisible();
