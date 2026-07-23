@@ -1,6 +1,7 @@
 import type { CurrentWreck, StationSnapshot } from '@neon-wreckers/contracts';
 import { Badge, Meter, NWIcon, OverlayEventPopup, Panel, type Tone } from '@neon-wreckers/ui';
 import { classifyHeadline, type Headline, type Severity } from './headlines.js';
+import { resolveRasterAsset } from './asset-manifest.js';
 
 export function uiTone(tone: Severity): Tone {
   return tone === 'positive' ? 'success' : tone === 'viewer' ? 'purple' : tone === 'critical' ? 'danger' : tone;
@@ -41,19 +42,13 @@ export function StationTelemetry({ station, connected, visible }: { station: Sta
   </Panel>;
 }
 
-function wreckArtworkSrc(wreck: CurrentWreck | null): string | null {
-  const visualKey = String(wreck?.visualKey ?? '').trim();
-  if (!visualKey) return null;
-  const slug = visualKey.startsWith('wreck-') ? visualKey.slice('wreck-'.length) : visualKey;
-  return `/wrecks/${slug}.webp`;
-}
 
 export function WreckTelemetry({ wreck, visible }: { wreck: CurrentWreck | null; visible: boolean }) {
   const tone = classifyHeadline(String(wreck?.risk ?? ''));
-  const artwork = wreckArtworkSrc(wreck);
+  const artwork = resolveRasterAsset(wreck?.visualKey);
   return <Panel depth="medium" tone={uiTone(tone)} className={`telemetry-panel wreck-telemetry ${visible ? 'overlay-awake' : 'overlay-idle'}`} aria-label="Active wreck telemetry">
     <header className="telemetry-header"><div className="telemetry-ident"><span className="telemetry-icon wreck-icon"><NWIcon name="wreck" size={22} /></span><div><span className="nw-eyebrow">SALVAGE TARGET</span><h2>{wreck?.name || 'SCANNING FIELD'}</h2></div></div><Badge tone={uiTone(tone)}>{wreck?.risk || 'UNKNOWN'}</Badge></header>
-    <div className="wreck-schematic" aria-hidden="true"><div className="scan-grid" /><span className="scan-ring scan-ring-outer" /><span className="scan-ring scan-ring-inner" />{artwork ? <img className="wreck-schematic__art" src={artwork} srcSet={`${artwork.replace('.webp', '-360w.webp')} 360w, ${artwork.replace('.webp', '-600w.webp')} 600w, ${artwork} 1200w`} sizes="(max-width: 1280px) 18rem, 24rem" alt="" loading="eager" decoding="async" /> : <NWIcon name="wreck" size={48} />}</div>
+    <div className="wreck-schematic" aria-hidden="true"><div className="scan-grid" /><span className="scan-ring scan-ring-outer" /><span className="scan-ring scan-ring-inner" />{artwork ? <img className="wreck-schematic__art" src={artwork.src} srcSet={artwork.srcSet} sizes="(max-width: 1280px) 18rem, 24rem" alt="" loading="eager" decoding="async" /> : <NWIcon name="wreck" size={48} />}</div>
     <p>{wreck?.description || 'Awaiting server telemetry from the local debris field.'}</p>
     <TelemetryMeter label="REMAINING HULL" value={clamp(wreck?.integrity)} tone={clamp(wreck?.integrity) <= 25 ? 'critical' : clamp(wreck?.integrity) <= 50 ? 'warning' : 'positive'} />
     <footer className="wreck-footer"><span>OBJECT ID</span><strong className="nw-numeric">{wreck?.id ? wreck.id.slice(0, 12).toUpperCase() : 'NO CONTACT'}</strong></footer>

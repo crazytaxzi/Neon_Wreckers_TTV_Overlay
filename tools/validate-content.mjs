@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { loadAndValidateAssetManifest } from './lib/asset-manifest.mjs';
 
 const contentRoot = path.resolve('content/base');
 const requiredFiles = ['items.json', 'wrecks.json', 'modules.json', 'station.json', 'events.json', 'seasons.json', 'balance.json', 'themes.json'];
@@ -10,16 +11,10 @@ const documents = Object.fromEntries(requiredFiles.map(file => {
   return [file, JSON.parse(fs.readFileSync(target, 'utf8'))];
 }));
 
-const assets = JSON.parse(fs.readFileSync('assets/manifest.json', 'utf8'));
-assert.equal(typeof assets.version, 'string', 'Asset manifest version is required.');
-assert.ok(Array.isArray(assets.assets), 'Asset manifest must contain an assets array.');
-const visualKeys = new Set();
-for (const asset of assets.assets) {
-  assert.match(asset.key, /^[a-z0-9]+(?:-[a-z0-9]+)*$/, `Invalid asset key: ${asset.key}`);
-  assert.ok(!visualKeys.has(asset.key), `Duplicate asset key: ${asset.key}`);
-  assert.ok(asset.alt?.trim(), `Asset ${asset.key} is missing alt text.`);
-  visualKeys.add(asset.key);
-}
+const { manifest: assets, byKey: assetByKey } = loadAndValidateAssetManifest('assets/manifest.json', {
+  publicRoots: ['apps/web/public', 'apps/admin/public', 'apps/overlay/public']
+});
+const visualKeys = new Set(assetByKey.keys());
 
 function assertUniqueSlugs(collection, label) {
   const slugs = new Set();
