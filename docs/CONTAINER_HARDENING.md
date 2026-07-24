@@ -12,11 +12,17 @@ The health check uses the same mounted secret through `REDISCLI_AUTH`; it does n
 
 Operators must continue to keep `.env` outside source control and restrict its host permissions. Rotate `REDIS_PASSWORD` before deploying this change if the current value has ever appeared in logs, shell history, support bundles, or process listings.
 
+## Runtime executables
+
+The production application image exposes `/app/node_modules/.bin` on `PATH`. The one-shot `setup` service invokes the bundled Prisma executable directly and runs the compiled production seed with Node. It never invokes pnpm or Corepack at runtime, so the non-root service does not need a writable home or package-manager cache.
+
+The shared `@neon-wreckers/contracts` workspace is compiled to `dist` during verification and production builds. Its runtime export points to JavaScript rather than TypeScript source, allowing the API to start under plain Node without a TypeScript loader.
+
 ## Service controls
 
 | Service | Controls |
 | --- | --- |
-| `setup` | non-root `node`, read-only root filesystem, `/tmp` tmpfs, all capabilities dropped, no-new-privileges, init process, 30-second stop grace, rotated logs, CPU and memory limits |
+| `setup` | non-root `node`, read-only root filesystem, `/tmp` tmpfs, bundled migration executable, compiled seed, all capabilities dropped, no-new-privileges, init process, 30-second stop grace, rotated logs, CPU and memory limits |
 | `api` | same application controls as `setup`; only port 8787 is exposed to the internal network |
 | `worker` | same application controls as `setup`; no published ports |
 | `redis` | dedicated image, non-root `redis`, secret-file authentication, read-only root filesystem, explicit `/data` volume, `/tmp` tmpfs, all capabilities dropped, no-new-privileges, rotated logs, CPU and memory limits |

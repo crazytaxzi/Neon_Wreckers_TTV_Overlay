@@ -84,7 +84,7 @@ services:
   setup:
     <<: *app
     restart: "no"
-    command: ["sh", "-c", "pnpm run db:migrate && pnpm run db:seed:production"]
+    command: ["sh", "-c", "prisma migrate deploy --schema infrastructure/database/prisma/schema.prisma && node infrastructure/database/dist/seed/seed.js"]
     depends_on:
       postgres:
         condition: service_healthy

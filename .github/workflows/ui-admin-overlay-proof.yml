@@ -6,6 +6,7 @@ on:
       - 'apps/admin/**'
       - 'apps/overlay/**'
       - 'packages/ui/**'
+      - 'packages/contracts/**'
       - 'tools/visual-proof/capture-admin-overlay.mjs'
       - '.github/workflows/ui-admin-overlay-proof.yml'
   workflow_dispatch:
@@ -36,6 +37,7 @@ jobs:
 
       - name: Build production surfaces
         run: |
+          pnpm --filter @neon-wreckers/contracts run build
           pnpm --filter @neon-wreckers/ui run build
           pnpm --filter @neon-wreckers/admin run build
           pnpm --filter @neon-wreckers/overlay run build

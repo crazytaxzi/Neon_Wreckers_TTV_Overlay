@@ -42,7 +42,7 @@ RUN apt-get update \
 
 ENV NODE_ENV=production
 ENV PNPM_HOME=/pnpm
-ENV PATH=$PNPM_HOME:$PATH
+ENV PATH=/app/node_modules/.bin:$PNPM_HOME:$PATH
 
 RUN corepack enable \
  && corepack prepare pnpm@10.32.0 --activate
