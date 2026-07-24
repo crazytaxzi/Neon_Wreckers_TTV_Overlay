@@ -13,6 +13,7 @@ const quartersRoute = read('apps/api/src/routes/quarters.ts');
 const webApp = read('apps/web/src/app.tsx');
 const quartersPage = read('apps/web/src/pages/quarters.tsx');
 const fleetPage = read('apps/web/src/pages/fleet.tsx');
+const gameArtwork = read('apps/web/src/components/GameArtwork.tsx');
 
 test('OBS overlay explicitly removes the full-canvas raster layer', () => {
   assert.match(overlayMain, /import '\.\/overlay\.css';[\s\S]*import '\.\/overlay-transparency\.css';/);
@@ -21,16 +22,14 @@ test('OBS overlay explicitly removes the full-canvas raster layer', () => {
   assert.match(overlayTransparency, /background: none !important/);
 });
 
-test('Rustlight Tug resolves to responsive owned-ship artwork', () => {
+test('Rustlight Tug resolves to owned-ship artwork', () => {
   assert.match(fleetPage, /ship\.visualKey\?\.startsWith\('ship-'\)/);
-  for (const file of [
-    'apps/web/public/ships/base/rustlight-tug.webp',
-    'apps/web/public/ships/base/rustlight-tug-600w.webp',
-    'apps/web/public/ships/base/rustlight-tug-360w.webp'
-  ]) {
-    assert.ok(fs.existsSync(path.join(root, file)), `Missing Rustlight artwork: ${file}`);
-    assert.ok(fs.statSync(path.join(root, file)).size > 4_000, `Rustlight artwork is unexpectedly small: ${file}`);
-  }
+  assert.match(gameArtwork, /rustlight-tug\.webp/);
+  assert.match(gameArtwork, /rustlight-tug\.svg/);
+  const artwork = 'apps/web/public/ships/base/rustlight-tug.svg';
+  assert.ok(fs.existsSync(path.join(root, artwork)), `Missing Rustlight artwork: ${artwork}`);
+  assert.ok(fs.statSync(path.join(root, artwork)).size > 4_000, 'Rustlight artwork is unexpectedly small.');
+  assert.match(read(artwork), /<title id="title">Rustlight Tug<\/title>/);
 });
 
 test('quarters expose functional fixture actions through the API and player surface', () => {
