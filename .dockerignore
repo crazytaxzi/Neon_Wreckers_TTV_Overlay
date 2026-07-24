@@ -3,6 +3,7 @@
 .env
 .env.*
 !.env.example
+.secrets
 node_modules
 **/node_modules
 **/dist
