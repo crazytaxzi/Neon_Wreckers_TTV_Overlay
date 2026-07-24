@@ -69,18 +69,24 @@ The installer validates `.env`, installs Docker and Certbot when absent, validat
 - `TWITCH_CLIENT_ID`: Twitch application client ID.
 - `TWITCH_CLIENT_SECRET`: Twitch application client secret.
 - `TWITCH_REDIRECT_URI`: exact HTTPS callback registered with Twitch, normally `https://PUBLIC_HOST/api/v1/auth/twitch/callback`.
-- `TWITCH_REQUIRED_SCOPES`: space- or comma-separated OAuth scopes.
+- `TWITCH_REQUIRED_SCOPES`: space- or comma-separated OAuth scopes. Canonical EventSub scopes are always added by the API.
 - `TWITCH_EVENTSUB_SECRET`: high-entropy 10–100 character secret shared with Twitch to verify EventSub webhook signatures.
-- `CREDENTIAL_ENCRYPTION_KEY`: separate high-entropy secret used to encrypt the streamer's renewable Twitch authorization at rest.
+- `CREDENTIAL_ENCRYPTION_KEY`: separate high-entropy secret used to encrypt renewable Twitch and StreamElements credentials at rest.
 - `STREAMER_TWITCH_ID`: immutable Twitch user ID that receives streamer and admin roles during sign-in.
 
 ### StreamElements
 
-- `STREAMELEMENTS_PROVIDER`: `disabled` or `streamelements`.
-- `STREAMELEMENTS_CHANNEL_ID`: broadcaster channel identifier.
-- `STREAMELEMENTS_JWT`: broadcaster-owned API credential. It must never enter browser code, content, screenshots, or support bundles.
+- `STREAMELEMENTS_PROVIDER`: `disabled` or `streamelements`. Use `streamelements` when point-funded actions may be enabled.
+- `STREAMELEMENTS_CLIENT_ID`: StreamElements OAuth application client ID. Optional when only the legacy owner-token import path is used.
+- `STREAMELEMENTS_CLIENT_SECRET`: StreamElements OAuth application client secret. Keep it server-side.
+- `STREAMELEMENTS_REDIRECT_URI`: exact callback registered with StreamElements, normally `https://PUBLIC_HOST/api/v1/auth/streamelements/callback`.
+- `STREAMELEMENTS_OAUTH_SCOPES`: space- or comma-separated scopes. The canonical minimum is `channel:read loyalty:read loyalty:write`.
+- `STREAMELEMENTS_CHANNEL_ID`: legacy broadcaster channel identifier. Configure it together with `STREAMELEMENTS_JWT`, or leave both empty for OAuth-only operation.
+- `STREAMELEMENTS_JWT`: legacy broadcaster owner token. It must never enter browser code, content, screenshots, or support bundles.
 - `STREAMELEMENTS_API_BASE`: StreamElements API root.
-- `FEATURE_POINTS_ACTIONS`: enables point-funded routes. Enabling it requires the StreamElements provider, channel ID, and JWT.
+- `FEATURE_POINTS_ACTIONS`: server kill switch for point-funded routes. Enabling it requires `STREAMELEMENTS_PROVIDER=streamelements` and either a complete OAuth application configuration or the complete legacy channel-ID/owner-token pair. An administrator must still verify and select an account and enable point actions for that account.
+
+The preferred setup is OAuth. Register the exact redirect URI before deployment, then connect one or more channels from **Admin → Integrations**. Each authorization identifies the channel currently active in StreamElements. To add another channel, switch the active StreamElements channel, authorize again, and select the desired saved account in Neon Wreckers.
 
 ### Operations
 
@@ -93,7 +99,7 @@ The production gateway is the canonical CSP enforcement layer for browser docume
 
 The player and overlay permit scripts and styles only from the same origin, images and fonts from the same origin plus explicit `data:` or `blob:` sources, and API or realtime connections through the same origin plus `ws:` and `wss:`. The admin policy is stricter and sets `frame-ancestors 'none'`. Player and overlay documents use `frame-ancestors 'self'`; OBS Browser Source loads the overlay as a top-level document and does not require arbitrary external framing.
 
-No surface permits `unsafe-inline`, `unsafe-eval`, plugins, or wildcard sources. Twitch OAuth remains compatible because the browser navigates to the same-origin API start route and the server performs the external redirect. Local development continues to support `ws:` while production supports `wss:`.
+No surface permits `unsafe-inline`, `unsafe-eval`, plugins, or wildcard sources. Twitch and StreamElements OAuth remain compatible because the browser navigates to a same-origin API start route and the server performs the external redirect. Local development continues to support `ws:` while production supports `wss:`.
 
 After deployment, inspect headers with:
 
