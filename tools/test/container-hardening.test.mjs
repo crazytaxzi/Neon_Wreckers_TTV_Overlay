@@ -12,14 +12,29 @@ const redisEntrypoint = await readFile(
   new URL('../../infrastructure/redis/secure-entrypoint.sh', import.meta.url),
   'utf8',
 );
+const materializeSecrets = await readFile(
+  new URL('../../scripts/materialize-secrets.sh', import.meta.url),
+  'utf8',
+);
+const updateScript = await readFile(new URL('../../scripts/update.sh', import.meta.url), 'utf8');
+const installScript = await readFile(new URL('../../scripts/install.sh', import.meta.url), 'utf8');
 
-test('redis credentials are mounted as a secret and absent from process arguments', () => {
-  assert.match(compose, /redis_password:\n\s+environment: REDIS_PASSWORD/);
+test('redis credentials are mounted as a file-backed secret and absent from process arguments', () => {
+  assert.match(compose, /redis_password:\n\s+file: \.\/\.secrets\/redis_password/);
+  assert.doesNotMatch(compose, /redis_password:\n\s+environment:/);
   assert.match(compose, /REDIS_PASSWORD_FILE: \/run\/secrets\/redis_password/);
   assert.doesNotMatch(compose, /--requirepass/);
   assert.doesNotMatch(compose, /redis-cli\s+-a/);
   assert.match(redisEntrypoint, /REDISCLI_AUTH="\$password" exec redis-cli ping/);
   assert.match(redisEntrypoint, /exec redis-server "\$config_file"/);
+});
+
+test('install and update materialize the ignored secret file before compose runs', () => {
+  assert.match(materializeSecrets, /materialize_runtime_secrets/);
+  assert.match(materializeSecrets, /secret_file="\$secret_dir\/redis_password"/);
+  assert.match(materializeSecrets, /chmod 0444 "\$temp_file"/);
+  assert.match(updateScript, /materialize_runtime_secrets "\$ROOT_DIR"/);
+  assert.match(installScript, /materialize_runtime_secrets "\$ROOT_DIR"/);
 });
 
 test('application containers run non-root with a read-only root filesystem', () => {

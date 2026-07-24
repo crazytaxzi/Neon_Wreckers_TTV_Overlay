@@ -3,6 +3,8 @@ set -Eeuo pipefail
 
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT_DIR"
+# shellcheck disable=SC1091
+source scripts/materialize-secrets.sh
 
 if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
   echo "Run this installer as root: sudo bash scripts/install.sh" >&2
@@ -28,6 +30,7 @@ required=(PUBLIC_HOST ACME_EMAIL PUBLIC_WEB_URL CORS_ORIGINS POSTGRES_USER POSTG
 for name in "${required[@]}"; do
   [[ -n ${!name:-} ]] || { echo "Missing required environment variable: $name" >&2; exit 1; }
 done
+materialize_runtime_secrets "$ROOT_DIR"
 
 hostname_pattern='^([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$'
 [[ $PUBLIC_HOST =~ $hostname_pattern ]] || {
@@ -129,6 +132,7 @@ SERVICE
 cat > /etc/systemd/system/neon-wreckers-backup.timer <<'TIMER'
 [Unit]
 Description=Create a daily Neon Wreckers backup
+After=docker.service
 
 [Timer]
 OnCalendar=*-*-* 04:17:00
