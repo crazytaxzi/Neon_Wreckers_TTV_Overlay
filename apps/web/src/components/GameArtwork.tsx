@@ -10,6 +10,10 @@ function responsiveVariant(src: string, width: 360 | 600): string {
   return src.endsWith('.webp') ? `${src.slice(0, -5)}-${width}w.webp` : src;
 }
 
+function primaryArtwork(src: string): string {
+  return src.endsWith('/ships/base/rustlight-tug.webp') ? '/ships/base/rustlight-tug.svg' : src;
+}
+
 function fallbackArtwork(src: string): string | null {
   return src.endsWith('/ships/base/rustlight-tug.webp') ? '/ships/base/rustlight-tug.svg' : null;
 }
@@ -22,15 +26,18 @@ export function GameArtwork({
   onError,
   ...props
 }: GameArtworkProps) {
-  const [resolvedSrc, setResolvedSrc] = useState(src);
-  useEffect(() => setResolvedSrc(src), [src]);
+  const [resolvedSrc, setResolvedSrc] = useState(() => primaryArtwork(src));
+  useEffect(() => setResolvedSrc(primaryArtwork(src)), [src]);
   const fallback = fallbackArtwork(src);
+  const srcSet = resolvedSrc.endsWith('.webp')
+    ? `${responsiveVariant(resolvedSrc, 360)} 360w, ${responsiveVariant(resolvedSrc, 600)} 600w, ${resolvedSrc} 1200w`
+    : undefined;
 
   return (
     <img
       {...props}
       src={resolvedSrc}
-      srcSet={`${responsiveVariant(resolvedSrc, 360)} 360w, ${responsiveVariant(resolvedSrc, 600)} 600w, ${resolvedSrc} 1200w`}
+      srcSet={srcSet}
       sizes={sizes}
       width={1200}
       height={675}

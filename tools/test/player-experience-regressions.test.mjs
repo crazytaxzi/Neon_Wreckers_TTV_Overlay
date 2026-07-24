@@ -24,14 +24,23 @@ test('OBS overlay explicitly removes the full-canvas raster layer', () => {
   assert.match(overlayTransparency, /background: none !important/);
 });
 
-test('Rustlight Tug resolves to owned-ship artwork', () => {
+test('Rustlight Tug uses the final generated ship portrait as its primary artwork', () => {
   assert.match(fleetPage, /ship\.visualKey\?\.startsWith\('ship-'\)/);
-  assert.match(gameArtwork, /rustlight-tug\.webp/);
-  assert.match(gameArtwork, /rustlight-tug\.svg/);
+  assert.match(gameArtwork, /function primaryArtwork/);
+  assert.match(gameArtwork, /rustlight-tug\.webp'[\s\S]*rustlight-tug\.svg/);
+
   const artwork = 'apps/web/public/ships/base/rustlight-tug.svg';
+  const source = read(artwork);
   assert.ok(fs.existsSync(path.join(root, artwork)), `Missing Rustlight artwork: ${artwork}`);
-  assert.ok(fs.statSync(path.join(root, artwork)).size > 4_000, 'Rustlight artwork is unexpectedly small.');
-  assert.match(read(artwork), /<title id="title">Rustlight Tug<\/title>/);
+  assert.match(source, /<title id="title">Rustlight Tug<\/title>/);
+  assert.doesNotMatch(source, /RUSTLIGHT INDUSTRIAL FRAME/);
+
+  const embedded = source.match(/data:image\/webp;base64,([^"\s]+)/)?.[1];
+  assert.ok(embedded, 'Rustlight portrait does not contain the generated WebP image.');
+  const decoded = Buffer.from(embedded, 'base64');
+  assert.ok(decoded.length > 8_000, 'Embedded Rustlight portrait is unexpectedly small.');
+  assert.equal(decoded.subarray(0, 4).toString('ascii'), 'RIFF');
+  assert.equal(decoded.subarray(8, 12).toString('ascii'), 'WEBP');
 });
 
 test('quarters expose functional fixture actions through the API and player surface', () => {
