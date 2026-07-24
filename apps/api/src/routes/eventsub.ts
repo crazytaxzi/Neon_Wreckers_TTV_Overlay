@@ -5,6 +5,7 @@ import { env } from '../env.js';
 import type { ApiContext, AuthenticatedUserWithPlayer } from '../types.js';
 import { deploySalvage, scanForWreck } from '../services/salvage.js';
 import { executePointAction } from '../services/points.js';
+import { findChatCommand, type ChatCommand } from '../services/chat-commands.js';
 
 type EventSubEnvelope = {
   challenge?: string;
@@ -26,19 +27,21 @@ function verifyEventSub(request: { headers: Record<string, unknown> }, raw: Buff
   return supplied.length === expected.length && crypto.timingSafeEqual(Buffer.from(supplied), Buffer.from(expected));
 }
 
+async function executeChatCommand(context: ApiContext, actor: AuthenticatedUserWithPlayer, command: ChatCommand, messageId: string) {
+  if (command.action.type === 'scan') return scanForWreck(context, actor);
+  if (command.action.type === 'salvage') return deploySalvage(context, actor, command.action.mode);
+  return executePointAction(context, actor, command.action.slug, `twitch:${messageId}`);
+}
+
 async function runChatCommand(context: ApiContext, event: Record<string, unknown>, messageId: string) {
   const message = event.message as { text?: string } | undefined;
-  const text = String(message?.text ?? '').trim().toLowerCase();
-  if (!text.startsWith('!')) return;
+  const command = await findChatCommand(context.prisma, String(message?.text ?? ''));
+  if (!command) return;
   const twitchUserId = String(event.chatter_user_id ?? '');
   const user = await context.prisma.user.findUnique({ where: { twitchUserId }, include: { player: true } });
+  if (!user?.player && command.requiresPlayer) return;
   if (!user?.player) return;
-  const actor = user as unknown as AuthenticatedUserWithPlayer;
-  if (text === '!scan') await scanForWreck(context, actor);
-  if (text === '!salvage cutters') await deploySalvage(context, actor, 'cutters');
-  if (text === '!salvage cargo') await deploySalvage(context, actor, 'cargo');
-  if (text === '!rushscan') await executePointAction(context, actor, 'rush_scan', `twitch:${messageId}`);
-  if (text === '!override') await executePointAction(context, actor, 'safety_override', `twitch:${messageId}`);
+  await executeChatCommand(context, user as unknown as AuthenticatedUserWithPlayer, command, messageId);
 }
 
 export async function registerEventSubRoutes(app: FastifyInstance, context: ApiContext) {
@@ -60,7 +63,7 @@ export async function registerEventSubRoutes(app: FastifyInstance, context: ApiC
         await runChatCommand(context, payload.event, externalId).catch(error => request.log.warn({ err: error, externalId }, 'chat command rejected'));
       } else if (payload.event) {
         const displayName = String(payload.event.user_name ?? payload.event.from_broadcaster_user_name ?? 'A viewer');
-        const title = eventType.includes('raid') ? 'Raid party arrived' : eventType.includes('subscribe') ? 'Station supporter linked' : eventType.includes('cheer') ? 'Cheer signal received' : 'Viewer signal received';
+        const title = eventType.includes('raid') ? 'Raid party arrived' : eventType.includes('subscribe') ? 'Station supporter linked' : eventType.includes('cheer') ? 'Cheer signal received' : eventType.includes('follow') ? 'New station follower' : 'Viewer signal received';
         const station = await context.prisma.station.findUniqueOrThrow({ where: { slug: 'station-zero' } });
         const history = await context.prisma.historyEntry.create({ data: { stationId: station.id, category: 'twitch', title, body: `${displayName} triggered ${eventType.replaceAll('.', ' ')}.`, actorDisplayName: displayName } });
         context.realtime.broadcast({ type: 'history.added', entry: history });
