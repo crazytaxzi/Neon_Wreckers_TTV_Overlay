@@ -20,6 +20,7 @@ import { registerFleetRoutes } from './routes/fleet.js';
 import { registerIntegrationRoutes } from './routes/integrations.js';
 import { registerPlayerRoutes } from './routes/player.js';
 import { registerPointRoutes } from './routes/points.js';
+import { registerQuartersRoutes } from './routes/quarters.js';
 import { registerSalvageRoutes } from './routes/salvage.js';
 import { registerStationRoutes } from './routes/station.js';
 import { registerSystemRoutes } from './routes/system.js';
@@ -85,6 +86,7 @@ export async function buildApp() {
   await registerExpeditionRoutes(app, context);
   await registerFleetRoutes(app, context);
   await registerPlayerRoutes(app, context);
+  await registerQuartersRoutes(app, context);
   await registerIntegrationRoutes(app, context);
   await registerEventSubRoutes(app, context);
   await registerAdminRoutes(app, context);

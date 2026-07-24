@@ -19,7 +19,8 @@ import type { GameData, UiPreferences } from './model.js';
 import { GuidePage, StationPage, SalvagePage, ConstructionPage } from './pages/station.js';
 import { InventoryPage, CraftingPage } from './pages/logistics.js';
 import { ShipsPage, CrewPage, ExpeditionPage } from './pages/fleet.js';
-import { MuseumPage, HistoryPage, NotificationsPage, MarketPage, QuartersPage, ProfilePage, SettingsPage } from './pages/community.js';
+import { MuseumPage, HistoryPage, NotificationsPage, MarketPage, ProfilePage, SettingsPage } from './pages/community.js';
+import { QuartersPage } from './pages/quarters.js';
 
 const defaultPreferences: UiPreferences = {
   reducedMotion: false,
@@ -108,7 +109,7 @@ function GameApp({ preferences, updatePreferences }: { preferences: UiPreference
     history: <HistoryPage {...pageProps} />,
     notifications: <NotificationsPage notifications={game.notifications} action={game.action} />,
     market: <MarketPage marketplace={game.marketplace} credits={me.player?.credits ?? 0} inventory={game.inventory} catalog={game.catalog} auctions={game.auctions} action={game.action} />,
-    quarters: <QuartersPage me={me} quarters={game.quarters} action={game.action} />,
+    quarters: <QuartersPage {...pageProps} />,
     profile: <ProfilePage me={me} action={game.action} />,
     settings: <SettingsPage preferences={preferences} updatePreferences={updatePreferences} />
   };

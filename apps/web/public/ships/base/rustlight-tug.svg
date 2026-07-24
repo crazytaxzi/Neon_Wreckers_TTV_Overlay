@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Rustlight Tug</title>
+  <desc id="desc">A compact industrial salvage tug with a green cockpit, orange hazard markings, grapple arms, and purple ion thrusters.</desc>
+  <defs>
+    <linearGradient id="space" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#060d1d"/>
+      <stop offset="0.52" stop-color="#101228"/>
+      <stop offset="1" stop-color="#02070c"/>
+    </linearGradient>
+    <radialGradient id="nebula" cx="50%" cy="45%" r="60%">
+      <stop offset="0" stop-color="#7c2bff" stop-opacity=".18"/>
+      <stop offset=".48" stop-color="#52ff24" stop-opacity=".07"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#354149"/>
+      <stop offset=".55" stop-color="#202b32"/>
+      <stop offset="1" stop-color="#121a20"/>
+    </linearGradient>
+    <linearGradient id="cockpit" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#19a75f"/>
+      <stop offset=".52" stop-color="#47ff62"/>
+      <stop offset="1" stop-color="#087e51"/>
+    </linearGradient>
+    <linearGradient id="engine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#bb4dff" stop-opacity="0"/>
+      <stop offset=".38" stop-color="#bb4dff" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#7e20ff" stop-opacity=".95"/>
+    </linearGradient>
+    <filter id="greenGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="8" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="purpleGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="12" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M64 0H0V64" fill="none" stroke="#7a43ff" stroke-opacity=".13" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="675" fill="url(#space)"/>
+  <rect width="1200" height="675" fill="url(#nebula)"/>
+  <g fill="#d6ecff" opacity=".9">
+    <circle cx="76" cy="88" r="2"/><circle cx="154" cy="132" r="3"/><circle cx="258" cy="60" r="2"/>
+    <circle cx="354" cy="112" r="2.5"/><circle cx="449" cy="42" r="1.5"/><circle cx="566" cy="84" r="2"/>
+    <circle cx="702" cy="50" r="2.5"/><circle cx="818" cy="121" r="1.5"/><circle cx="942" cy="72" r="3"/>
+    <circle cx="1082" cy="112" r="2"/><circle cx="1142" cy="42" r="1.5"/><circle cx="91" cy="231" r="2"/>
+    <circle cx="211" cy="198" r="1.5"/><circle cx="1003" cy="208" r="2"/><circle cx="1118" cy="254" r="2.5"/>
+  </g>
+
+  <path d="M0 520H1200V675H0Z" fill="#03070c"/>
+  <path d="M0 520H1200V675H0Z" fill="url(#grid)"/>
+  <path d="M0 624 375 516h450l375 108" fill="none" stroke="#8d3cff" stroke-opacity=".18"/>
+  <path d="M600 512v163M430 512 330 675M770 512l100 163" fill="none" stroke="#8d3cff" stroke-opacity=".2"/>
+
+  <g opacity=".8">
+    <path d="M42 44h320" stroke="#9840ff" stroke-width="2"/>
+    <path d="M42 44v126" stroke="#9840ff" stroke-width="2"/>
+    <path d="M58 66h58M58 82h42M58 98h88M58 114h50M58 130h32" stroke="#67ff32" stroke-opacity=".38" stroke-width="5"/>
+    <path d="M840 620h320V505" fill="none" stroke="#67ff32" stroke-opacity=".4" stroke-width="2"/>
+  </g>
+
+  <g id="ship">
+    <path d="M203 352 301 280 410 242 486 202 719 192 786 233 918 265 1003 327 974 441 838 482 397 482 258 447Z" fill="url(#hull)" stroke="#9fb7c4" stroke-opacity=".65" stroke-width="2"/>
+    <path d="M294 285 410 244 489 204 718 194 783 234 916 267 849 286 366 286Z" fill="#3a454d" opacity=".72"/>
+    <path d="M426 244 491 177 651 166 734 224 686 292 481 292Z" fill="#2e3940" stroke="#a9bdc8" stroke-opacity=".7"/>
+    <path d="M500 202 553 179H637L690 220 662 247H507Z" fill="#071a16" stroke="#55f7ff" stroke-width="2"/>
+    <path d="M518 208 555 191H625L665 220 645 236H518Z" fill="url(#cockpit)" opacity=".86" filter="url(#greenGlow)"/>
+    <path d="M609 166v-46M576 120h66" stroke="#9fb7c4" stroke-width="4"/>
+    <circle cx="609" cy="110" r="10" fill="#42d145" stroke="#e7ffe6" stroke-width="2" filter="url(#greenGlow)"/>
+
+    <path d="M486 318H756V353H486Z" fill="#081012" stroke="#6af341" stroke-opacity=".65"/>
+    <path d="M501 329H681V341H501Z" fill="#62d926"/>
+    <path d="M690 329H738V341H690Z" fill="#8d35e8"/>
+
+    <path d="M250 323 363 281 438 305 452 384 342 402 271 365Z" fill="#2a3338" stroke="#dc9d47" stroke-opacity=".65"/>
+    <path d="M305 303 375 288 420 313 429 367 350 378 317 354Z" fill="#192127" stroke="#f28b24" stroke-width="3"/>
+    <path d="M341 292 382 378M382 282l42 85" stroke="#8497a1" stroke-opacity=".55"/>
+
+    <path d="M204 351 145 307 84 328 33 302 62 363 28 394 84 419 143 446 204 414Z" fill="#2b3438" stroke="#f28b24" stroke-opacity=".75"/>
+    <path d="M84 328 51 311M83 419 49 399M68 320l24 22M68 403l24-22" stroke="#ff9b2f" stroke-width="6"/>
+    <path d="M1000 327 1056 298 1115 320 1160 300 1137 356 1170 391 1116 417 1056 443 976 413Z" fill="#2b3438" stroke="#f28b24" stroke-opacity=".75"/>
+    <path d="M1117 320 1149 306M1117 417l34-18M1135 318l-22 24M1137 400l-24-20" stroke="#ff9b2f" stroke-width="6"/>
+
+    <path d="M846 319h152l20 21-20 29H846Z" fill="#11191d" stroke="#849ca6"/>
+    <path d="M850 380h146l21 21-21 27H850Z" fill="#11191d" stroke="#849ca6"/>
+    <rect x="955" y="327" width="45" height="34" rx="7" fill="#102113" stroke="#62ff31" stroke-width="2" filter="url(#greenGlow)"/>
+    <rect x="955" y="387" width="45" height="33" rx="7" fill="#102113" stroke="#62ff31" stroke-width="2" filter="url(#greenGlow)"/>
+
+    <path d="M212 352 170 335 94 334 35 357 92 380 170 373 212 364Z" fill="url(#engine)" opacity=".72" filter="url(#purpleGlow)"/>
+    <path d="M1000 337 1042 329 1115 337 1168 361 1114 379 1041 369 999 358Z" fill="url(#engine)" opacity=".52" filter="url(#purpleGlow)"/>
+
+    <circle cx="388" cy="438" r="54" fill="#171e23" stroke="#8f9ca4" stroke-width="4"/>
+    <circle cx="388" cy="438" r="38" fill="#070b10" stroke="#a53cff" stroke-width="4" filter="url(#purpleGlow)"/>
+    <circle cx="388" cy="438" r="22" fill="#6a18a3"/>
+    <circle cx="884" cy="438" r="54" fill="#171e23" stroke="#8f9ca4" stroke-width="4"/>
+    <circle cx="884" cy="438" r="38" fill="#070b10" stroke="#a53cff" stroke-width="4" filter="url(#purpleGlow)"/>
+    <circle cx="884" cy="438" r="22" fill="#6a18a3"/>
+
+    <path d="M516 451h25l-21 34h-25Zm39 0h25l-21 34h-25Zm39 0h25l-21 34h-25Zm39 0h25l-21 34h-25Zm39 0h25l-21 34h-25Z" fill="#f58b1f"/>
+    <g fill="#b8c8ce" opacity=".8">
+      <circle cx="475" cy="405" r="3"/><circle cx="520" cy="405" r="3"/><circle cx="565" cy="405" r="3"/>
+      <circle cx="610" cy="405" r="3"/><circle cx="655" cy="405" r="3"/><circle cx="700" cy="405" r="3"/>
+    </g>
+    <path d="M470 288v147M610 288v150M762 288v146" stroke="#94a7af" stroke-opacity=".42" stroke-width="2"/>
+    <path d="M455 380h370" stroke="#82939a" stroke-opacity=".35"/>
+  </g>
+
+  <text x="48" y="560" fill="#62ff31" font-family="monospace" font-size="16" letter-spacing="4">RUSTLIGHT INDUSTRIAL FRAME // TUG-01</text>
+  <text x="48" y="586" fill="#aeb9c2" opacity=".58" font-family="monospace" font-size="11" letter-spacing="3">SALVAGE GRAPPLE · SHORT-RANGE DRIVE · CREW BERTH 02</text>
+</svg>

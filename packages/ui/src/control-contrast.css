@@ -1,0 +1,41 @@
+/* Keep control labels readable when raster skins replace the solid fills that
+   originally supplied their foreground contrast. */
+.nw-button--primary {
+  color: #f2ffe9 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 8px rgba(var(--nw-color-green-rgb), 0.2);
+}
+
+.nw-button--secondary {
+  color: var(--nw-color-text) !important;
+}
+
+.nw-button--warning {
+  color: #fff1d8 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.nw-button--danger {
+  color: #ffe8eb !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.nw-button:disabled,
+.nw-icon-button:disabled {
+  color: rgba(var(--nw-color-text-rgb), 0.72) !important;
+  opacity: 0.72 !important;
+  filter: grayscale(0.45) brightness(0.78) !important;
+  text-shadow: none;
+}
+
+.nw-button:focus-visible,
+.nw-icon-button:focus-visible {
+  outline: 2px solid var(--nw-color-cyan) !important;
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  .nw-button,
+  .nw-icon-button {
+    color: ButtonText !important;
+  }
+}

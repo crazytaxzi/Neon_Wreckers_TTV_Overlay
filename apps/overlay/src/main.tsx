@@ -9,6 +9,7 @@ import { useHeadlineQueue } from './use-headline-queue.js';
 import { useOverlayHeadlines } from './use-overlay-headlines.js';
 import { useOverlayVisibility } from './use-overlay-visibility.js';
 import './overlay.css';
+import './overlay-transparency.css';
 
 const onlineHeadline: Headline = {
   id: 'online',
