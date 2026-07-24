@@ -71,5 +71,5 @@ test('chat command editing remains inside a server-side action allowlist', () =>
 test('overlay event behavior is documented without duplicate StreamElements ingestion', () => {
   assert.match(docs, /Twitch EventSub/i);
   assert.match(docs, /follows, subscriptions, cheers, and raids/i);
-  assert.match(docs, /avoid duplicate/i);
+  assert.match(docs, /duplicate activity cards/i);
 });
