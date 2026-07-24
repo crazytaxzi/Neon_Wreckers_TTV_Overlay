@@ -3,6 +3,7 @@ import {
   StreamElementsProvider,
   normalizeStreamElementsScopes,
   refreshStreamElementsToken,
+  validateStreamElementsOAuthToken,
   type StreamElementsCredential,
   type StreamElementsIdentity,
   type StreamElementsTokenResponse
@@ -194,7 +195,7 @@ async function refreshStoredIfNeeded(prisma: PrismaClient, slug: string, stored:
   const refreshed: StoredConnection = {
     ...stored,
     accessTokenEncrypted: encryptCredential(token.access_token),
-    refreshTokenEncrypted: encryptCredential(token.refresh_token),
+    refreshTokenEncrypted: token.refresh_token ? encryptCredential(token.refresh_token) : stored.refreshTokenEncrypted,
     scopes: normalizeStreamElementsScopes(token.scope),
     expiresAt: tokenExpiresAt(token).toISOString(),
     lastError: null
@@ -257,7 +258,11 @@ export async function importLegacyStreamElementsConnection(prisma: PrismaClient,
 }
 
 export async function saveOAuthStreamElementsConnection(prisma: PrismaClient, token: StreamElementsTokenResponse, createdById: string) {
-  const scopes = normalizeStreamElementsScopes(token.scope);
+  const validation = await validateStreamElementsOAuthToken(token.access_token);
+  if (validation.clientId && validation.clientId !== env.STREAMELEMENTS_CLIENT_ID) throw new Error('StreamElements returned a token for a different OAuth client.');
+  const scopes = [...new Set([...normalizeStreamElementsScopes(token.scope), ...validation.scopes])];
+  const missingScopes = streamElementsScopes.filter(scope => !scopes.includes(scope));
+  if (missingScopes.length) throw new Error(`StreamElements did not grant required scopes: ${missingScopes.join(', ')}`);
   const provisional: StreamElementsCredential = {
     apiBase: env.STREAMELEMENTS_API_BASE,
     token: token.access_token,
@@ -272,6 +277,7 @@ export async function saveOAuthStreamElementsConnection(prisma: PrismaClient, to
     pointsEnabled: env.FEATURE_POINTS_ACTIONS === 'true'
   };
   const identity = await new StreamElementsProvider(provisional).fetchIdentity();
+  if (validation.channelId && validation.channelId !== identity.channelId) throw new Error('StreamElements token validation and channel identity did not match.');
   return persistConnection(prisma, {
     authType: 'oauth2',
     accessToken: token.access_token,
@@ -289,8 +295,15 @@ export async function verifyStreamElementsConnection(prisma: PrismaClient, slug:
   if (!version || version.lifecycle === 'retired') throw new Error('StreamElements connection was not found.');
   const stored = await refreshStoredIfNeeded(prisma, slug, version.contentJson as unknown as StoredConnection);
   try {
-    const identity = await new StreamElementsProvider(storedCredential(stored)).fetchIdentity();
-    if (identity.channelId !== stored.channelId) throw new Error('StreamElements returned a different channel than the saved connection.');
+    const credential = storedCredential(stored);
+    const validation = stored.authType === 'oauth2' ? await validateStreamElementsOAuthToken(credential.token) : null;
+    if (validation?.clientId && validation.clientId !== env.STREAMELEMENTS_CLIENT_ID) throw new Error('StreamElements returned a token for a different OAuth client.');
+    const missingScopes = stored.authType === 'oauth2' ? streamElementsScopes.filter(scope => !stored.scopes.includes(scope)) : [];
+    if (missingScopes.length) throw new Error(`StreamElements connection is missing required scopes: ${missingScopes.join(', ')}`);
+    const identity = await new StreamElementsProvider(credential).fetchIdentity();
+    if (identity.channelId !== stored.channelId || (validation?.channelId && validation.channelId !== stored.channelId)) {
+      throw new Error('StreamElements returned a different channel than the saved connection.');
+    }
     const verified: StoredConnection = {
       ...stored,
       provider: identity.provider,
@@ -314,8 +327,9 @@ export async function verifyStreamElementsConnection(prisma: PrismaClient, slug:
 export async function selectStreamElementsConnection(prisma: PrismaClient, slug: string, actorId: string) {
   const version = await latestBySlug(prisma, slug);
   if (!version || version.lifecycle === 'retired') throw new Error('StreamElements connection was not found.');
+  const verified = await verifyStreamElementsConnection(prisma, slug, actorId);
   await writeVersion(prisma, settingsSlug, { activeConnectionSlug: slug }, actorId);
-  return verifyStreamElementsConnection(prisma, slug, actorId);
+  return { ...verified, isActive: true };
 }
 
 export async function updateStreamElementsConnectionSettings(
