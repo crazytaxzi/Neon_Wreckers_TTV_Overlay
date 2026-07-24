@@ -45,7 +45,7 @@ function configuredCommand(version: { slug: string; lifecycle: string; contentJs
     trigger: normalizeTrigger(String(raw.trigger ?? '')),
     description: String(raw.description ?? ''),
     enabled: raw.enabled !== false,
-    requiresPlayer: raw.requiresPlayer !== false,
+    requiresPlayer: true,
     action,
     updatedAt: version.createdAt,
     source: 'configured'
@@ -93,7 +93,9 @@ export async function saveChatCommand(
   const id = command.id || command.trigger.slice(1).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   if (!id) throw new Error('Command trigger must include a usable name.');
   const slug = slugForId(id);
-  const normalized = { ...command, id, trigger: normalizeTrigger(command.trigger) };
+  const normalized = { ...command, id, trigger: normalizeTrigger(command.trigger), requiresPlayer: true };
+  const duplicate = (await loadChatCommands(prisma)).find(existing => existing.trigger === normalized.trigger && existing.id !== id);
+  if (duplicate) throw new Error(`The trigger ${normalized.trigger} is already assigned to ${duplicate.trigger}.`);
   return prisma.$transaction(async transaction => {
     await acquireTransactionLock(transaction, `content-version:${slug}`);
     const latest = await transaction.contentVersion.findFirst({ where: { slug }, orderBy: { version: 'desc' } });
