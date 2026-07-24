@@ -14,6 +14,8 @@ const webApp = read('apps/web/src/app.tsx');
 const quartersPage = read('apps/web/src/pages/quarters.tsx');
 const fleetPage = read('apps/web/src/pages/fleet.tsx');
 const gameArtwork = read('apps/web/src/components/GameArtwork.tsx');
+const uiIndex = read('packages/ui/src/index.ts');
+const controlContrast = read('packages/ui/src/control-contrast.css');
 
 test('OBS overlay explicitly removes the full-canvas raster layer', () => {
   assert.match(overlayMain, /import '\.\/overlay\.css';[\s\S]*import '\.\/overlay-transparency\.css';/);
@@ -43,4 +45,11 @@ test('quarters expose functional fixture actions through the API and player surf
   assert.match(webApp, /from '\.\/pages\/quarters\.js'/);
   assert.match(webApp, /quarters: <QuartersPage \{\.\.\.pageProps\} \/>/);
   assert.match(quartersPage, /\/api\/v1\/quarters\/use/);
+});
+
+test('raster-skinned controls retain readable foreground contrast', () => {
+  assert.match(uiIndex, /import '\.\/raster-system\.css';[\s\S]*import '\.\/control-contrast\.css';/);
+  assert.match(controlContrast, /\.nw-button--primary[\s\S]*color: #f2ffe9 !important/);
+  assert.match(controlContrast, /\.nw-button:disabled[\s\S]*opacity: 0\.72 !important/);
+  assert.match(controlContrast, /outline: 2px solid var\(--nw-color-cyan\) !important/);
 });
