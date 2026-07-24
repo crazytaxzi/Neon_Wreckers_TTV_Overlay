@@ -50,10 +50,35 @@ if grep -Eq 'replace-with|example\.com' .env; then
   exit 1
 fi
 
+legacy_stream_elements_count=0
+[[ -n ${STREAMELEMENTS_CHANNEL_ID:-} ]] && ((legacy_stream_elements_count += 1))
+[[ -n ${STREAMELEMENTS_JWT:-} ]] && ((legacy_stream_elements_count += 1))
+[[ $legacy_stream_elements_count -ne 1 ]] || {
+  echo "STREAMELEMENTS_CHANNEL_ID and STREAMELEMENTS_JWT must be configured together." >&2
+  exit 1
+}
+
+oauth_stream_elements_count=0
+[[ -n ${STREAMELEMENTS_CLIENT_ID:-} ]] && ((oauth_stream_elements_count += 1))
+[[ -n ${STREAMELEMENTS_CLIENT_SECRET:-} ]] && ((oauth_stream_elements_count += 1))
+[[ -n ${STREAMELEMENTS_REDIRECT_URI:-} ]] && ((oauth_stream_elements_count += 1))
+[[ $oauth_stream_elements_count -eq 0 || $oauth_stream_elements_count -eq 3 ]] || {
+  echo "STREAMELEMENTS_CLIENT_ID, STREAMELEMENTS_CLIENT_SECRET, and STREAMELEMENTS_REDIRECT_URI must be configured together." >&2
+  exit 1
+}
+if [[ $oauth_stream_elements_count -eq 3 ]]; then
+  [[ $STREAMELEMENTS_REDIRECT_URI == "https://${PUBLIC_HOST}/api/v1/auth/streamelements/callback" ]] || {
+    echo "STREAMELEMENTS_REDIRECT_URI does not match PUBLIC_HOST." >&2
+    exit 1
+  }
+fi
+
 if [[ ${FEATURE_POINTS_ACTIONS:-false} == "true" ]]; then
   [[ ${STREAMELEMENTS_PROVIDER:-disabled} == "streamelements" ]] || { echo "FEATURE_POINTS_ACTIONS requires STREAMELEMENTS_PROVIDER=streamelements." >&2; exit 1; }
-  [[ -n ${STREAMELEMENTS_CHANNEL_ID:-} ]] || { echo "STREAMELEMENTS_CHANNEL_ID is required when point actions are enabled." >&2; exit 1; }
-  [[ -n ${STREAMELEMENTS_JWT:-} ]] || { echo "STREAMELEMENTS_JWT is required when point actions are enabled." >&2; exit 1; }
+  [[ $legacy_stream_elements_count -eq 2 || $oauth_stream_elements_count -eq 3 ]] || {
+    echo "FEATURE_POINTS_ACTIONS requires either StreamElements OAuth credentials or the legacy channel ID and owner token." >&2
+    exit 1
+  }
 fi
 
 install_docker() {

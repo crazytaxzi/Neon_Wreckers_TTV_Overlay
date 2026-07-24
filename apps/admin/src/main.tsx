@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { errorMessage, requestApi } from '@neon-wreckers/browser-client';
 import {
@@ -45,9 +45,59 @@ type StationSummary = {
   integrity: number;
 };
 
-type LoyaltyHealth = {
+type StreamElementsConnection = {
+  id: string;
+  channelId: string;
+  provider: string;
+  providerId: string | null;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  authType: 'jwt' | 'oauth2';
+  scopes: string[];
+  expiresAt: string | null;
+  isActive: boolean;
+  pointsEnabled: boolean;
+  lastVerifiedAt: string | null;
+  lastError: string | null;
+  updatedAt: string;
+  matchesStreamer: boolean;
+};
+
+type StreamElementsStatus = {
   ok: boolean;
   detail: string;
+  configured: boolean;
+  oauthConfigured: boolean;
+  oauthScopes: string[];
+  legacyAvailable: boolean;
+  pointsKillSwitchEnabled: boolean;
+  activeConnectionId: string | null;
+  connections: StreamElementsConnection[];
+  identity?: {
+    channelId: string;
+    provider: string;
+    providerId: string | null;
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+  };
+};
+
+type ChatCommandAction =
+  | { type: 'scan' }
+  | { type: 'salvage'; mode: 'cutters' | 'cargo' }
+  | { type: 'point_action'; slug: 'rush_scan' | 'safety_override' };
+
+type ChatCommand = {
+  id: string;
+  trigger: string;
+  description: string;
+  enabled: boolean;
+  requiresPlayer: boolean;
+  action: ChatCommandAction;
+  updatedAt: string | null;
+  source: 'default' | 'configured';
 };
 
 type ConfigVersion = {
@@ -57,14 +107,84 @@ type ConfigVersion = {
   lifecycle: string;
   createdAt: string;
 };
-type AdminOverview = { service: { uptimeSeconds: number; startedAt: string; node: string; loadAverage: number[]; cpuCount: number; memory: { rss: number; heapUsed: number; heapTotal: number }; disk: { total: number; free: number; used: number } | null; sockets: number }; throughput: { lastMinute: MetricWindow; lastHour: MetricWindow; lastDay: MetricWindow; series: Array<{ minute: string; requests: number; errors: number; bytes: number; latencyMs: number }> }; database: { players: number; activeExpeditions: number; activeEvents: number; activeCooldowns: number; pendingTransactions: number }; queue: Record<string, number>; timers: Array<{ id: string; name: string; playerName: string; resolvesAt: string }>; cloudSafeZone: { machine: string; eligibleRegions: string[]; vmHoursPerMonth: string; standardDiskGbMonth: number; outboundGbMonth: number; estimatedOverage: { vmUsdPerHour: number; standardDiskUsdPerGbMonth: number; premiumEgressUsdPerGbFrom: number }; disclaimer: string } };
-type MetricWindow = { requests: number; errors: number; bytes: number; averageLatencyMs: number; requestsPerMinute: number };
-type AdminPlayer = { id: string; displayName: string; twitchLogin: string; credits: number; xp: number; level: number; reputation: number; bannedUntil: string | null; cooldowns: Array<{ id: string; actionKey: string; expiresAt: string }> };
-type LoyaltyTransaction = { id: string; amount: number; actionSlug: string; status: string; createdAt: string; error: string | null; user: { displayName: string; twitchLogin: string } };
+
+type AdminOverview = {
+  service: {
+    uptimeSeconds: number;
+    startedAt: string;
+    node: string;
+    loadAverage: number[];
+    cpuCount: number;
+    memory: { rss: number; heapUsed: number; heapTotal: number };
+    disk: { total: number; free: number; used: number } | null;
+    sockets: number;
+  };
+  throughput: {
+    lastMinute: MetricWindow;
+    lastHour: MetricWindow;
+    lastDay: MetricWindow;
+    series: Array<{ minute: string; requests: number; errors: number; bytes: number; latencyMs: number }>;
+  };
+  database: {
+    players: number;
+    activeExpeditions: number;
+    activeEvents: number;
+    activeCooldowns: number;
+    pendingTransactions: number;
+  };
+  queue: Record<string, number>;
+  timers: Array<{ id: string; name: string; playerName: string; resolvesAt: string }>;
+  cloudSafeZone: {
+    machine: string;
+    eligibleRegions: string[];
+    vmHoursPerMonth: string;
+    standardDiskGbMonth: number;
+    outboundGbMonth: number;
+    estimatedOverage: {
+      vmUsdPerHour: number;
+      standardDiskUsdPerGbMonth: number;
+      premiumEgressUsdPerGbFrom: number;
+    };
+    disclaimer: string;
+  };
+};
+
+type MetricWindow = {
+  requests: number;
+  errors: number;
+  bytes: number;
+  averageLatencyMs: number;
+  requestsPerMinute: number;
+};
+
+type AdminPlayer = {
+  id: string;
+  displayName: string;
+  twitchLogin: string;
+  credits: number;
+  xp: number;
+  level: number;
+  reputation: number;
+  bannedUntil: string | null;
+  cooldowns: Array<{ id: string; actionKey: string; expiresAt: string }>;
+};
+
+type LoyaltyTransaction = {
+  id: string;
+  amount: number;
+  actionSlug: string;
+  status: string;
+  createdAt: string;
+  error: string | null;
+  user: { displayName: string; twitchLogin: string };
+};
+
 type PushToast = ReturnType<typeof useToast>['pushToast'];
 
 const navigation: TabItem[] = [
   { id: 'operations', label: 'Operations', icon: 'station' },
+  { id: 'integrations', label: 'Integrations', icon: 'network' },
+  { id: 'commands', label: 'Commands', icon: 'terminal' },
   { id: 'server', label: 'Server', icon: 'diagnostics' },
   { id: 'timers', label: 'Timers', icon: 'events' },
   { id: 'players', label: 'Players', icon: 'crew' },
@@ -81,7 +201,8 @@ function AdminApp() {
   const [tab, setTab] = useState('operations');
   const [me, setMe] = useState<CurrentUser | null>();
   const [config, setConfig] = useState<ConfigVersion[]>([]);
-  const [health, setHealth] = useState<LoyaltyHealth | null>(null);
+  const [streamElements, setStreamElements] = useState<StreamElementsStatus | null>(null);
+  const [commands, setCommands] = useState<ChatCommand[]>([]);
   const [station, setStation] = useState<StationSummary | null>(null);
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [players, setPlayers] = useState<AdminPlayer[]>([]);
@@ -90,18 +211,22 @@ function AdminApp() {
   const { pushToast } = useToast();
 
   const refresh = useCallback(async () => {
-    const [stationData, healthData, configData, overviewData, playersData, transactionsData] = await Promise.all([
+    const [stationData, streamElementsData, commandData, configData, overviewData, playersData, transactionsData] = await Promise.all([
       requestApi<StationSummary>('/api/v1/station'),
-      requestApi<LoyaltyHealth>('/api/v1/integrations/streamelements/health'),
+      requestApi<StreamElementsStatus>('/api/v1/integrations/streamelements/health'),
+      requestApi<ChatCommand[]>('/api/v1/admin/chat-commands'),
       requestApi<ConfigVersion[]>('/api/v1/admin/config'),
       requestApi<AdminOverview>('/api/v1/admin/overview'),
       requestApi<AdminPlayer[]>('/api/v1/admin/players'),
       requestApi<LoyaltyTransaction[]>('/api/v1/admin/transactions')
     ]);
     setStation(stationData);
-    setHealth(healthData);
+    setStreamElements(streamElementsData);
+    setCommands(commandData);
     setConfig(configData);
-    setOverview(overviewData); setPlayers(playersData); setTransactions(transactionsData);
+    setOverview(overviewData);
+    setPlayers(playersData);
+    setTransactions(transactionsData);
   }, []);
 
   useEffect(() => {
@@ -144,6 +269,7 @@ function AdminApp() {
       pushToast({ title: 'Spawn failed', message: errorMessage(error), tone: 'danger' });
     }
   };
+
   const triggerEvent = async (slug: string) => {
     try {
       await requestApi(`/api/v1/admin/events/${slug}/trigger`, { method: 'POST' });
@@ -153,16 +279,35 @@ function AdminApp() {
       pushToast({ title: 'Event rejected', message: errorMessage(error), tone: 'danger' });
     }
   };
-  const resetEvent = async (slug: string) => { try { await requestApi(`/api/v1/admin/events/${slug}/reset`, { method: 'POST', body: JSON.stringify({ stopActive: true, reason: 'Manual operator reset' }) }); pushToast({ title: 'Event timer reset', message: slug, tone: 'success' }); await refresh(); } catch (error) { pushToast({ title: 'Reset failed', message: errorMessage(error), tone: 'danger' }); } };
+
+  const resetEvent = async (slug: string) => {
+    try {
+      await requestApi(`/api/v1/admin/events/${slug}/reset`, {
+        method: 'POST',
+        body: JSON.stringify({ stopActive: true, reason: 'Manual operator reset' })
+      });
+      pushToast({ title: 'Event timer reset', message: slug, tone: 'success' });
+      await refresh();
+    } catch (error) {
+      pushToast({ title: 'Reset failed', message: errorMessage(error), tone: 'danger' });
+    }
+  };
+
   const subscribeTwitch = async () => {
     try {
       const results = await requestApi<Array<{ type: string; ok: boolean; error?: string }>>('/api/v1/integrations/twitch/subscribe', { method: 'POST' });
       const failures = results.filter(result => !result.ok);
-      pushToast({ title: failures.length ? 'Twitch subscriptions need attention' : 'Twitch EventSub connected', message: failures.map(result => `${result.type}: ${result.error}`).join(' · '), tone: failures.length ? 'warning' : 'success', duration: 8000 });
+      pushToast({
+        title: failures.length ? 'Twitch subscriptions need attention' : 'Twitch EventSub connected',
+        message: failures.map(result => `${result.type}: ${result.error}`).join(' · '),
+        tone: failures.length ? 'warning' : 'success',
+        duration: 8000
+      });
     } catch (error) {
       pushToast({ title: 'Twitch setup failed', message: errorMessage(error), tone: 'danger' });
     }
   };
+
   const signOut = async () => {
     await requestApi('/api/v1/auth/logout', { method: 'POST' });
     window.location.href = '/';
@@ -175,7 +320,9 @@ function AdminApp() {
   }
 
   const pages: Record<string, ReactNode> = {
-    operations: <OperationsPage station={station} health={health} onSpawn={() => setConfirmSpawn(true)} onRefresh={() => void refresh()} onTrigger={slug => void triggerEvent(slug)} onReset={slug => void resetEvent(slug)} onSubscribeTwitch={() => void subscribeTwitch()} />,
+    operations: <OperationsPage station={station} streamElements={streamElements} onSpawn={() => setConfirmSpawn(true)} onRefresh={() => void refresh()} onTrigger={slug => void triggerEvent(slug)} onReset={slug => void resetEvent(slug)} onSubscribeTwitch={() => void subscribeTwitch()} />,
+    integrations: <IntegrationsPage status={streamElements} refresh={refresh} pushToast={pushToast} />,
+    commands: <CommandsPage commands={commands} refresh={refresh} pushToast={pushToast} />,
     server: <ServerPage overview={overview} />,
     timers: <TimersPage overview={overview} refresh={refresh} pushToast={pushToast} />,
     players: <PlayersPage players={players} refresh={refresh} pushToast={pushToast} />,
@@ -190,7 +337,7 @@ function AdminApp() {
       header={<CommandHeader
         brand="NEON WRECKERS // ADMIN"
         title="Streamer Control Center"
-        subtitle="Operations, versioned content, and interface diagnostics"
+        subtitle="Operations, integrations, commands, and diagnostics"
         status={<Badge tone="warning" icon="settings">AUTHORIZED</Badge>}
         actions={<div className="inline-actions"><Button size="sm" variant="ghost" icon={<NWIcon name="diagnostics" size={15} />} onClick={() => void refresh()}>Resync</Button><Button size="sm" variant="ghost" onClick={() => void signOut()}>Sign out</Button></div>}
         profile={<ProfileChip name={me.displayName} detail="Command operator" avatarUrl={me.avatarUrl || undefined} />}
@@ -215,22 +362,33 @@ function AccessDenied({ reason }: { reason: string }) {
   );
 }
 
-function OperationsPage({ station, health, onSpawn, onRefresh, onTrigger, onReset, onSubscribeTwitch }: { station: StationSummary | null; health: LoyaltyHealth | null; onSpawn: () => void; onRefresh: () => void; onTrigger: (slug: string) => void; onReset: (slug: string) => void; onSubscribeTwitch: () => void }) {
-  const integrationTone = health?.ok ? 'success' : 'warning';
+function OperationsPage({ station, streamElements, onSpawn, onRefresh, onTrigger, onReset, onSubscribeTwitch }: {
+  station: StationSummary | null;
+  streamElements: StreamElementsStatus | null;
+  onSpawn: () => void;
+  onRefresh: () => void;
+  onTrigger: (slug: string) => void;
+  onReset: (slug: string) => void;
+  onSubscribeTwitch: () => void;
+}) {
+  const integrationTone = streamElements?.ok ? 'success' : 'warning';
   return (
     <div className="admin-stack">
-      <SectionTitle eyebrow="LIVE OPERATIONS" title="Station Command" description="Administrative controls use the existing API surface without client-side game logic." icon="station" action={<Button variant="ghost" icon={<NWIcon name="diagnostics" size={15} />} onClick={onRefresh}>Refresh telemetry</Button>} />
+      <SectionTitle eyebrow="LIVE OPERATIONS" title="Station Command" description="Administrative controls use the authoritative API." icon="station" action={<Button variant="ghost" icon={<NWIcon name="diagnostics" size={15} />} onClick={onRefresh}>Refresh telemetry</Button>} />
       <ResponsiveGrid min="13rem">
         <StatusDisplay label="Population" value={station?.population ?? 0} icon="population" tone="success" />
         <StatusDisplay label="Power" value={station?.power ?? 0} unit="%" icon="power" tone="purple" />
         <StatusDisplay label="Integrity" value={station?.integrity ?? 0} unit="%" icon="integrity" tone={(station?.integrity ?? 0) < 50 ? 'warning' : 'success'} />
-        <StatusDisplay label="StreamElements" value={integrationTone === 'success' ? 'ONLINE' : 'CHECK'} icon="streamelements" tone={integrationTone} />
+        <StatusDisplay label="StreamElements" value={integrationTone === 'success' ? 'VERIFIED' : 'CHECK'} icon="streamelements" tone={integrationTone} />
       </ResponsiveGrid>
       <Panel tone="purple">
         <SectionTitle eyebrow="LIVE EVENTS" title="Event Triggers" description="Event cooldowns and effects are enforced by the authoritative API." icon="events" />
         <div className="admin-command-grid">{['reactor-instability', 'black-market-visit', 'ghost-ship'].map(slug => <CardCommand key={slug} slug={slug} onTrigger={onTrigger} onReset={onReset} />)}</div>
       </Panel>
-      <Panel tone="info"><SectionTitle eyebrow="TWITCH EVENTSUB" title="Viewer Event Connection" description="Creates the signed webhook subscriptions for chat, follows, subscriptions, cheers, and raids." icon="twitch" /><Button onClick={onSubscribeTwitch}>Connect EventSub subscriptions</Button></Panel>
+      <Panel tone="info">
+        <SectionTitle eyebrow="TWITCH EVENTSUB" title="Viewer Event Connection" description="Creates signed webhook subscriptions for chat, follows, subscriptions, cheers, and raids. Those events are broadcast to the overlay activity feed." icon="twitch" />
+        <Button onClick={onSubscribeTwitch}>Connect EventSub subscriptions</Button>
+      </Panel>
       <ResponsiveGrid min="20rem">
         <Panel tone="warning">
           <SectionTitle eyebrow="WRECK CONTROL" title="Spawn salvage target" icon="wreck" />
@@ -239,16 +397,203 @@ function OperationsPage({ station, health, onSpawn, onRefresh, onTrigger, onRese
         </Panel>
         <Panel tone={integrationTone}>
           <SectionTitle eyebrow="INTEGRATION HEALTH" title="StreamElements Link" icon="streamelements" />
-          <IntegrationHealth health={health} />
+          <p>{streamElements?.detail ?? 'No health payload returned.'}</p>
+          <strong>{streamElements?.identity?.displayName ?? 'No selected account'}</strong>
         </Panel>
       </ResponsiveGrid>
     </div>
   );
 }
 
-function IntegrationHealth({ health }: { health: LoyaltyHealth | null }) {
-  const rows = useMemo(() => Object.entries(health ?? {}).map(([key, value]) => ({ key, value: typeof value === 'object' ? JSON.stringify(value) : String(value) })), [health]);
-  return <DataGrid rows={rows} getRowKey={row => row.key} empty="No health payload returned." columns={[{ key: 'key', header: 'Signal', render: row => <span className="admin-key">{row.key}</span> },{ key: 'value', header: 'Value', render: row => <span className="nw-numeric">{row.value}</span> }]} />;
+function IntegrationsPage({ status, refresh, pushToast }: {
+  status: StreamElementsStatus | null;
+  refresh: () => Promise<void>;
+  pushToast: PushToast;
+}) {
+  const post = async (path: string, body: unknown | undefined, success: string) => {
+    try {
+      await requestApi(path, { method: 'POST', ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+      pushToast({ title: success, tone: 'success' });
+      await refresh();
+    } catch (error) {
+      pushToast({ title: 'StreamElements command failed', message: errorMessage(error), tone: 'danger', duration: 8000 });
+    }
+  };
+  const remove = async (connection: StreamElementsConnection) => {
+    if (!window.confirm(`Remove the saved StreamElements connection for ${connection.displayName}?`)) return;
+    try {
+      await requestApi(`/api/v1/integrations/streamelements/connections/${encodeURIComponent(connection.id)}`, { method: 'DELETE' });
+      pushToast({ title: 'StreamElements account removed', tone: 'success' });
+      await refresh();
+    } catch (error) {
+      pushToast({ title: 'Remove failed', message: errorMessage(error), tone: 'danger' });
+    }
+  };
+  const active = status?.connections.find(connection => connection.isActive) ?? null;
+
+  return (
+    <div className="admin-stack">
+      <SectionTitle eyebrow="ACCOUNT ROUTING" title="StreamElements Control Center" description="Verify the actual channel behind each token, save multiple authorized accounts, and select the one Neon Wreckers charges." icon="streamelements" />
+      <ResponsiveGrid min="14rem">
+        <StatusDisplay label="API verification" value={status?.ok ? 'PASS' : 'FAIL'} icon="diagnostics" tone={status?.ok ? 'success' : 'danger'} />
+        <StatusDisplay label="Selected account" value={active?.displayName ?? 'NONE'} icon="profile" tone={active ? 'info' : 'warning'} />
+        <StatusDisplay label="OAuth application" value={status?.oauthConfigured ? 'READY' : 'NOT SET'} icon="network" tone={status?.oauthConfigured ? 'success' : 'warning'} />
+        <StatusDisplay label="Point actions" value={active?.pointsEnabled && status?.pointsKillSwitchEnabled ? 'ENABLED' : 'OFF'} icon="credits" tone={active?.pointsEnabled && status?.pointsKillSwitchEnabled ? 'success' : 'warning'} />
+      </ResponsiveGrid>
+
+      {!status?.pointsKillSwitchEnabled && <Notification title="Server point-action kill switch is off" tone="warning">The account can still be verified and selected, but paid chat commands remain disabled until FEATURE_POINTS_ACTIONS=true is deployed.</Notification>}
+      {active && !active.matchesStreamer && <Notification title="Selected account does not match the configured Twitch streamer" tone="danger">The StreamElements provider ID is {active.providerId ?? 'unknown'}, while Neon Wreckers is configured for a different Twitch broadcaster. Select the correct account before enabling point actions.</Notification>}
+
+      <Panel tone={status?.ok ? 'success' : 'warning'}>
+        <SectionTitle eyebrow="ACTIVE CONNECTION" title={active?.displayName ?? 'No StreamElements account selected'} description={status?.detail} icon="streamelements" />
+        {active ? (
+          <div className="admin-integration-profile">
+            {active.avatarUrl ? <img src={active.avatarUrl} alt="" /> : <div className="admin-avatar-placeholder"><NWIcon name="profile" size={28} /></div>}
+            <div>
+              <strong>{active.displayName}</strong>
+              <span>@{active.username} · {active.provider}</span>
+              <small>Channel {active.channelId} · {active.authType.toUpperCase()} · verified {active.lastVerifiedAt ? new Date(active.lastVerifiedAt).toLocaleString() : 'never'}</small>
+            </div>
+          </div>
+        ) : <p>Connect through OAuth or verify the existing server token below.</p>}
+        <div className="admin-mobile-actions">
+          {status?.oauthConfigured && <Button onClick={() => { window.location.href = '/api/v1/auth/streamelements/start?returnTo=/admin/'; }}>Connect another account</Button>}
+          {status?.legacyAvailable && <Button variant="ghost" onClick={() => void post('/api/v1/integrations/streamelements/import-legacy', undefined, 'Server token verified and saved')}>Verify current server token</Button>}
+          {active && <Button variant="ghost" onClick={() => void post(`/api/v1/integrations/streamelements/connections/${encodeURIComponent(active.id)}/verify`, undefined, 'Selected account verified')}>Verify selected account</Button>}
+          {active && <Button variant={active.pointsEnabled ? 'warning' : 'primary'} onClick={() => void post(`/api/v1/integrations/streamelements/connections/${encodeURIComponent(active.id)}/settings`, { pointsEnabled: !active.pointsEnabled }, active.pointsEnabled ? 'Point actions disabled' : 'Point actions enabled')}>{active.pointsEnabled ? 'Disable point actions' : 'Enable point actions'}</Button>}
+        </div>
+      </Panel>
+
+      <Panel>
+        <SectionTitle eyebrow="SAVED ACCOUNTS" title="Choose the charged channel" description="OAuth authorizes the currently selected StreamElements channel. Connect another account after switching channels in StreamElements, then choose it here." icon="network" />
+        <div className="admin-connection-list">
+          {(status?.connections ?? []).map(connection => (
+            <div key={connection.id} className={connection.isActive ? 'is-active' : ''}>
+              <div>
+                <strong>{connection.displayName}</strong>
+                <span>@{connection.username} · {connection.provider} · {connection.channelId}</span>
+                <small>{connection.lastError || `Scopes: ${connection.scopes.join(', ') || 'owner token'}`}</small>
+              </div>
+              <div className="admin-mobile-actions">
+                {!connection.isActive && <Button size="sm" onClick={() => void post(`/api/v1/integrations/streamelements/connections/${encodeURIComponent(connection.id)}/select`, undefined, `${connection.displayName} selected`)}>Use this account</Button>}
+                <Button size="sm" variant="ghost" onClick={() => void post(`/api/v1/integrations/streamelements/connections/${encodeURIComponent(connection.id)}/verify`, undefined, `${connection.displayName} verified`)}>Verify</Button>
+                <Button size="sm" variant="ghost" onClick={() => void remove(connection)}>Remove</Button>
+              </div>
+            </div>
+          ))}
+          {!status?.connections.length && <p>No saved accounts yet.</p>}
+        </div>
+      </Panel>
+
+      {!status?.oauthConfigured && <Notification title="OAuth account picker needs a StreamElements application" tone="info">Add STREAMELEMENTS_CLIENT_ID, STREAMELEMENTS_CLIENT_SECRET, and STREAMELEMENTS_REDIRECT_URI to the server. The existing JWT verification path remains available in the meantime.</Notification>}
+    </div>
+  );
+}
+
+function CommandsPage({ commands, refresh, pushToast }: {
+  commands: ChatCommand[];
+  refresh: () => Promise<void>;
+  pushToast: PushToast;
+}) {
+  const [selectedId, setSelectedId] = useState<string | null>(commands[0]?.id ?? null);
+  const [draft, setDraft] = useState<ChatCommand | null>(commands[0] ?? null);
+
+  useEffect(() => {
+    const selected = commands.find(command => command.id === selectedId) ?? commands[0] ?? null;
+    setSelectedId(selected?.id ?? null);
+    setDraft(selected);
+  }, [commands, selectedId]);
+
+  const newCommand = () => {
+    setSelectedId(null);
+    setDraft({
+      id: '',
+      trigger: '!command',
+      description: 'Describe what this command does.',
+      enabled: true,
+      requiresPlayer: true,
+      action: { type: 'scan' },
+      updatedAt: null,
+      source: 'configured'
+    });
+  };
+
+  const save = async () => {
+    if (!draft) return;
+    try {
+      const path = selectedId ? `/api/v1/admin/chat-commands/${encodeURIComponent(selectedId)}` : '/api/v1/admin/chat-commands';
+      await requestApi(path, {
+        method: selectedId ? 'PUT' : 'POST',
+        body: JSON.stringify({
+          trigger: draft.trigger,
+          description: draft.description,
+          enabled: draft.enabled,
+          requiresPlayer: true,
+          action: draft.action
+        })
+      });
+      pushToast({ title: 'Chat command saved', message: draft.trigger, tone: 'success' });
+      await refresh();
+    } catch (error) {
+      pushToast({ title: 'Command rejected', message: errorMessage(error), tone: 'danger' });
+    }
+  };
+
+  const retire = async () => {
+    if (!selectedId || !draft || !window.confirm(`Retire ${draft.trigger}?`)) return;
+    try {
+      await requestApi(`/api/v1/admin/chat-commands/${encodeURIComponent(selectedId)}`, { method: 'DELETE' });
+      pushToast({ title: 'Chat command retired', tone: 'success' });
+      setSelectedId(null);
+      await refresh();
+    } catch (error) {
+      pushToast({ title: 'Retire failed', message: errorMessage(error), tone: 'danger' });
+    }
+  };
+
+  const actionKey = draft?.action.type === 'scan' ? 'scan' : draft?.action.type === 'salvage' ? `salvage:${draft.action.mode}` : `point:${draft?.action.slug}`;
+
+  const setAction = (value: string) => {
+    if (!draft) return;
+    if (value === 'scan') setDraft({ ...draft, action: { type: 'scan' } });
+    if (value === 'salvage:cutters') setDraft({ ...draft, action: { type: 'salvage', mode: 'cutters' } });
+    if (value === 'salvage:cargo') setDraft({ ...draft, action: { type: 'salvage', mode: 'cargo' } });
+    if (value === 'point:rush_scan') setDraft({ ...draft, action: { type: 'point_action', slug: 'rush_scan' } });
+    if (value === 'point:safety_override') setDraft({ ...draft, action: { type: 'point_action', slug: 'safety_override' } });
+  };
+
+  return (
+    <div className="admin-stack">
+      <SectionTitle eyebrow="CHAT AUTOMATION" title="Command Editor" description="Commands map to a safe server-side action allowlist. They cannot execute arbitrary code." icon="terminal" action={<Button onClick={newCommand}>New command</Button>} />
+      <div className="admin-player-layout">
+        <Panel>
+          <div className="admin-player-list">
+            {commands.map(command => (
+              <button key={command.id} className={`admin-player-button ${selectedId === command.id ? 'is-selected' : ''}`} onClick={() => { setSelectedId(command.id); setDraft(command); }}>
+                <strong>{command.trigger}</strong>
+                <span>{command.description}</span>
+                <small>{command.enabled ? 'Enabled' : 'Disabled'} · {command.source}</small>
+              </button>
+            ))}
+          </div>
+        </Panel>
+        <Panel>
+          {draft ? (
+            <div className="admin-stack">
+              <SectionTitle eyebrow={selectedId ? 'EDIT COMMAND' : 'NEW COMMAND'} title={draft.trigger} icon="terminal" />
+              <Field label="Chat trigger" hint="Starts with ! and matches the full normalized chat message"><Input value={draft.trigger} onChange={event => setDraft({ ...draft, trigger: event.target.value })} /></Field>
+              <Field label="Description"><Input value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} /></Field>
+              <Field label="Server action"><Select value={actionKey} onChange={event => setAction(event.target.value)}><option value="scan">Scan for wreck</option><option value="salvage:cutters">Deploy cutters</option><option value="salvage:cargo">Deploy cargo recovery</option><option value="point:rush_scan">Spend points: rush scan</option><option value="point:safety_override">Spend points: safety override</option></Select></Field>
+              <label className="admin-check"><input type="checkbox" checked={draft.enabled} onChange={event => setDraft({ ...draft, enabled: event.target.checked })} /> Command enabled</label>
+              <Notification title="Linked viewer account required" tone="info">All current command actions modify persistent player state, so the chatter must have signed into Neon Wreckers.</Notification>
+              <Notification title="Execution boundary" tone="info">The action is selected from a validated server allowlist. Point-funded actions still require a verified StreamElements account, the per-account toggle, and the server kill switch.</Notification>
+              <div className="admin-mobile-actions"><Button onClick={() => void save()}>Save command</Button>{selectedId && <Button variant="warning" onClick={() => void retire()}>Retire command</Button>}</div>
+            </div>
+          ) : <p>Select a command or create a new one.</p>}
+        </Panel>
+      </div>
+    </div>
+  );
 }
 
 function CardCommand({ slug, onTrigger, onReset }: { slug: string; onTrigger: (slug: string) => void; onReset: (slug: string) => void }) {

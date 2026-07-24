@@ -9,7 +9,8 @@ import { eventsBySlug } from '@neon-wreckers/content';
 import { GameRuleError } from '@neon-wreckers/game-engine';
 import os from 'node:os';
 import { statfs } from 'node:fs/promises';
-import { env } from '../env.js';
+
+const reservedConfigPrefixes = ['integration.', 'chat-command.'] as const;
 
 const jsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
   z.union([
@@ -32,6 +33,12 @@ const configSchema = z.object({
   body => !body.scheduledAt || !body.expiresAt || Date.parse(body.expiresAt) > Date.parse(body.scheduledAt),
   { message: 'expiresAt must be later than scheduledAt.', path: ['expiresAt'] }
 );
+
+function assertPublicConfigSlug(slug: string) {
+  if (reservedConfigPrefixes.some(prefix => slug.startsWith(prefix))) {
+    throw new GameRuleError('CONFIG_SLUG_RESERVED', 'That configuration namespace is managed by a dedicated admin module.');
+  }
+}
 
 export async function registerAdminRoutes(app: FastifyInstance, context: ApiContext) {
   app.get('/api/v1/admin/overview', async request => {
@@ -74,18 +81,25 @@ export async function registerAdminRoutes(app: FastifyInstance, context: ApiCont
   app.post('/api/v1/admin/transactions/:id/refund', async request => {
     const admin = await requireAdmin(context.prisma, request); const id = String((request.params as { id: string }).id); const body = z.object({ reason: z.string().trim().min(3).max(300) }).parse(request.body); const transaction = await context.prisma.loyaltyTransaction.findUniqueOrThrow({ where: { id }, include: { user: true } });
     if (!['committed', 'ambiguous'].includes(transaction.status)) throw new GameRuleError('NOT_REFUNDABLE', 'Only committed or ambiguous point transactions can be refunded.');
-    const username = String((transaction.requestJson as Record<string, unknown>).username ?? transaction.user.twitchLogin ?? transaction.user.displayName);
-    const credit = await context.loyaltyProvider.credit({ channelId: env.STREAMELEMENTS_CHANNEL_ID, username, amount: transaction.amount, reason: body.reason, idempotencyKey: `admin-refund:${transaction.id}`, priorReference: transaction.externalReference ?? undefined });
-    const updated = await context.prisma.$transaction(async prisma => { const tx = await prisma.loyaltyTransaction.update({ where: { id }, data: { status: 'refunded', responseJson: { adminRefundReference: credit.externalReference, reason: body.reason } } }); await prisma.auditLog.create({ data: { actorId: admin.id, action: 'loyalty.refund', target: id, after: { amount: transaction.amount, reason: body.reason, reference: credit.externalReference }, requestId: request.id } }); return tx; });
+    const requestJson = transaction.requestJson as Record<string, unknown>;
+    const username = String(requestJson.username ?? transaction.user.twitchLogin ?? transaction.user.displayName);
+    const connection = await context.loyaltyProvider.connection();
+    if (!connection) throw new GameRuleError('STREAMELEMENTS_NOT_CONNECTED', 'Select and verify a StreamElements account before issuing a refund.');
+    const originalChannelId = String(requestJson.channelId ?? transaction.broadcasterId ?? '');
+    if (originalChannelId && originalChannelId !== connection.channelId) throw new GameRuleError('STREAMELEMENTS_ACCOUNT_MISMATCH', 'Select the StreamElements account used for the original charge before issuing this refund.');
+    const credit = await context.loyaltyProvider.credit({ channelId: connection.channelId, username, amount: transaction.amount, reason: body.reason, idempotencyKey: `admin-refund:${transaction.id}`, priorReference: transaction.externalReference ?? undefined });
+    const updated = await context.prisma.$transaction(async prisma => { const tx = await prisma.loyaltyTransaction.update({ where: { id }, data: { status: 'refunded', responseJson: { adminRefundReference: credit.externalReference, reason: body.reason, channelId: connection.channelId } } }); await prisma.auditLog.create({ data: { actorId: admin.id, action: 'loyalty.refund', target: id, after: { amount: transaction.amount, reason: body.reason, reference: credit.externalReference, channelId: connection.channelId }, requestId: request.id } }); return tx; });
     return { data: updated, requestId: request.id };
   });
 
-  app.post('/api/v1/admin/events/:slug/reset', async request => { const admin = await requireAdmin(context.prisma, request); const slug = String((request.params as { slug: string }).slug); const body = z.object({ stopActive: z.boolean().default(false), reason: z.string().trim().min(3).max(300) }).parse(request.body); const result = body.stopActive ? await context.prisma.runtimeEvent.updateMany({ where: { slug, status: 'active' }, data: { status: 'completed', endsAt: new Date() } }) : { count: 0 }; await context.prisma.runtimeEvent.deleteMany({ where: { slug, status: { not: 'active' } } }); await context.prisma.auditLog.create({ data: { actorId: admin.id, action: 'event.timer.reset', target: slug, after: { ...body, stopped: result.count }, requestId: request.id } }); return { data: { reset: true, stopped: result.count }, requestId: request.id }; });
+  app.post('/api/v1/admin/events/:slug/reset', async request => { const admin = await requireAdmin(context.prisma, request); const slug = String((request.params as { slug: string }).slug); const body = z.object({ stopActive: z.boolean().default(false), reason: z.string().trim().min(3).max(300) }).parse(request.body); const result = body.stopActive ? await context.prisma.runtimeEvent.updateMany({ where: { slug, status: 'active' }, data: { status: 'completed', endsAt: new Date() } }) : { count: 0 }; await context.prisma.runtimeEvent.deleteMany({ where: { slug, status: { not: 'active' } } }); await context.prisma.auditLog.create({ data: { actorId: admin.id, action: 'event.timer.reset', target: slug, after: { ...body, stopped: result.count, reason: body.reason }, requestId: request.id } }); return { data: { reset: true, stopped: result.count }, requestId: request.id }; });
 
   app.get('/api/v1/admin/config', async request => {
     await requireAdmin(context.prisma, request);
     return {
       data: await context.prisma.contentVersion.findMany({
+        where: { NOT: reservedConfigPrefixes.map(prefix => ({ slug: { startsWith: prefix } })) },
+        select: { id: true, slug: true, version: true, lifecycle: true, createdAt: true },
         orderBy: [{ slug: 'asc' }, { version: 'desc' }],
         take: 100
       }),
@@ -96,6 +110,7 @@ export async function registerAdminRoutes(app: FastifyInstance, context: ApiCont
   app.post('/api/v1/admin/config', async request => {
     const user = await requireAdmin(context.prisma, request);
     const body = configSchema.parse(request.body);
+    assertPublicConfigSlug(body.slug);
     const created = await context.prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
       await acquireTransactionLock(transaction, `content-version:${body.slug}`);
       const latest = await transaction.contentVersion.findFirst({

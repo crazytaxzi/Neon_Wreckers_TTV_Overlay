@@ -7,12 +7,13 @@ import rateLimit from '@fastify/rate-limit';
 import websocket from '@fastify/websocket';
 import { PrismaClient } from '@prisma/client';
 import { Queue } from 'bullmq';
-import { createLoyaltyProvider, parseRedisConnection } from '@neon-wreckers/integrations';
+import { createResolvingLoyaltyProvider, parseRedisConnection } from '@neon-wreckers/integrations';
 import { corsOrigins, env, isProd, trustProxy } from './env.js';
 import { errorResponse } from './lib/errors.js';
 import { PlayerRealtimeHub, RealtimeHub } from './lib/realtime.js';
 import { registerAdminRoutes } from './routes/admin.js';
 import { registerAuthRoutes } from './routes/auth.js';
+import { registerChatCommandRoutes } from './routes/chat-commands.js';
 import { registerConstructionRoutes } from './routes/construction.js';
 import { registerExpeditionRoutes } from './routes/expeditions.js';
 import { registerEventSubRoutes } from './routes/eventsub.js';
@@ -26,6 +27,7 @@ import { registerStationRoutes } from './routes/station.js';
 import { registerSystemRoutes } from './routes/system.js';
 import type { ApiContext } from './types.js';
 import { RequestMetrics } from './services/metrics.js';
+import { resolveStreamElementsCredential } from './services/streamelements.js';
 
 const apiContentSecurityPolicy = { directives: { defaultSrc: ["'none'"], baseUri: ["'none'"], formAction: ["'none'"], frameAncestors: ["'none'"], objectSrc: ["'none'"] } } as const;
 type MetricsRequest = { metricsStartedAt?: number };
@@ -37,7 +39,7 @@ export async function buildApp() {
   const context: ApiContext = {
     prisma,
     gameQueue,
-    loyaltyProvider: createLoyaltyProvider({ provider: env.STREAMELEMENTS_PROVIDER, apiBase: env.STREAMELEMENTS_API_BASE, jwt: env.STREAMELEMENTS_JWT }),
+    loyaltyProvider: createResolvingLoyaltyProvider(() => resolveStreamElementsCredential(prisma)),
     realtime: new RealtimeHub(metrics),
     playerRealtime: new PlayerRealtimeHub(metrics),
     metrics
@@ -89,6 +91,7 @@ export async function buildApp() {
   await registerQuartersRoutes(app, context);
   await registerIntegrationRoutes(app, context);
   await registerEventSubRoutes(app, context);
+  await registerChatCommandRoutes(app, context);
   await registerAdminRoutes(app, context);
   return app;
 }

@@ -5,11 +5,16 @@ import path from 'node:path';
 
 const routeRoot = 'apps/api/src/routes';
 const expectedRoutes = [
+  'DELETE /api/v1/admin/chat-commands/:id',
+  'DELETE /api/v1/integrations/streamelements/connections/:id',
+  'GET /api/v1/admin/chat-commands',
   'GET /api/v1/admin/config',
   'GET /api/v1/admin/overview',
   'GET /api/v1/admin/players',
   'GET /api/v1/admin/transactions',
   'GET /api/v1/auction/listings',
+  'GET /api/v1/auth/streamelements/callback',
+  'GET /api/v1/auth/streamelements/start',
   'GET /api/v1/auth/twitch/callback',
   'GET /api/v1/auth/twitch/start',
   'GET /api/v1/cooldowns',
@@ -36,6 +41,7 @@ const expectedRoutes = [
   'GET /internal/metrics',
   'GET /ready',
   'POST /api/v1/admin/actions/spawn-wreck',
+  'POST /api/v1/admin/chat-commands',
   'POST /api/v1/admin/config',
   'POST /api/v1/admin/events/:slug/reset',
   'POST /api/v1/admin/events/:slug/trigger',
@@ -54,6 +60,10 @@ const expectedRoutes = [
   'POST /api/v1/expeditions/:id/claim',
   'POST /api/v1/expeditions/:id/resolve-now',
   'POST /api/v1/expeditions/launch',
+  'POST /api/v1/integrations/streamelements/connections/:id/select',
+  'POST /api/v1/integrations/streamelements/connections/:id/settings',
+  'POST /api/v1/integrations/streamelements/connections/:id/verify',
+  'POST /api/v1/integrations/streamelements/import-legacy',
   'POST /api/v1/integrations/twitch/eventsub',
   'POST /api/v1/integrations/twitch/subscribe',
   'POST /api/v1/marketplace/buy',
@@ -74,7 +84,8 @@ const expectedRoutes = [
   'POST /api/v1/ships/:id/upgrade',
   'POST /api/v1/ships/purchase',
   'POST /api/v1/station/maintain',
-  'POST /api/v1/station/refine'
+  'POST /api/v1/station/refine',
+  'PUT /api/v1/admin/chat-commands/:id'
 ].sort();
 
 function routeSourceFiles() {

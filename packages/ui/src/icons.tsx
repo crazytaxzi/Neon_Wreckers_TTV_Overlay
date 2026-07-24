@@ -135,6 +135,7 @@ const DangerGlyph = forwardRef<SVGSVGElement, LucideProps>(function DangerGlyph(
 const iconRegistry = {
   station: StationGlyph,
   crew: CrewGlyph,
+  profile: CrewGlyph,
   power: Power,
   reactor: Atom,
   storage: Warehouse,
@@ -179,12 +180,11 @@ const iconRegistry = {
 
 export type IconName = keyof typeof iconRegistry;
 
-export type NWIconProps = LucideProps & {
-  name: IconName;
-  label?: string;
-};
+export function iconFor(name: IconName): LucideIcon {
+  return iconRegistry[name];
+}
 
-export function NWIcon({ name, label, ...props }: NWIconProps) {
-  const Icon = iconRegistry[name];
-  return <Icon aria-hidden={label ? undefined : true} aria-label={label} focusable="false" {...props} />;
+export function NWIcon({ name, ...props }: { name: IconName } & LucideProps) {
+  const Icon = iconFor(name);
+  return <Icon aria-hidden="true" focusable="false" {...props} />;
 }

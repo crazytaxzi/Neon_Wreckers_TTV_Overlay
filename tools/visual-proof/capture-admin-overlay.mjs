@@ -5,10 +5,66 @@ const adminBase = process.env.NW_ADMIN_PREVIEW_URL ?? 'http://127.0.0.1:4174/adm
 const overlayBase = process.env.NW_OVERLAY_PREVIEW_URL ?? 'http://127.0.0.1:4175/overlay/';
 const outputRoot = process.env.NW_VISUAL_PROOF_DIR ?? 'proof';
 
+const streamElementsConnection = {
+  id: 'integration.streamelements.connection.wrecker-control',
+  channelId: '65d80c9be87d123456789abc',
+  provider: 'twitch',
+  providerId: '14343136',
+  username: 'crazytaxzi',
+  displayName: 'WRECKER CONTROL',
+  avatarUrl: null,
+  authType: 'oauth2',
+  scopes: ['channel:read', 'loyalty:read', 'loyalty:write'],
+  expiresAt: '2026-08-21T22:14:00Z',
+  isActive: true,
+  pointsEnabled: true,
+  lastVerifiedAt: '2026-07-21T22:14:00Z',
+  lastError: null,
+  updatedAt: '2026-07-21T22:14:00Z',
+  matchesStreamer: true
+};
+
 const adminData = {
   '/api/v1/me': { id: 'admin-preview', displayName: 'WRECKER CONTROL', avatarUrl: null, roles: ['admin', 'streamer'] },
   '/api/v1/station': { name: 'NEON PRIME HUB', population: 1248, power: 78, integrity: 92 },
-  '/api/v1/integrations/streamelements/health': { ok: true, detail: 'Signed loyalty bridge online. Last settlement 18 seconds ago.' },
+  '/api/v1/integrations/streamelements/health': {
+    ok: true,
+    detail: 'StreamElements API reachable',
+    configured: true,
+    oauthConfigured: true,
+    oauthScopes: ['channel:read', 'loyalty:read', 'loyalty:write'],
+    legacyAvailable: true,
+    pointsKillSwitchEnabled: true,
+    activeConnectionId: streamElementsConnection.id,
+    identity: {
+      channelId: streamElementsConnection.channelId,
+      provider: streamElementsConnection.provider,
+      providerId: streamElementsConnection.providerId,
+      username: streamElementsConnection.username,
+      displayName: streamElementsConnection.displayName,
+      avatarUrl: streamElementsConnection.avatarUrl
+    },
+    connections: [streamElementsConnection, {
+      ...streamElementsConnection,
+      id: 'integration.streamelements.connection.station-alt',
+      channelId: '65d80c9be87d987654321def',
+      providerId: '987654321',
+      username: 'station_alt',
+      displayName: 'STATION ALT',
+      authType: 'jwt',
+      scopes: ['owner:*'],
+      isActive: false,
+      pointsEnabled: false,
+      matchesStreamer: false
+    }]
+  },
+  '/api/v1/admin/chat-commands': [
+    { id: 'scan', trigger: '!scan', description: 'Scan for a new wreck.', enabled: true, requiresPlayer: true, action: { type: 'scan' }, updatedAt: null, source: 'default' },
+    { id: 'salvage-cutters', trigger: '!salvage cutters', description: 'Deploy cutters against the active wreck.', enabled: true, requiresPlayer: true, action: { type: 'salvage', mode: 'cutters' }, updatedAt: '2026-07-21T20:00:00Z', source: 'configured' },
+    { id: 'salvage-cargo', trigger: '!salvage cargo', description: 'Deploy cargo recovery against the active wreck.', enabled: true, requiresPlayer: true, action: { type: 'salvage', mode: 'cargo' }, updatedAt: null, source: 'default' },
+    { id: 'rushscan', trigger: '!rushscan', description: 'Spend StreamElements points to rush a wreck scan.', enabled: true, requiresPlayer: true, action: { type: 'point_action', slug: 'rush_scan' }, updatedAt: null, source: 'default' },
+    { id: 'override', trigger: '!override', description: 'Spend StreamElements points on a safety override salvage run.', enabled: false, requiresPlayer: true, action: { type: 'point_action', slug: 'safety_override' }, updatedAt: '2026-07-21T21:00:00Z', source: 'configured' }
+  ],
   '/api/v1/admin/config': [
     { id: 'cfg-4', slug: 'station-zero-live', version: 14, lifecycle: 'published', createdAt: '2026-07-21T21:10:00Z' },
     { id: 'cfg-3', slug: 'salvage-balance', version: 8, lifecycle: 'draft', createdAt: '2026-07-21T19:05:00Z' }
@@ -121,14 +177,14 @@ await mkdir(`${outputRoot}/admin/mobile`, { recursive: true });
 await mkdir(`${outputRoot}/overlay`, { recursive: true });
 
 const adminViews = [
-  ['operations', 'Operations'], ['server', 'Server'], ['timers', 'Timers'], ['players', 'Players'],
+  ['operations', 'Operations'], ['integrations', 'Integrations'], ['commands', 'Commands'], ['server', 'Server'], ['timers', 'Timers'], ['players', 'Players'],
   ['transactions', 'Refunds'], ['config', 'Config'], ['interface', 'UI Library']
 ];
 for (const [name, label] of adminViews) await captureAdmin(label, { width: 1920, height: 1080 }, `${outputRoot}/admin/desktop/${name}.png`);
 await captureAdmin('UI Library', { width: 1920, height: 1080 }, `${outputRoot}/admin/desktop/graphics.png`, true);
-for (const [name, label] of [['operations', 'Operations'], ['players', 'Players'], ['config', 'Config']]) await captureAdmin(label, { width: 1024, height: 768 }, `${outputRoot}/admin/tablet/${name}.png`);
+for (const [name, label] of [['operations', 'Operations'], ['integrations', 'Integrations'], ['commands', 'Commands'], ['players', 'Players'], ['config', 'Config']]) await captureAdmin(label, { width: 1024, height: 768 }, `${outputRoot}/admin/tablet/${name}.png`);
 await captureAdmin('UI Library', { width: 1024, height: 768 }, `${outputRoot}/admin/tablet/graphics.png`, true);
-for (const [name, label] of [['operations', 'Operations'], ['players', 'Players']]) await captureAdmin(label, { width: 390, height: 844 }, `${outputRoot}/admin/mobile/${name}.png`);
+for (const [name, label] of [['operations', 'Operations'], ['integrations', 'Integrations'], ['commands', 'Commands'], ['players', 'Players']]) await captureAdmin(label, { width: 390, height: 844 }, `${outputRoot}/admin/mobile/${name}.png`);
 
 async function captureOverlay(name, viewport, viewerMode = false, transparentMode = false) {
   const context = await browser.newContext({ viewport });

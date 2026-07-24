@@ -9,7 +9,10 @@ import { deploySalvage, scanForWreck } from './salvage.js';
 export type PointActionSlug = 'safety_override' | 'rush_scan';
 
 export async function executePointAction(context: ApiContext, user: AuthenticatedUserWithPlayer, actionSlug: PointActionSlug, idempotencyKey: string) {
-  if (env.FEATURE_POINTS_ACTIONS !== 'true') throw new HttpError(503, 'Point-funded actions are disabled.', 'POINT_ACTIONS_DISABLED');
+  if (env.FEATURE_POINTS_ACTIONS !== 'true') throw new HttpError(503, 'Point-funded actions are disabled by the server kill switch.', 'POINT_ACTIONS_DISABLED');
+  const connection = await context.loyaltyProvider.connection();
+  if (!connection) throw new HttpError(503, 'No verified StreamElements account is selected.', 'STREAMELEMENTS_NOT_CONNECTED');
+  if (!connection.pointsEnabled) throw new HttpError(503, 'Point-funded actions are disabled for the selected StreamElements account.', 'POINT_ACTIONS_DISABLED_FOR_ACCOUNT');
   if (!idempotencyKey) throw new GameRuleError('IDEMPOTENCY_REQUIRED', 'Send an Idempotency-Key header.');
   const existing = await context.prisma.loyaltyTransaction.findUnique({ where: { idempotencyKey } });
   if (existing) {
@@ -21,7 +24,7 @@ export async function executePointAction(context: ApiContext, user: Authenticate
   const username = user.twitchLogin || user.displayName;
   let record;
   try {
-    record = await context.prisma.loyaltyTransaction.create({ data: { provider: context.loyaltyProvider.name, idempotencyKey, playerId: user.player.id, userId: user.id, broadcasterId: env.STREAMER_TWITCH_ID, amount, actionSlug, status: 'pending', requestJson: { username } } });
+    record = await context.prisma.loyaltyTransaction.create({ data: { provider: context.loyaltyProvider.name, idempotencyKey, playerId: user.player.id, userId: user.id, broadcasterId: connection.channelId, amount, actionSlug, status: 'pending', requestJson: { username, channelId: connection.channelId, connectionDisplayName: connection.displayName } } });
   } catch (error) {
     if (isDatabaseError(error, 'P2002')) {
       const replay = await context.prisma.loyaltyTransaction.findUniqueOrThrow({ where: { idempotencyKey } });
@@ -33,7 +36,7 @@ export async function executePointAction(context: ApiContext, user: Authenticate
 
   let result;
   try {
-    result = await runChargedAction(context.loyaltyProvider, { channelId: env.STREAMELEMENTS_CHANNEL_ID, username, amount, reason: `Neon Wreckers ${actionSlug}`, refundReason: `Refund ${actionSlug}`, idempotencyKey }, async () => actionSlug === 'safety_override' ? deploySalvage(context, user, 'override') : scanForWreck(context, user, true));
+    result = await runChargedAction(context.loyaltyProvider, { channelId: connection.channelId, username, amount, reason: `Neon Wreckers ${actionSlug}`, refundReason: `Refund ${actionSlug}`, idempotencyKey }, async () => actionSlug === 'safety_override' ? deploySalvage(context, user, 'override') : scanForWreck(context, user, true));
   } catch (error) {
     await context.prisma.loyaltyTransaction.update({ where: { id: record.id }, data: { status: 'failed', error: error instanceof Error ? error.message : String(error) } });
     throw error;
