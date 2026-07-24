@@ -8,9 +8,13 @@ The API always requests these canonical scopes, even when an older production `.
 
 - `user:read:email`
 - `user:read:chat`
+- `user:bot`
+- `channel:bot`
 - `moderator:read:followers`
 - `channel:read:subscriptions`
 - `bits:read`
+
+Webhook-based `channel.chat.message` subscriptions are created with an app access token. Twitch therefore requires both the chat-reading grant and the bot/channel grants associated with that client ID. The configured streamer account is used as both the chat user and broadcaster.
 
 `TWITCH_REQUIRED_SCOPES` may add future or deployment-specific scopes, but it cannot remove the canonical EventSub grants. This prevents a stale environment file from silently downgrading a fresh OAuth authorization.
 
@@ -18,14 +22,17 @@ Changing the configured scope list does not modify an authorization that Twitch 
 
 ## Reauthorization procedure
 
-When the admin console reports missing scopes:
+When the admin console reports missing scopes or Twitch rejects `channel.chat.message` authorization:
 
 1. Deploy the current API build so the canonical scope list is active.
-2. Sign out of Neon Wreckers.
-3. Sign in through Twitch again as the configured streamer account and approve the requested permissions.
-4. Return to the admin console and run **Connect EventSub subscriptions**.
+2. Open `/api/v1/auth/twitch/start?returnTo=/admin/&forceVerify=1` on the public host.
+3. Sign in through Twitch as the configured streamer account and approve the requested permissions.
+4. The OAuth callback returns directly to `/admin/`.
+5. Run **Connect EventSub subscriptions** again.
 
 Refreshing an existing token preserves its original grants. A fresh OAuth authorization is required to add scopes.
+
+The `returnTo` value is limited to same-origin relative paths so OAuth cannot be used as an open redirect.
 
 ## Reconciliation behavior
 

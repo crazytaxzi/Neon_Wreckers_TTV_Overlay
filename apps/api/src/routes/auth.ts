@@ -16,27 +16,41 @@ import {
 import { publicMe } from '../services/station.js';
 import { saveTwitchCredential } from '../services/twitch-credentials.js';
 
+function safeReturnPath(value: unknown) {
+  if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) return null;
+  return value;
+}
+
 export async function registerAuthRoutes(app: FastifyInstance, context: ApiContext) {
-  app.get('/api/v1/auth/twitch/start', async (_request, reply) => {
+  app.get('/api/v1/auth/twitch/start', async (request, reply) => {
     if (!env.TWITCH_CLIENT_ID || !env.TWITCH_CLIENT_SECRET || !env.TWITCH_REDIRECT_URI) {
       throw new HttpError(503, 'Twitch credentials are not configured.', 'TWITCH_NOT_CONFIGURED');
     }
+    const query = z.object({
+      returnTo: z.string().optional(),
+      forceVerify: z.enum(['1']).optional()
+    }).parse(request.query);
     const state = crypto.randomBytes(18).toString('base64url');
-    reply.setCookie('nw_twitch_state', state, {
+    const cookieOptions = {
       path: '/api/v1/auth/twitch',
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: 'lax' as const,
       secure: cookieSecure,
       maxAge: 600,
       signed: true
-    });
+    };
+    reply.setCookie('nw_twitch_state', state, cookieOptions);
+    const returnTo = safeReturnPath(query.returnTo);
+    if (returnTo) reply.setCookie('nw_twitch_return_to', returnTo, cookieOptions);
     const config = {
       clientId: env.TWITCH_CLIENT_ID,
       clientSecret: env.TWITCH_CLIENT_SECRET,
       redirectUri: env.TWITCH_REDIRECT_URI,
       scopes: twitchScopes
     };
-    return reply.redirect(buildTwitchAuthorizeUrl(config, state));
+    const authorizeUrl = new URL(buildTwitchAuthorizeUrl(config, state));
+    if (query.forceVerify === '1') authorizeUrl.searchParams.set('force_verify', 'true');
+    return reply.redirect(authorizeUrl.toString());
   });
 
   app.get('/api/v1/auth/twitch/callback', async (request, reply) => {
@@ -57,8 +71,12 @@ export async function registerAuthRoutes(app: FastifyInstance, context: ApiConte
     if (twitchUser.id === env.STREAMER_TWITCH_ID) await saveTwitchCredential(context.prisma, user.id, token);
     const session = await createSession(context.prisma, user.id);
     setSessionCookie(reply, session.raw, session.expiresAt);
+    const returnTo = safeReturnPath(readSignedCookie(request, 'nw_twitch_return_to')) ?? '/';
     reply.clearCookie('nw_twitch_state', { path: '/api/v1/auth/twitch' });
-    return reply.redirect(`${env.PUBLIC_WEB_URL}/?signedIn=1`);
+    reply.clearCookie('nw_twitch_return_to', { path: '/api/v1/auth/twitch' });
+    const redirectUrl = new URL(returnTo, env.PUBLIC_WEB_URL);
+    redirectUrl.searchParams.set('signedIn', '1');
+    return reply.redirect(redirectUrl.toString());
   });
 
   app.post('/api/v1/auth/logout', async (request, reply) => {
