@@ -33,7 +33,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   playwright:
@@ -42,7 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          persist-credentials: false
+          ref: ${{ github.head_ref || github.ref_name }}
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 22.16.0
@@ -74,12 +74,24 @@ jobs:
             done
             if [ "$ready" -ne 1 ]; then cat /tmp/*-preview.log; exit 1; fi
           done
-      - name: Run browser suite
+      - name: Refresh browser snapshots
         env:
           NW_BROWSER_BASE_URL: http://127.0.0.1:4173
           NW_ADMIN_BASE_URL: http://127.0.0.1:4174/admin/
           NW_OVERLAY_BASE_URL: http://127.0.0.1:4175/overlay/?preview=1
-        run: pnpm test:browser
+        run: pnpm test:browser:update
+      - name: Commit refreshed snapshots
+        if: github.event_name == 'pull_request'
+        run: |
+          git add tests/browser/__snapshots__
+          if git diff --cached --quiet; then
+            echo 'Visual baselines already current.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'test(browser): refresh synchronized visual baseline'
+          git push origin HEAD:${{ github.head_ref }}
       - name: Upload browser report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
