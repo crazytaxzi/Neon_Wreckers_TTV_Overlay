@@ -19,8 +19,7 @@ const twitchBaseScopes = ['user:read:email', ...twitchEventSubScopes] as const;
 export const streamElementsBaseScopes = [
   'channel:read',
   'loyalty:read',
-  'loyalty:write',
-  'activities:read'
+  'loyalty:write'
 ] as const;
 
 const environmentSchema = z.object({
