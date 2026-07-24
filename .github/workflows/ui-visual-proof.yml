@@ -5,6 +5,7 @@ on:
     paths:
       - 'apps/web/**'
       - 'packages/ui/**'
+      - 'packages/contracts/**'
       - 'tools/test/ui-revamp.test.mjs'
       - '.github/workflows/ui-visual-proof.yml'
   workflow_dispatch:
@@ -33,6 +34,9 @@ jobs:
 
       - name: Install frozen dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build shared runtime contracts
+        run: pnpm --filter @neon-wreckers/contracts run build
 
       - name: Build shared UI
         run: pnpm --filter @neon-wreckers/ui run build
