@@ -16,6 +16,7 @@ postgres-data/
 redis-data/
 certificates/
 uploads/
+.secrets/
 
 # Local production configuration
 .env
