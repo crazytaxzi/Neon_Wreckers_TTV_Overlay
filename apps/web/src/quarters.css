@@ -1,0 +1,168 @@
+.quarters-console {
+  --quarters-accent: var(--nw-color-purple);
+  --quarters-accent-rgb: var(--nw-color-purple-rgb);
+}
+
+.quarters-console__masthead {
+  position: relative;
+  display: flex;
+  min-height: 9rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  overflow: hidden;
+  padding: 1.4rem 1.6rem;
+  border: 1px solid rgba(var(--quarters-accent-rgb), 0.34);
+  background:
+    linear-gradient(105deg, rgba(var(--quarters-accent-rgb), 0.16), transparent 52%),
+    radial-gradient(circle at 82% 42%, rgba(var(--nw-color-green-rgb), 0.12), transparent 28%),
+    repeating-linear-gradient(135deg, transparent 0 14px, rgba(var(--nw-color-text-rgb), 0.015) 14px 15px),
+    rgba(var(--nw-color-surface-rgb), 0.96);
+  clip-path: polygon(0.9rem 0, 100% 0, 100% calc(100% - 0.9rem), calc(100% - 0.9rem) 100%, 0 100%, 0 0.9rem);
+}
+
+.quarters-console__masthead::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, var(--quarters-accent), transparent 22%) top left / 34% 2px no-repeat,
+    linear-gradient(90deg, transparent, var(--nw-color-green)) bottom right / 30% 2px no-repeat;
+  opacity: 0.75;
+}
+
+.quarters-console__masthead > * { position: relative; z-index: 1; }
+.quarters-console__masthead h2 { margin: 0.3rem 0 0.45rem; font-size: clamp(1.65rem, 2.5vw, 2.7rem); }
+.quarters-console__masthead p { max-width: 64ch; margin: 0; color: var(--nw-color-text-muted); }
+
+.quarters-console__occupancy {
+  display: grid;
+  min-width: 12rem;
+  gap: 0.35rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(var(--nw-color-green-rgb), 0.28);
+  background: rgba(var(--nw-color-void-rgb), 0.7);
+  text-align: right;
+}
+.quarters-console__occupancy > span { color: var(--nw-color-text-dim); font-family: var(--nw-font-mono); font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; }
+.quarters-console__occupancy > strong { color: var(--nw-color-green); font-size: 1.7rem; }
+
+.quarters-console__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.75fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.quarters-room-map {
+  position: relative;
+  display: grid;
+  min-height: 25rem;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: repeat(5, minmax(4.2rem, 1fr));
+  gap: 0.35rem;
+  margin: 1rem 0;
+  padding: 0.8rem;
+  overflow: hidden;
+  border: 1px solid rgba(var(--nw-color-purple-rgb), 0.34);
+  background:
+    linear-gradient(rgba(var(--nw-color-purple-rgb), 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--nw-color-purple-rgb), 0.09) 1px, transparent 1px),
+    radial-gradient(circle at 50% 42%, rgba(var(--nw-color-purple-rgb), 0.13), transparent 55%),
+    rgba(var(--nw-color-void-rgb), 0.78);
+  background-size: 12.5% 20%, 12.5% 20%, auto, auto;
+  box-shadow: inset 0 0 4rem rgba(var(--nw-color-void-rgb), 0.7);
+  clip-path: polygon(0.7rem 0, 100% 0, 100% calc(100% - 0.7rem), calc(100% - 0.7rem) 100%, 0 100%, 0 0.7rem);
+}
+
+.quarters-room-map--frost-wrecks {
+  border-color: rgba(var(--nw-color-cyan-rgb), 0.42);
+  background:
+    linear-gradient(rgba(var(--nw-color-cyan-rgb), 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--nw-color-cyan-rgb), 0.1) 1px, transparent 1px),
+    radial-gradient(circle at 52% 35%, rgba(var(--nw-color-cyan-rgb), 0.16), transparent 54%),
+    rgba(2, 10, 17, 0.86);
+  background-size: 12.5% 20%, 12.5% 20%, auto, auto;
+}
+
+.quarters-room-object {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  min-width: 0;
+  place-items: center;
+  gap: 0.15rem;
+  padding: 0.35rem;
+  border: 1px solid rgba(var(--nw-color-purple-rgb), 0.36);
+  color: var(--nw-color-text);
+  background:
+    linear-gradient(145deg, rgba(var(--nw-color-purple-rgb), 0.18), transparent 60%),
+    rgba(var(--nw-color-surface-raised-rgb), 0.9);
+  cursor: pointer;
+  clip-path: polygon(0.35rem 0, 100% 0, 100% calc(100% - 0.35rem), calc(100% - 0.35rem) 100%, 0 100%, 0 0.35rem);
+}
+.quarters-room-object:hover,
+.quarters-room-object.is-selected { border-color: var(--nw-color-green); box-shadow: inset 0 0 1rem rgba(var(--nw-color-green-rgb), 0.1), 0 0 0 1px rgba(var(--nw-color-green-rgb), 0.25); }
+.quarters-room-object span { max-width: 100%; overflow: hidden; font-size: 0.65rem; font-weight: 750; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.quarters-room-object small { color: var(--nw-color-text-dim); font-size: 0.55rem; }
+
+.quarters-room-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 0.8rem;
+  color: var(--nw-color-text-dim);
+  text-align: center;
+}
+
+.quarters-room-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+  padding: 0.75rem;
+  border: 1px solid var(--nw-color-line);
+  background: rgba(var(--nw-color-void-rgb), 0.45);
+}
+.quarters-room-controls strong { display: block; margin-top: 0.2rem; text-transform: capitalize; }
+
+.quarters-fixture-list { display: grid; gap: 0.75rem; }
+.quarters-fixture-list .nw-card { padding: 0.85rem; }
+.quarters-fixture-list .nw-card.is-installed { outline: 1px solid rgba(var(--nw-color-green-rgb), 0.35); }
+.quarters-fixture-card__head { display: flex; gap: 0.75rem; align-items: flex-start; }
+.quarters-fixture-card__head > span { display: grid; width: 2.8rem; height: 2.8rem; flex: 0 0 auto; place-items: center; border: 1px solid rgba(var(--nw-color-purple-rgb), 0.34); color: var(--nw-color-purple); background: rgba(var(--nw-color-void-rgb), 0.58); }
+.quarters-fixture-card__head h3 { margin: 0 0 0.25rem; }
+.quarters-fixture-card__head p { margin: 0; color: var(--nw-color-text-muted); font-size: 0.76rem; }
+
+.quarters-operation-card { display: grid; min-height: 18rem; align-content: start; gap: 0.65rem; }
+.quarters-operation-card.is-offline { opacity: 0.58; }
+.quarters-operation-card.is-online { outline: 1px solid rgba(var(--nw-color-purple-rgb), 0.28); }
+.quarters-operation-card__status { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; color: var(--nw-color-purple); }
+.quarters-operation-card h3,
+.quarters-operation-card p { margin: 0; }
+.quarters-operation-card p { color: var(--nw-color-text-muted); }
+.quarters-operation-card small { color: var(--nw-color-text-dim); }
+.quarters-operation-card strong { min-height: 2.4rem; color: var(--nw-color-green); font-size: 0.82rem; }
+.quarters-operation-card .nw-button { margin-top: auto; }
+
+@media (max-width: 980px) {
+  .quarters-console__layout { grid-template-columns: 1fr; }
+  .quarters-console__masthead { align-items: flex-start; flex-direction: column; }
+  .quarters-console__occupancy { width: 100%; text-align: left; }
+}
+
+@media (max-width: 680px) {
+  .quarters-room-map { min-height: 22rem; grid-template-rows: repeat(5, minmax(3.6rem, 1fr)); padding: 0.45rem; gap: 0.2rem; }
+  .quarters-room-object span { display: none; }
+  .quarters-room-controls { align-items: flex-start; flex-direction: column; }
+  .quarters-console__masthead { padding: 1rem; }
+}
+
+@media (forced-colors: active) {
+  .quarters-console__masthead,
+  .quarters-room-map,
+  .quarters-room-object { border: 2px solid CanvasText; background: Canvas; }
+}
