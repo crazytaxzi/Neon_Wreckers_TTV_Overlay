@@ -24,7 +24,7 @@ test('deployment and runtime require every EventSub authorization scope', () => 
     assert.ok(environmentSource.includes(`'${scope}'`), `canonical OAuth scopes are missing ${scope}`);
   }
   assert.match(environmentSource, /new Set\(\[\.\.\.twitchBaseScopes, \.\.\.configuredTwitchScopes\]\)/);
-  assert.match(route, /import \{ env, twitchEventSubScopes, twitchScopes \} from '\.\.\/env\.js'/);
+  assert.match(route, /import \{[^}]*\benv\b[^}]*\btwitchEventSubScopes\b[^}]*\btwitchScopes\b[^}]*\} from '\.\.\/env\.js'/);
   assert.match(route, /findMissingTwitchScopes\(broadcaster\.twitchCredential\.scopes\)/);
   assert.match(route, /Reconnect Twitch authorization\. Missing scopes:/);
 });
