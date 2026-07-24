@@ -11,6 +11,7 @@ on:
       - 'apps/overlay/**'
       - 'apps/api/**'
       - 'packages/ui/**'
+      - 'packages/contracts/**'
       - 'infrastructure/gateway/**'
       - 'tools/test/ui-revamp.test.mjs'
       - 'tools/test/content-security-policy.test.mjs'
@@ -51,6 +52,9 @@ jobs:
 
       - name: Run existing repository guardrails
         run: node --test tools/test/repository.test.mjs
+
+      - name: Build runtime contracts
+        run: pnpm --filter @neon-wreckers/contracts run build
 
       - name: Build shared UI
         run: pnpm --filter @neon-wreckers/ui run build
