@@ -48,6 +48,84 @@
 .admin-cooldowns { display: grid; gap: .5rem; margin-bottom: .75rem; }
 .admin-cooldowns > div { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .5rem; align-items: center; padding: .6rem; border: 1px solid var(--nw-color-border); }
 
+.admin-integration-profile {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .8rem;
+  padding: .8rem;
+  border: 1px solid var(--nw-color-border);
+  background: color-mix(in srgb, var(--nw-color-surface-raised) 88%, transparent);
+}
+
+.admin-integration-profile img,
+.admin-avatar-placeholder {
+  width: 3.25rem;
+  height: 3.25rem;
+  border: 1px solid var(--nw-color-cyan);
+  object-fit: cover;
+  background: var(--nw-color-surface);
+}
+
+.admin-avatar-placeholder {
+  display: grid;
+  place-items: center;
+  font-family: var(--nw-font-display);
+  color: var(--nw-color-cyan);
+}
+
+.admin-integration-profile > div {
+  min-width: 0;
+  display: grid;
+  gap: .18rem;
+}
+
+.admin-integration-profile span,
+.admin-integration-profile small,
+.admin-connection-list span,
+.admin-connection-list small {
+  color: var(--nw-color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.admin-connection-list {
+  display: grid;
+  gap: .55rem;
+}
+
+.admin-connection-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .75rem;
+  align-items: center;
+  padding: .75rem;
+  border: 1px solid var(--nw-color-border);
+  background: var(--nw-color-surface-raised);
+}
+
+.admin-connection-list > div.is-active {
+  border-color: var(--nw-color-cyan);
+  box-shadow: inset .2rem 0 var(--nw-color-cyan);
+}
+
+.admin-connection-list > div > div:first-child {
+  display: grid;
+  gap: .18rem;
+}
+
+.admin-check {
+  display: flex;
+  gap: .6rem;
+  align-items: flex-start;
+  padding: .7rem;
+  border: 1px solid var(--nw-color-border);
+  background: var(--nw-color-surface-raised);
+}
+
+.admin-check input {
+  margin-top: .2rem;
+}
+
 @media (max-width: 760px) {
   .admin-player-layout { grid-template-columns: 1fr; }
   .admin-player-list { max-height: 18rem; }
@@ -57,6 +135,10 @@
   .admin-page { padding-inline: .15rem; }
   .admin-command-grid { grid-template-columns: 1fr; }
   .admin-shell .nw-data-grid { min-width: 42rem; }
+  .admin-integration-profile,
+  .admin-connection-list > div { grid-template-columns: 1fr; }
+  .admin-integration-profile img,
+  .admin-avatar-placeholder { width: 2.75rem; height: 2.75rem; }
 }
 
 @keyframes admin-enter {
