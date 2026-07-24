@@ -3,11 +3,14 @@ set -Eeuo pipefail
 
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT_DIR"
+# shellcheck disable=SC1091
+source scripts/materialize-secrets.sh
 [[ -f .env ]] || { echo ".env is missing." >&2; exit 1; }
 set -a
 # shellcheck disable=SC1091
 source .env
 set +a
+materialize_runtime_secrets "$ROOT_DIR"
 
 if [[ ${1:-} == "--certificate-only" ]]; then
   trap 'docker compose up -d gateway >/dev/null 2>&1 || true' EXIT
