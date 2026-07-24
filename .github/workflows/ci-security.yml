@@ -46,7 +46,14 @@ jobs:
 
       - name: Prepare sanitized Compose environment
         shell: bash
-        run: cp .env.example .env
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          set -a
+          source .env
+          set +a
+          source scripts/materialize-secrets.sh
+          materialize_runtime_secrets "$PWD"
 
       - name: Validate production Compose model
         run: docker compose -f compose.yaml config --quiet
