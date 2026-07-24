@@ -12,18 +12,22 @@ The health check uses the same mounted secret through `REDISCLI_AUTH`; it does n
 
 Operators must continue to keep `.env` outside source control and restrict its host permissions. Rotate `REDIS_PASSWORD` before deploying this change if the current value has ever appeared in logs, shell history, support bundles, or process listings.
 
+## Runtime executables
+
+The production application image exposes `/app/node_modules/.bin` on `PATH`. The one-shot `setup` service invokes the bundled Prisma executable directly and runs the compiled production seed with Node. It never invokes pnpm or Corepack at runtime, so the non-root service does not need a writable home or package-manager cache.
+
+The shared `@neon-wreckers/contracts` workspace is compiled to `dist` during verification and production builds. Its runtime export points to JavaScript rather than TypeScript source, allowing the API to start under plain Node without a TypeScript loader.
+
 ## Service controls
 
 | Service | Controls |
 | --- | --- |
-| `setup` | non-root `node`, read-only root filesystem, `/tmp` tmpfs, bundled Prisma migration executable and compiled seed, no runtime package-manager download, all capabilities dropped, no-new-privileges, init process, 30-second stop grace, rotated logs, CPU and memory limits |
+| `setup` | non-root `node`, read-only root filesystem, `/tmp` tmpfs, bundled migration executable, compiled seed, all capabilities dropped, no-new-privileges, init process, 30-second stop grace, rotated logs, CPU and memory limits |
 | `api` | same application controls as `setup`; only port 8787 is exposed to the internal network |
 | `worker` | same application controls as `setup`; no published ports |
 | `redis` | dedicated image, non-root `redis`, secret-file authentication, read-only root filesystem, explicit `/data` volume, `/tmp` tmpfs, all capabilities dropped, no-new-privileges, rotated logs, CPU and memory limits |
 | `postgres` | explicit data volume and runtime tmpfs paths, no-new-privileges, 60-second stop grace, rotated logs, CPU and memory limits |
 | `gateway` | read-only root filesystem, explicit tmpfs paths required by nginx startup/runtime, TLS mount read-only, bounded capabilities, no-new-privileges, rotated logs, CPU and memory limits |
-
-The setup service invokes the bundled Prisma binary and compiled production seed directly. It does not invoke `pnpm` or Corepack at runtime, so a read-only application container does not need to create `/home/node/.cache` or download package-manager metadata before migrations can run.
 
 PostgreSQL retains its normal image entrypoint and startup privileges because it must initialize and repair ownership of a new data volume. The gateway retains only the capabilities needed to bind ports 80/443 and drop privileges to nginx workers. These exceptions are narrower than running with Docker's default capability set.
 
@@ -35,7 +39,7 @@ PostgreSQL retains its normal image entrypoint and startup privileges because it
 4. Verify Redis process arguments do not contain the password with the host's process inspection tooling.
 5. Verify backup, restore, certificate renewal, API readiness, and worker queue processing in the deployment environment.
 
-For manual recovery after images have already been built, source `.env`, run `materialize_runtime_secrets` from `scripts/materialize-secrets.sh`, and then run `docker compose up -d --no-build --remove-orphans`.
+For manual recovery after images have already been built, source `.env`, run `materialize_runtime_secrets` from `scripts/materialize-secrets.sh`, and then run `docker compose up -d --remove-orphans`.
 
 ## Validation boundary
 
