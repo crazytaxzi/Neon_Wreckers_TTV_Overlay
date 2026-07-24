@@ -47,11 +47,13 @@ test('encrypted managed configuration is isolated from the generic registry', ()
   assert.doesNotMatch(adminRoutes, /select: \{[^}]*contentJson: true/);
 });
 
-test('OAuth scopes cover identity, points, and future activity verification', () => {
-  for (const scope of ['channel:read', 'loyalty:read', 'loyalty:write', 'activities:read']) {
+test('OAuth scopes are least-privilege for identity and loyalty operations', () => {
+  for (const scope of ['channel:read', 'loyalty:read', 'loyalty:write']) {
     assert.ok(environment.includes(scope), `.env.example is missing ${scope}`);
     assert.ok(docs.includes(scope), `StreamElements documentation is missing ${scope}`);
   }
+  assert.doesNotMatch(environment, /STREAMELEMENTS_OAUTH_SCOPES=.*activities:read/);
+  assert.match(docs, /does not request that permission/i);
 });
 
 test('chat command editing remains inside a server-side action allowlist', () => {
