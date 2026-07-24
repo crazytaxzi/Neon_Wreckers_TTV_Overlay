@@ -1,0 +1,8 @@
+/* The OBS surface must remain transparent between the telemetry panels.
+   The shared raster skin includes a full-canvas decorative frame that is
+   appropriate for previews, but it must never become an opaque broadcast layer. */
+.broadcast-canvas::before {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+}
