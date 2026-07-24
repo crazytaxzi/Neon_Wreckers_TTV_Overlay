@@ -5,6 +5,15 @@ const optionalUrl = z.preprocess(
   z.string().url().optional()
 );
 
+export const twitchEventSubScopes = [
+  'user:read:chat',
+  'moderator:read:followers',
+  'channel:read:subscriptions',
+  'bits:read'
+] as const;
+
+const twitchBaseScopes = ['user:read:email', ...twitchEventSubScopes] as const;
+
 const environmentSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(8787),
@@ -19,7 +28,7 @@ const environmentSchema = z.object({
   TWITCH_CLIENT_ID: z.string().default(''),
   TWITCH_CLIENT_SECRET: z.string().default(''),
   TWITCH_REDIRECT_URI: optionalUrl,
-  TWITCH_REQUIRED_SCOPES: z.string().default('user:read:email user:read:chat moderator:read:followers channel:read:subscriptions bits:read'),
+  TWITCH_REQUIRED_SCOPES: z.string().default(twitchBaseScopes.join(' ')),
   TWITCH_EVENTSUB_SECRET: z.string().min(10).default('development-eventsub-secret'),
   CREDENTIAL_ENCRYPTION_KEY: z.string().min(32).default('development-credential-key-32-bytes'),
   STREAMER_TWITCH_ID: z.string().default(''),
@@ -79,4 +88,5 @@ export const isProd = env.NODE_ENV === 'production';
 export const trustProxy = env.TRUST_PROXY === 'true';
 export const cookieSecure = env.COOKIE_SECURE === 'true';
 export const corsOrigins = env.CORS_ORIGINS.split(',').map(value => value.trim()).filter(Boolean);
-export const twitchScopes = env.TWITCH_REQUIRED_SCOPES.split(/[ ,]+/).filter(Boolean);
+const configuredTwitchScopes = env.TWITCH_REQUIRED_SCOPES.split(/[ ,]+/).filter(Boolean);
+export const twitchScopes = [...new Set([...twitchBaseScopes, ...configuredTwitchScopes])];

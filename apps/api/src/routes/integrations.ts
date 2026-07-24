@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { env, twitchScopes } from '../env.js';
+import { env, twitchEventSubScopes, twitchScopes } from '../env.js';
 import type { ApiContext } from '../types.js';
 import { requireAdmin, requireUser } from '../services/auth.js';
 import {
@@ -10,16 +10,9 @@ import {
 } from '@neon-wreckers/integrations';
 import { decryptCredential, saveTwitchCredential } from '../services/twitch-credentials.js';
 
-const requiredEventSubScopes = [
-  'user:read:chat',
-  'moderator:read:followers',
-  'channel:read:subscriptions',
-  'bits:read'
-] as const;
-
 export function findMissingTwitchScopes(grantedScopes: readonly string[]) {
   const granted = new Set(grantedScopes);
-  return requiredEventSubScopes.filter(scope => !granted.has(scope));
+  return twitchEventSubScopes.filter(scope => !granted.has(scope));
 }
 
 function eventSubFailureMessage(error: unknown) {
@@ -59,7 +52,7 @@ export async function registerIntegrationRoutes(app: FastifyInstance, context: A
         authorized: Boolean(user?.twitchCredential),
         expiresAt: user?.twitchCredential?.expiresAt ?? null,
         scopes: grantedScopes,
-        requiredScopes: requiredEventSubScopes,
+        requiredScopes: twitchEventSubScopes,
         missingScopes: findMissingTwitchScopes(grantedScopes)
       },
       requestId: request.id

@@ -4,7 +4,8 @@ import fs from 'node:fs';
 
 const route = fs.readFileSync('apps/api/src/routes/integrations.ts', 'utf8');
 const twitch = fs.readFileSync('packages/integrations/src/twitch.ts', 'utf8');
-const environment = fs.readFileSync('.env.example', 'utf8');
+const environmentExample = fs.readFileSync('.env.example', 'utf8');
+const environmentSource = fs.readFileSync('apps/api/src/env.ts', 'utf8');
 const admin = fs.readFileSync('apps/admin/src/main.tsx', 'utf8');
 
 const requiredScopes = [
@@ -16,9 +17,11 @@ const requiredScopes = [
 
 test('deployment and runtime require every EventSub authorization scope', () => {
   for (const scope of requiredScopes) {
-    assert.ok(environment.includes(scope), `.env.example is missing ${scope}`);
-    assert.ok(route.includes(`'${scope}'`), `runtime scope validation is missing ${scope}`);
+    assert.ok(environmentExample.includes(scope), `.env.example is missing ${scope}`);
+    assert.ok(environmentSource.includes(`'${scope}'`), `canonical OAuth scopes are missing ${scope}`);
   }
+  assert.match(environmentSource, /new Set\(\[\.\.\.twitchBaseScopes, \.\.\.configuredTwitchScopes\]\)/);
+  assert.match(route, /import \{ env, twitchEventSubScopes, twitchScopes \} from '\.\.\/env\.js'/);
   assert.match(route, /findMissingTwitchScopes\(broadcaster\.twitchCredential\.scopes\)/);
   assert.match(route, /Reconnect Twitch authorization\. Missing scopes:/);
 });
