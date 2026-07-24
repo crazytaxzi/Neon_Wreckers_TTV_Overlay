@@ -16,6 +16,13 @@ export const twitchEventSubScopes = [
 
 const twitchBaseScopes = ['user:read:email', ...twitchEventSubScopes] as const;
 
+export const streamElementsBaseScopes = [
+  'channel:read',
+  'loyalty:read',
+  'loyalty:write',
+  'activities:read'
+] as const;
+
 const environmentSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(8787),
@@ -37,6 +44,10 @@ const environmentSchema = z.object({
   STREAMELEMENTS_PROVIDER: z.enum(['disabled', 'streamelements']).default('disabled'),
   STREAMELEMENTS_CHANNEL_ID: z.string().default(''),
   STREAMELEMENTS_JWT: z.string().default(''),
+  STREAMELEMENTS_CLIENT_ID: z.string().default(''),
+  STREAMELEMENTS_CLIENT_SECRET: z.string().default(''),
+  STREAMELEMENTS_REDIRECT_URI: optionalUrl,
+  STREAMELEMENTS_OAUTH_SCOPES: z.string().default(streamElementsBaseScopes.join(' ')),
   STREAMELEMENTS_API_BASE: z.string().url().default('https://api.streamelements.com/kappa/v2'),
   FEATURE_POINTS_ACTIONS: z.enum(['true', 'false']).default('false'),
   LOG_LEVEL: z.string().default('info'),
@@ -67,13 +78,14 @@ const environmentSchema = z.object({
     }
   }
 
-  if (values.STREAMELEMENTS_PROVIDER === 'streamelements') {
-    if (!values.STREAMELEMENTS_CHANNEL_ID) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: 'STREAMELEMENTS_CHANNEL_ID is required for the StreamElements provider.' });
-    }
-    if (!values.STREAMELEMENTS_JWT) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: 'STREAMELEMENTS_JWT is required for the StreamElements provider.' });
-    }
+  const legacyValues = [values.STREAMELEMENTS_CHANNEL_ID, values.STREAMELEMENTS_JWT].filter(Boolean);
+  if (legacyValues.length === 1) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: 'STREAMELEMENTS_CHANNEL_ID and STREAMELEMENTS_JWT must be configured together.' });
+  }
+
+  const oauthValues = [values.STREAMELEMENTS_CLIENT_ID, values.STREAMELEMENTS_CLIENT_SECRET, values.STREAMELEMENTS_REDIRECT_URI].filter(Boolean);
+  if (oauthValues.length > 0 && oauthValues.length < 3) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: 'STREAMELEMENTS_CLIENT_ID, STREAMELEMENTS_CLIENT_SECRET, and STREAMELEMENTS_REDIRECT_URI must be configured together.' });
   }
 
   if (values.FEATURE_POINTS_ACTIONS === 'true' && values.STREAMELEMENTS_PROVIDER !== 'streamelements') {
@@ -92,3 +104,5 @@ export const cookieSecure = env.COOKIE_SECURE === 'true';
 export const corsOrigins = env.CORS_ORIGINS.split(',').map(value => value.trim()).filter(Boolean);
 const configuredTwitchScopes = env.TWITCH_REQUIRED_SCOPES.split(/[ ,]+/).filter(Boolean);
 export const twitchScopes = [...new Set([...twitchBaseScopes, ...configuredTwitchScopes])];
+const configuredStreamElementsScopes = env.STREAMELEMENTS_OAUTH_SCOPES.split(/[ ,]+/).filter(Boolean);
+export const streamElementsScopes = [...new Set([...streamElementsBaseScopes, ...configuredStreamElementsScopes])];
