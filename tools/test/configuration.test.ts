@@ -10,7 +10,7 @@ Object.assign(process.env, {
   SESSION_SECRET: '0123456789abcdef0123456789abcdef'
 });
 
-const { parseEnvironment } = await import('../../apps/api/src/env.js');
+const { parseEnvironment, streamElementsBaseScopes } = await import('../../apps/api/src/env.js');
 const { readSignedCookie } = await import('../../apps/api/src/services/auth.js');
 const { decryptCredential, encryptCredential } = await import('../../apps/api/src/services/twitch-credentials.js');
 const {
@@ -39,6 +39,20 @@ test('production environment rejects insecure proxy and incomplete provider conf
     FEATURE_POINTS_ACTIONS: 'true',
     STREAMELEMENTS_PROVIDER: 'disabled'
   }), /FEATURE_POINTS_ACTIONS requires STREAMELEMENTS_PROVIDER=streamelements/);
+});
+
+test('StreamElements credentials are complete and canonical scopes stay least-privilege', () => {
+  assert.throws(() => parseEnvironment({
+    ...baseEnvironment,
+    STREAMELEMENTS_JWT: 'owner-token'
+  }), /STREAMELEMENTS_CHANNEL_ID and STREAMELEMENTS_JWT must be configured together/);
+
+  assert.throws(() => parseEnvironment({
+    ...baseEnvironment,
+    STREAMELEMENTS_CLIENT_ID: 'client-only'
+  }), /STREAMELEMENTS_CLIENT_ID, STREAMELEMENTS_CLIENT_SECRET, and STREAMELEMENTS_REDIRECT_URI must be configured together/);
+
+  assert.deepEqual(streamElementsBaseScopes, ['channel:read', 'loyalty:read', 'loyalty:write']);
 });
 
 test('signed cookie reader rejects invalid signatures', () => {
