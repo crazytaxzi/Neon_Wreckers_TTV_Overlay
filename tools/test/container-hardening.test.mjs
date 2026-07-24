@@ -54,9 +54,13 @@ test('services declare bounded logs, graceful shutdown, and resource constraints
   assert.match(compose, /cpus:/);
 });
 
-test('setup uses the canonical package manager and redis runs unprivileged', () => {
-  assert.match(compose, /pnpm run db:migrate && pnpm run db:seed:production/);
-  assert.doesNotMatch(compose, /(^|[^p])npm run db:migrate/);
+test('setup runs bundled migration and seed executables without a runtime package manager', () => {
+  assert.match(
+    compose,
+    /\.\/node_modules\/\.bin\/prisma migrate deploy --schema infrastructure\/database\/prisma\/schema\.prisma/,
+  );
+  assert.match(compose, /node infrastructure\/database\/dist\/seed\/seed\.js/);
+  assert.doesNotMatch(compose, /command: \["sh", "-c", "pnpm run db:migrate/);
   assert.match(redisDockerfile, /USER redis/);
   assert.match(redisDockerfile, /ENTRYPOINT \["\/usr\/local\/bin\/neon-redis"\]/);
 });
