@@ -18,6 +18,13 @@ const materializeSecrets = await readFile(
 );
 const updateScript = await readFile(new URL('../../scripts/update.sh', import.meta.url), 'utf8');
 const installScript = await readFile(new URL('../../scripts/install.sh', import.meta.url), 'utf8');
+const rootPackage = JSON.parse(
+  await readFile(new URL('../../package.json', import.meta.url), 'utf8'),
+);
+const contractsPackage = JSON.parse(
+  await readFile(new URL('../../packages/contracts/package.json', import.meta.url), 'utf8'),
+);
+
 
 test('redis credentials are mounted as a file-backed secret and absent from process arguments', () => {
   assert.match(compose, /redis_password:\n\s+file: \.\/\.secrets\/redis_password/);
@@ -29,6 +36,7 @@ test('redis credentials are mounted as a file-backed secret and absent from proc
   assert.match(redisEntrypoint, /exec redis-server "\$config_file"/);
 });
 
+
 test('install and update materialize the ignored secret file before compose runs', () => {
   assert.match(materializeSecrets, /materialize_runtime_secrets/);
   assert.match(materializeSecrets, /secret_file="\$secret_dir\/redis_password"/);
@@ -37,6 +45,7 @@ test('install and update materialize the ignored secret file before compose runs
   assert.match(installScript, /materialize_runtime_secrets "\$ROOT_DIR"/);
 });
 
+
 test('application containers run non-root with a read-only root filesystem', () => {
   assert.match(compose, /x-app:[\s\S]*?user: node/);
   assert.match(compose, /x-app:[\s\S]*?read_only: true/);
@@ -44,7 +53,9 @@ test('application containers run non-root with a read-only root filesystem', () 
   assert.match(compose, /x-app:[\s\S]*?no-new-privileges:true/);
   assert.match(dockerfile, /USER node/);
   assert.match(dockerfile, /corepack prepare pnpm@10\.32\.0 --activate/);
+  assert.match(dockerfile, /ENV PATH=\/app\/node_modules\/\.bin:\$PNPM_HOME:\$PATH/);
 });
+
 
 test('services declare bounded logs, graceful shutdown, and resource constraints', () => {
   assert.match(compose, /max-size: 10m/);
@@ -54,13 +65,33 @@ test('services declare bounded logs, graceful shutdown, and resource constraints
   assert.match(compose, /cpus:/);
 });
 
+
 test('setup runs bundled migration and seed executables without a runtime package manager', () => {
   assert.match(
     compose,
-    /\.\/node_modules\/\.bin\/prisma migrate deploy --schema infrastructure\/database\/prisma\/schema\.prisma/,
+    /prisma migrate deploy --schema infrastructure\/database\/prisma\/schema\.prisma/,
   );
   assert.match(compose, /node infrastructure\/database\/dist\/seed\/seed\.js/);
   assert.doesNotMatch(compose, /command: \["sh", "-c", "pnpm run db:migrate/);
+  assert.doesNotMatch(compose, /command: \["sh", "-c", "\.\/node_modules/);
   assert.match(redisDockerfile, /USER redis/);
   assert.match(redisDockerfile, /ENTRYPOINT \["\/usr\/local\/bin\/neon-redis"\]/);
+});
+
+
+test('runtime contracts are compiled before server and browser builds', () => {
+  assert.equal(contractsPackage.main, 'dist/index.js');
+  assert.equal(contractsPackage.types, 'dist/index.d.ts');
+  assert.equal(contractsPackage.exports['.'].import, './dist/index.js');
+  assert.equal(contractsPackage.exports['.'].types, './dist/index.d.ts');
+  assert.equal(contractsPackage.scripts.build, 'tsc -p tsconfig.json');
+  assert.match(
+    rootPackage.scripts.build,
+    /--filter @neon-wreckers\/contracts run build/,
+  );
+  assert.match(
+    rootPackage.scripts['test:api'],
+    /--filter @neon-wreckers\/contracts run build/,
+  );
+  assert.match(dockerfile, /COPY --from=build --chown=node:node \/workspace\/packages \.\/packages/);
 });
