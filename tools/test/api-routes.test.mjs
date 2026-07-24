@@ -64,6 +64,7 @@ const expectedRoutes = [
   'POST /api/v1/player/career',
   'POST /api/v1/points/actions/:actionSlug',
   'POST /api/v1/quarters',
+  'POST /api/v1/quarters/use',
   'POST /api/v1/salvage/deploy',
   'POST /api/v1/salvage/scan',
   'POST /api/v1/ships/:id/refuel',
