@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { errorMessage, requestApi } from '@neon-wreckers/browser-client';
 import {
@@ -528,7 +528,7 @@ function CommandsPage({ commands, refresh, pushToast }: {
           trigger: draft.trigger,
           description: draft.description,
           enabled: draft.enabled,
-          requiresPlayer: draft.requiresPlayer,
+          requiresPlayer: true,
           action: draft.action
         })
       });
@@ -585,7 +585,7 @@ function CommandsPage({ commands, refresh, pushToast }: {
               <Field label="Description"><Input value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} /></Field>
               <Field label="Server action"><Select value={actionKey} onChange={event => setAction(event.target.value)}><option value="scan">Scan for wreck</option><option value="salvage:cutters">Deploy cutters</option><option value="salvage:cargo">Deploy cargo recovery</option><option value="point:rush_scan">Spend points: rush scan</option><option value="point:safety_override">Spend points: safety override</option></Select></Field>
               <label className="admin-check"><input type="checkbox" checked={draft.enabled} onChange={event => setDraft({ ...draft, enabled: event.target.checked })} /> Command enabled</label>
-              <label className="admin-check"><input type="checkbox" checked={draft.requiresPlayer} onChange={event => setDraft({ ...draft, requiresPlayer: event.target.checked })} /> Require a viewer account linked to Neon Wreckers</label>
+              <Notification title="Linked viewer account required" tone="info">All current command actions modify persistent player state, so the chatter must have signed into Neon Wreckers.</Notification>
               <Notification title="Execution boundary" tone="info">The action is selected from a validated server allowlist. Point-funded actions still require a verified StreamElements account, the per-account toggle, and the server kill switch.</Notification>
               <div className="admin-mobile-actions"><Button onClick={() => void save()}>Save command</Button>{selectedId && <Button variant="warning" onClick={() => void retire()}>Retire command</Button>}</div>
             </div>
