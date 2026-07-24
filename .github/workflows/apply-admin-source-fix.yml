@@ -1,0 +1,50 @@
+name: Apply admin source fix
+
+on:
+  push:
+    branches:
+      - feat/streamelements-control-center
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: feat/streamelements-control-center
+          fetch-depth: 0
+      - name: Apply deterministic source edits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('apps/admin/src/main.tsx')
+          source = path.read_text()
+          replacements = {
+              "import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';": "import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';",
+              "requiresPlayer: draft.requiresPlayer,": "requiresPlayer: true,",
+              '<label className="admin-check"><input type="checkbox" checked={draft.requiresPlayer} onChange={event => setDraft({ ...draft, requiresPlayer: event.target.checked })} /> Require a viewer account linked to Neon Wreckers</label>': '<Notification title="Linked viewer account required" tone="info">All current command actions modify persistent player state, so the chatter must have signed into Neon Wreckers.</Notification>'
+          }
+          changed = False
+          for old, new in replacements.items():
+              if old in source:
+                  source = source.replace(old, new)
+                  changed = True
+          if changed:
+              path.write_text(source)
+          PY
+          if git diff --quiet -- apps/admin/src/main.tsx; then
+            echo 'No source edit required.'
+            exit 0
+          fi
+          git config user.name 'crazytaxzi'
+          git config user.email 'crazytaxzi@users.noreply.github.com'
+          git add apps/admin/src/main.tsx
+          git commit -m 'fix(admin): enforce linked-player command boundary'
+          git push origin HEAD:feat/streamelements-control-center
