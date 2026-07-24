@@ -7,6 +7,8 @@ const optionalUrl = z.preprocess(
 
 export const twitchEventSubScopes = [
   'user:read:chat',
+  'user:bot',
+  'channel:bot',
   'moderator:read:followers',
   'channel:read:subscriptions',
   'bits:read'
