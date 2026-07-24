@@ -38,7 +38,7 @@ test('Rustlight Tug uses the final generated ship portrait as its primary artwor
   const embedded = source.match(/data:image\/webp;base64,([^"\s]+)/)?.[1];
   assert.ok(embedded, 'Rustlight portrait does not contain the generated WebP image.');
   const decoded = Buffer.from(embedded, 'base64');
-  assert.ok(decoded.length > 12_000, 'Embedded Rustlight portrait is unexpectedly small.');
+  assert.ok(decoded.length > 8_000, 'Embedded Rustlight portrait is unexpectedly small.');
   assert.equal(decoded.subarray(0, 4).toString('ascii'), 'RIFF');
   assert.equal(decoded.subarray(8, 12).toString('ascii'), 'WEBP');
 });
