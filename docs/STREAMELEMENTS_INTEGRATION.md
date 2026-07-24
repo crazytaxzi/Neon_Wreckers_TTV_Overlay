@@ -21,19 +21,20 @@ STREAMELEMENTS_PROVIDER=streamelements
 STREAMELEMENTS_CLIENT_ID=...
 STREAMELEMENTS_CLIENT_SECRET=...
 STREAMELEMENTS_REDIRECT_URI=https://YOUR_PUBLIC_HOST/api/v1/auth/streamelements/callback
-STREAMELEMENTS_OAUTH_SCOPES=channel:read loyalty:read loyalty:write activities:read
+STREAMELEMENTS_OAUTH_SCOPES=channel:read loyalty:read loyalty:write
 ```
 
-The requested scopes have narrow purposes:
+The requested scopes are limited to the implemented features:
 
 - `channel:read` verifies the exact StreamElements channel.
 - `loyalty:read` reads balances and loyalty configuration.
 - `loyalty:write` performs point debits and refunds.
-- `activities:read` leaves room for explicit activity verification without changing the overlay ingestion source.
+
+The StreamElements realtime gateway also offers `channel.activities` with `activities:read`, but Neon Wreckers does not request that permission because Twitch EventSub already supplies the same follow, subscription, cheer, and raid events to the overlay. Using both sources would produce duplicate activity cards.
 
 After deployment, open **Admin → Integrations → Connect another account**. StreamElements authorizes the channel currently selected in its dashboard. To save another channel, switch to that channel in StreamElements and repeat the connection. Neon Wreckers then shows all saved, verified channels and lets the operator choose the active one.
 
-OAuth access and refresh tokens are encrypted before being written to the existing versioned configuration registry. Refresh-token rotation is persisted when StreamElements issues a replacement.
+OAuth access and refresh tokens are encrypted before being written to the existing versioned configuration registry. Managed integration records are excluded from the generic configuration list, and generic configuration writes cannot use the reserved integration namespace.
 
 ## Legacy owner-token migration
 
@@ -54,7 +55,7 @@ Point-funded commands require all three controls:
 2. **Point actions enabled** for that selected account.
 3. `FEATURE_POINTS_ACTIONS=true` in the server environment.
 
-The selected connection's verified channel ID is used for balance changes and refunds. A Twitch provider-ID mismatch is displayed as a blocking warning in the admin UI.
+The selected connection's verified channel ID is used for balance changes and refunds. A Twitch provider-ID mismatch is displayed as a blocking warning in the admin UI. Historical refunds are blocked until the operator selects the same StreamElements channel that handled the original charge.
 
 ## Chat command editor
 
