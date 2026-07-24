@@ -49,9 +49,8 @@ jobs:
         run: |
           set -euo pipefail
           cp .env.example .env
-          set -a
-          source .env
-          set +a
+          REDIS_PASSWORD=$(sed -n 's/^REDIS_PASSWORD=//p' .env | head -n 1)
+          export REDIS_PASSWORD
           source scripts/materialize-secrets.sh
           materialize_runtime_secrets "$PWD"
 
