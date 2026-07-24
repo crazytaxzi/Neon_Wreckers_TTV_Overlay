@@ -73,7 +73,17 @@ jobs:
           retention-days: 14
 
       - name: Build admin app
-        run: pnpm --filter @neon-wreckers/admin run build
+        run: |
+          set -o pipefail
+          pnpm --filter @neon-wreckers/admin run build 2>&1 | tee admin-build.log
+
+      - name: Upload admin build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-build-log
+          path: admin-build.log
+          retention-days: 14
 
       - name: Build overlay app
         run: pnpm --filter @neon-wreckers/overlay run build
