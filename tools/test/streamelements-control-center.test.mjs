@@ -5,6 +5,8 @@ import fs from 'node:fs';
 const integration = fs.readFileSync('packages/integrations/src/streamelements.ts', 'utf8');
 const service = fs.readFileSync('apps/api/src/services/streamelements.ts', 'utf8');
 const routes = fs.readFileSync('apps/api/src/routes/integrations.ts', 'utf8');
+const adminRoutes = fs.readFileSync('apps/api/src/routes/admin.ts', 'utf8');
+const points = fs.readFileSync('apps/api/src/services/points.ts', 'utf8');
 const commands = fs.readFileSync('apps/api/src/services/chat-commands.ts', 'utf8');
 const commandRoutes = fs.readFileSync('apps/api/src/routes/chat-commands.ts', 'utf8');
 const eventsub = fs.readFileSync('apps/api/src/routes/eventsub.ts', 'utf8');
@@ -29,10 +31,20 @@ test('StreamElements account routing is selectable, verifiable, and guarded', ()
   for (const path of ['import-legacy', '/select', '/verify', '/settings']) assert.ok(routes.includes(path));
   assert.match(service, /activeConnectionSlug/);
   assert.match(service, /matchesStreamer/);
+  assert.match(points, /connection\.channelId/);
+  assert.match(adminRoutes, /STREAMELEMENTS_ACCOUNT_MISMATCH/);
   assert.match(admin, /Choose the charged channel/);
   assert.match(admin, /Verify selected account/);
   assert.match(admin, /Use this account/);
   assert.match(admin, /FEATURE_POINTS_ACTIONS=true/);
+});
+
+test('encrypted managed configuration is isolated from the generic registry', () => {
+  assert.match(adminRoutes, /reservedConfigPrefixes = \['integration\.', 'chat-command\.'\]/);
+  assert.match(adminRoutes, /where: \{ NOT: reservedConfigPrefixes\.map/);
+  assert.match(adminRoutes, /select: \{ id: true, slug: true, version: true, lifecycle: true, createdAt: true \}/);
+  assert.match(adminRoutes, /assertPublicConfigSlug\(body\.slug\)/);
+  assert.doesNotMatch(adminRoutes, /select: \{[^}]*contentJson: true/);
 });
 
 test('OAuth scopes cover identity, points, and future activity verification', () => {
