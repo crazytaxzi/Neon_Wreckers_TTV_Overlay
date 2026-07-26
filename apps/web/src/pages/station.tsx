@@ -31,63 +31,242 @@ import {
   itemIcon,
 } from "../page-utils.js";
 
-export function GuidePage() {
-  const steps = [
-    [
-      "1. Salvage",
-      "Scan a wreck, then deploy cutters or cargo teams. Cargo mode rolls more wreck-specific materials; Research Skiffs yield Research Data, while freighters carry food and coolant supplies.",
-    ],
-    [
-      "2. Build",
-      "Contribute recovered scrap, electronics, alloys, and research data to shared station modules.",
-    ],
-    [
-      "3. Keep Zero alive",
-      "Repair the hull, fuel the reactor, and run food or medical drives. Power and integrity directly affect resident retention.",
-    ],
-    [
-      "4. Trade",
-      "Buy fixed station stock or list your own items in the 48-hour player Auction House. Compare every item’s guide value first.",
-    ],
-    [
-      "5. Expeditions",
-      "Glass Belt Runs return ice, water, algae, food, polymer, and biofiber. Dead Relay Pings return Research Data, electronics, lenses, charts, conduits, relays, and rare Quantum Keys.",
-    ],
-  ];
+export function GuidePage({
+  onNavigate,
+}: {
+  onNavigate: (destination: string) => void;
+}) {
+  const quickStart = [
+    {
+      number: "01",
+      icon: "salvage",
+      title: "Recover a wreck",
+      body: "Open Salvage, scan the active wreck, then choose Cutters for dependable scrap or Cargo Teams for more wreck-specific loot.",
+      action: "Open Salvage",
+      destination: "salvage",
+    },
+    {
+      number: "02",
+      icon: "inventory",
+      title: "Check your hold",
+      body: "Recovered materials land in your Cargo Hold. Inspect their sources, uses, recipes, rarity, and guide value before spending or selling.",
+      action: "Open Cargo Hold",
+      destination: "inventory",
+    },
+    {
+      number: "03",
+      icon: "construction",
+      title: "Strengthen Station Zero",
+      body: "Contribute materials to station projects, restore critical systems, and keep power, integrity, food, medicine, and morale out of danger.",
+      action: "Open Station",
+      destination: "construction",
+    },
+    {
+      number: "04",
+      icon: "crew",
+      title: "Prepare a crew",
+      body: "Recruit specialists, train job and talent ratings, use shore leave to reduce fatigue, and keep expedition crew in reserve.",
+      action: "Open Crew",
+      destination: "crew",
+    },
+    {
+      number: "05",
+      icon: "expedition",
+      title: "Launch an expedition",
+      body: "Choose a fueled, repaired ship and rested crew. Compare risk, fuel cost, duration, route bonuses, and possible rewards before launch.",
+      action: "Open Expeditions",
+      destination: "expeditions",
+    },
+  ] as const;
+
+  const systems = [
+    {
+      icon: "salvage",
+      title: "Salvage & cooldowns",
+      points: [
+        "Every wreck has its own risk, integrity, remaining loot budget, and loot pool.",
+        "Cutters favor reliable recovery. Cargo Teams make additional wreck-loot rolls.",
+        "Actions can have cooldowns. The countdown beside a disabled control shows when it is ready.",
+      ],
+    },
+    {
+      icon: "crew",
+      title: "Crew readiness",
+      points: [
+        "Job stars unlock role-specific expedition benefits; talent stars improve a crew member’s supporting bonus.",
+        "Fatigue rises on launch and falls after resolution. Exhausted, injured, busy, or station-assigned crew cannot deploy.",
+        "Shore leave costs credits but restores morale and reduces fatigue. Rotating specialist candidates refresh automatically.",
+      ],
+    },
+    {
+      icon: "expedition",
+      title: "Ships & expeditions",
+      points: [
+        "Ships need fuel and condition. Class statistics, installed upgrades, skins, and crew roles affect outcomes.",
+        "Ship mastery earned from claimed expeditions unlocks additional upgrade slots.",
+        "An expedition resolves automatically; claim it afterward to collect rewards, mastery, history, and incident details.",
+      ],
+    },
+    {
+      icon: "resources",
+      title: "Crafting & construction",
+      points: [
+        "Recipes require the listed materials and an unlocked station module. Fabrication time varies by recipe.",
+        "Station projects are shared: every contribution advances the same community objective.",
+        "Module levels unlock capacity and services; repairs protect completed infrastructure from collapse.",
+      ],
+    },
+    {
+      icon: "trade",
+      title: "Credits & markets",
+      points: [
+        "The station market sells fixed stock. Player auctions run separately and expire after 48 hours.",
+        "Guide value is a reference, not a guaranteed sale price. Check quantity and total price before confirming.",
+        "Crafting, ship work, recruiting, training, shore leave, and premium frames all compete for your credits.",
+      ],
+    },
+    {
+      icon: "station",
+      title: "Population & progression",
+      points: [
+        "Residents react to power, hull integrity, food, medicine, morale, and habitat capacity.",
+        "Contracts, repeatable operations, seasonal collections, and museum donations provide longer-term goals.",
+        "Your career and station prestige shape progression without replacing the shared survival objective.",
+      ],
+    },
+  ] as const;
+
   return (
-    <div className="page-stack concept-standard-page">
-      <SectionTitle
-        eyebrow="WRECKER ORIENTATION"
-        title="How to Play"
-        description="A quick path from first scan to a thriving player-run station."
-        icon="data"
-      />
-      <Notification title="Command tooltips active" tone="info">
-        Buttons, prices, status readouts, and item cards include contextual
-        help. Timers count down beside actions that are busy.
+    <div className="page-stack concept-standard-page guide-console">
+      <section className="guide-hero">
+        <div className="guide-hero__copy">
+          <span className="nw-eyebrow">STATION ZERO // FIELD MANUAL 2.0</span>
+          <h1>From first wreck to fleet command</h1>
+          <p>
+            Neon Wreckers is a shared salvage-and-survival game. Recover
+            materials, build your personal operation, and work with every
+            Wrecker to keep Station Zero alive.
+          </p>
+          <div className="inline-actions">
+            <Button onClick={() => onNavigate("salvage")}>Start salvaging</Button>
+            <Button variant="ghost" onClick={() => onNavigate("station")}>
+              Return home
+            </Button>
+          </div>
+        </div>
+        <div className="guide-hero__loop" aria-label="Core game loop">
+          <span>Scan</span>
+          <NWIcon name="salvage" size={26} />
+          <span>Recover</span>
+          <NWIcon name="resources" size={26} />
+          <span>Build</span>
+          <NWIcon name="expedition" size={26} />
+          <span>Explore</span>
+        </div>
+      </section>
+
+      <Notification title="The short version" tone="success">
+        Salvage produces materials. Materials fund crafting, ships, and shared
+        station projects. A prepared fleet reaches rarer resources. A healthy
+        station keeps every player’s progression moving.
       </Notification>
-      <ResponsiveGrid min="19rem">
-        {steps.map(([title, body]) => (
-          <Card key={title} className="field-manual-card">
-            <span className="nw-eyebrow">FIELD MANUAL</span>
-            <h3>{title}</h3>
-            <p>{body}</p>
-          </Card>
-        ))}
-      </ResponsiveGrid>
+
+      <section className="guide-section">
+        <SectionTitle
+          eyebrow="FIRST SHIFT"
+          title="Your five-step quick start"
+          description="Follow this route if you have just arrived or are returning after an update."
+          icon="data"
+        />
+        <div className="guide-steps">
+          {quickStart.map((step) => (
+            <Card key={step.number} className="guide-step-card">
+              <div className="guide-step-card__header">
+                <span className="guide-step-card__number">{step.number}</span>
+                <NWIcon name={step.icon} size={28} />
+              </div>
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onNavigate(step.destination)}
+              >
+                {step.action}
+              </Button>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section className="guide-section">
+        <SectionTitle
+          eyebrow="SYSTEM BRIEFINGS"
+          title="How the game fits together"
+          description="The rules that matter before you commit resources or send a crew away."
+          icon="signal"
+        />
+        <ResponsiveGrid min="20rem">
+          {systems.map((system) => (
+            <Card key={system.title} className="guide-system-card">
+              <div className="guide-system-card__title">
+                <NWIcon name={system.icon} size={26} />
+                <h3>{system.title}</h3>
+              </div>
+              <ul>
+                {system.points.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+            </Card>
+          ))}
+        </ResponsiveGrid>
+      </section>
+
+      <Panel className="guide-readiness">
+        <SectionTitle
+          eyebrow="PRE-FLIGHT CHECK"
+          title="Before launching an expedition"
+          icon="scanner"
+        />
+        <div className="guide-checklist">
+          <span><Badge tone="success">1</Badge> Ship condition is above zero</span>
+          <span><Badge tone="success">2</Badge> Fuel covers the displayed cost</span>
+          <span><Badge tone="success">3</Badge> Crew meet the minimum and fatigue limit</span>
+          <span><Badge tone="success">4</Badge> Crew are unassigned, uninjured, and not away</span>
+          <span><Badge tone="success">5</Badge> The selected risk and route match your goal</span>
+        </div>
+        <Button onClick={() => onNavigate("expeditions")}>
+          Review expedition board
+        </Button>
+      </Panel>
+
       <Panel>
         <SectionTitle
-          eyebrow="COMMUNITY OBJECTIVE"
-          title="Why population matters"
-          icon="population"
+          eyebrow="COMMAND REFERENCE"
+          title="Where to find everything"
+          icon="network"
         />
-        <p>
-          Residents are Station Zero’s workforce and survival score. A larger
-          population supports future station capacity and shows that the
-          community is keeping habitats safe. Residents arrive after food
-          drives, clinics, good morale, and habitat construction; they leave
-          when power, hull integrity, or morale becomes dangerous.
-        </p>
+        <div className="guide-destinations">
+          {[
+            ["Home", "Live station status and recommended actions", "station"],
+            ["Salvage", "Scan wrecks and recover materials", "salvage"],
+            ["Station", "Projects, survival systems, contracts, and seasons", "construction"],
+            ["Market", "Station inventory and player auctions", "market"],
+            ["Profile", "Career, identity, records, quarters, and settings", "profile"],
+          ].map(([label, description, destination]) => (
+            <button
+              type="button"
+              key={destination}
+              className="guide-destination"
+              onClick={() => onNavigate(destination)}
+            >
+              <strong>{label}</strong>
+              <span>{description}</span>
+              <NWIcon name="scanner" size={18} />
+            </button>
+          ))}
+        </div>
       </Panel>
     </div>
   );

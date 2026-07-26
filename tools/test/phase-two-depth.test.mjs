@@ -35,3 +35,16 @@ test('expedition route tradeoffs and prototype research affect worker resolution
   assert.ok(items.some(item => item.slug === 'prototype-blueprint'));
   assert.ok(balance.ships.upgrades.some(upgrade => upgrade.blueprints > 0));
 });
+
+test('every purchasable ship class has three licensed upgrade paths with responsive artwork', () => {
+  const balance = JSON.parse(read('content/base/balance.json'));
+  for (const ship of balance.ships.purchases) {
+    const skins = balance.ships.skins.filter(skin => skin.classSlug === ship.slug);
+    assert.equal(skins.length, 3, `${ship.name} should have exactly three licensed frames`);
+    for (const skin of skins) {
+      assert.ok(fs.existsSync(`apps/web/public/ships/skins/${skin.slug}.webp`), `${skin.name} full artwork is missing`);
+      assert.ok(fs.existsSync(`apps/web/public/ships/skins/${skin.slug}-600w.webp`), `${skin.name} 600w artwork is missing`);
+      assert.ok(fs.existsSync(`apps/web/public/ships/skins/${skin.slug}-360w.webp`), `${skin.name} 360w artwork is missing`);
+    }
+  }
+});

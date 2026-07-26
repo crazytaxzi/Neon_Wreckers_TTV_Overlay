@@ -17,6 +17,244 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.guide-console {
+  max-width: 92rem;
+  margin-inline: auto;
+}
+
+.guide-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.65fr);
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: center;
+  min-height: 24rem;
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+  overflow: hidden;
+  border: 1px solid rgba(var(--nw-color-cyan-rgb), 0.25);
+  background:
+    linear-gradient(115deg, rgba(var(--nw-color-purple-rgb), 0.13), transparent 48%),
+    radial-gradient(circle at 82% 50%, rgba(var(--nw-color-cyan-rgb), 0.13), transparent 19rem),
+    var(--nw-color-surface);
+}
+
+.guide-hero::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  opacity: 0.22;
+  background-image:
+    linear-gradient(rgba(var(--nw-color-cyan-rgb), 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--nw-color-cyan-rgb), 0.08) 1px, transparent 1px);
+  background-size: 3.5rem 3.5rem;
+  mask-image: linear-gradient(90deg, transparent 25%, black);
+}
+
+.guide-hero__copy,
+.guide-hero__loop {
+  position: relative;
+  z-index: 1;
+}
+
+.guide-hero h1 {
+  max-width: 15ch;
+  margin: 0.4rem 0 0.8rem;
+  font-size: clamp(2.1rem, 5vw, 4.8rem);
+  line-height: 0.96;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.guide-hero__copy > p {
+  max-width: 62ch;
+  font-size: clamp(1rem, 1.4vw, 1.18rem);
+}
+
+.guide-hero__loop {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.65rem 1rem;
+  align-items: center;
+  padding: 1.25rem;
+  border-left: 2px solid var(--nw-color-cyan);
+  background: rgba(var(--nw-color-surface-rgb), 0.72);
+}
+
+.guide-hero__loop span {
+  font-family: var(--nw-font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.guide-hero__loop svg {
+  color: var(--nw-color-cyan);
+}
+
+.guide-section {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.guide-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.guide-step-card,
+.guide-system-card {
+  height: 100%;
+}
+
+.guide-step-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  border-top: 2px solid rgba(var(--nw-color-cyan-rgb), 0.65);
+}
+
+.guide-step-card p {
+  flex: 1;
+}
+
+.guide-step-card__header,
+.guide-system-card__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.guide-step-card__header svg,
+.guide-system-card__title svg {
+  color: var(--nw-color-cyan);
+}
+
+.guide-step-card__number {
+  color: var(--nw-color-text-dim);
+  font-family: var(--nw-font-mono);
+  font-size: 1.4rem;
+}
+
+.guide-system-card__title {
+  justify-content: flex-start;
+}
+
+.guide-system-card__title h3,
+.guide-step-card h3 {
+  margin: 0;
+}
+
+.guide-system-card ul {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0.9rem 0 0;
+  padding-left: 1.15rem;
+}
+
+.guide-system-card li::marker {
+  color: var(--nw-color-cyan);
+}
+
+.guide-readiness {
+  display: grid;
+  gap: 1rem;
+  background:
+    linear-gradient(90deg, rgba(var(--nw-color-green-rgb), 0.07), transparent 70%),
+    var(--nw-color-surface);
+}
+
+.guide-checklist {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.guide-checklist > span {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  color: var(--nw-color-text-dim);
+  font-size: 0.88rem;
+}
+
+.guide-destinations {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.guide-destination {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.3fr) 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  color: var(--nw-color-text);
+  text-align: left;
+  border: 1px solid rgba(var(--nw-color-cyan-rgb), 0.13);
+  background: rgba(var(--nw-color-cyan-rgb), 0.025);
+  cursor: pointer;
+  transition:
+    border-color var(--nw-motion-fast),
+    background var(--nw-motion-fast),
+    transform var(--nw-motion-fast);
+}
+
+.guide-destination span {
+  color: var(--nw-color-text-dim);
+}
+
+.guide-destination svg {
+  color: var(--nw-color-cyan);
+}
+
+.guide-destination:hover,
+.guide-destination:focus-visible {
+  border-color: rgba(var(--nw-color-cyan-rgb), 0.55);
+  background: rgba(var(--nw-color-cyan-rgb), 0.07);
+  transform: translateX(0.2rem);
+}
+
+@media (max-width: 1100px) {
+  .guide-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .guide-checklist {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .guide-hero {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .guide-hero__loop {
+    grid-template-columns: repeat(4, auto);
+    border-left: 0;
+    border-top: 2px solid var(--nw-color-cyan);
+  }
+
+  .guide-steps,
+  .guide-checklist {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-destination {
+    grid-template-columns: 1fr auto;
+  }
+
+  .guide-destination span {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
 .login-screen {
   position: relative;
   min-height: 100vh;

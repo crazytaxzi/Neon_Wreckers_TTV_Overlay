@@ -96,7 +96,7 @@ function GameApp({ preferences, updatePreferences }: { preferences: UiPreference
   const me = game.me;
   const pageProps: GameData = { ...game, me };
   const pages: Record<string, ReactNode> = {
-    guide: <GuidePage />,
+    guide: <GuidePage onNavigate={setTab} />,
     station: <StationPage {...pageProps} onNavigate={setTab} />,
     salvage: <SalvagePage {...pageProps} />,
     inventory: <InventoryPage {...pageProps} />,
