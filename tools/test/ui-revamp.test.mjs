@@ -30,6 +30,8 @@ test('player navigation exposes exactly five primary mobile destinations', async
   const labels = [...source.matchAll(/mobileButton\([^,]+, '([^']+)'/g)].map(match => match[1]);
   assert.deepEqual(labels, ['Home', 'Salvage', 'Station', 'Market', 'Profile']);
   assert.match(source, /playerStationGroup/);
+  assert.match(source, /const playerStationSheetGroup = \[\.\.\.playerStationGroup, 'guide'\];/);
+  assert.match(source, /sheet === 'station' \? playerStationSheetGroup : playerProfileGroup/);
   assert.match(source, /playerProfileGroup/);
   assert.match(source, /nw-mobile-nav-sheet/);
 });
@@ -56,7 +58,7 @@ test('player artwork uses responsive project assets instead of concept screensho
   const originals = assets.filter(file => !/-\d+w\.webp$/.test(file));
   const mobile = assets.filter(file => file.endsWith('-360w.webp'));
   const tablet = assets.filter(file => file.endsWith('-600w.webp'));
-  assert.equal(originals.length, 35, 'Expected the 35 canonical project artwork sources.');
+  assert.equal(originals.length, 47, 'Expected the 47 canonical project artwork sources.');
   assert.equal(mobile.length, originals.length, 'Every canonical artwork source needs a 360px mobile variant.');
   assert.equal(tablet.length, originals.length, 'Every canonical artwork source needs a 600px tablet variant.');
   assert.match(component, /srcSet=/);
