@@ -1140,6 +1140,24 @@ html[data-reduced-motion="true"] *::after {
   background: rgba(var(--nw-color-surface-rgb), 0.52);
 }
 
+.player-action-hub .nw-button {
+  min-height: 5.25rem;
+  justify-content: flex-start;
+  padding: 0.9rem;
+  text-align: left;
+}
+
+.player-action-hub .nw-button > span:last-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.player-action-hub .nw-button small {
+  color: var(--nw-color-text-dim);
+  font-weight: 500;
+  white-space: normal;
+}
+
 .player-alert-button {
   position: relative;
   display: grid;

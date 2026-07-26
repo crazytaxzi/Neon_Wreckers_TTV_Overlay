@@ -5,6 +5,7 @@ import {
   DataGrid,
   Field,
   Input,
+  Modal,
   Notification,
   NWIcon,
   Panel,
@@ -100,7 +101,8 @@ export function InventoryPage({ inventory, catalog }: Pick<GameData, 'inventory'
 }
 
 export function CraftingPage({ recipes, inventory, catalog, cooldowns, action }: Pick<GameData, 'recipes' | 'inventory' | 'catalog' | 'cooldowns' | 'action'>) {
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [selectedRecipe, setSelectedRecipe] = useState<CraftingRecipe | null>(null);
+  const [quantity, setQuantity] = useState(1);
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
   const held = (slug: string) => inventory.find(item => item.itemSlug === slug)?.quantity ?? 0;
@@ -141,10 +143,8 @@ export function CraftingPage({ recipes, inventory, catalog, cooldowns, action }:
       <div className="fabrication-grid">
         {recipes.map(recipe => {
           const maxAffordable = affordableFor(recipe);
-          const quantity = quantities[recipe.slug] ?? 1;
-          const ready = maxAffordable >= quantity;
+          const ready = maxAffordable > 0;
           const remaining = cooldownRemaining(cooldowns, `craft:${recipe.slug}`, now);
-          const setQuantity = (value: number) => setQuantities(current => ({ ...current, [recipe.slug]: Math.max(1, Math.min(10, value)) }));
           const primaryOutput = Object.keys(recipe.outputs)[0] ?? 'resources';
           return (
             <article key={recipe.slug} className={`fabrication-card ${recipe.unlocked ? 'is-online' : 'is-locked'}`}>
@@ -157,36 +157,43 @@ export function CraftingPage({ recipes, inventory, catalog, cooldowns, action }:
               <div className="fabrication-card__flow">
                 <div className="fabrication-materials">
                   <span>Input Materials</span>
-                  {Object.entries(recipe.inputs).map(([slug, amount]) => <div key={slug} className={held(slug) >= amount * quantity ? 'is-ready' : 'is-missing'}><NWIcon name={itemIcon(slug)} size={20} /><strong>{nameFor(slug)}</strong><small className="nw-numeric">{held(slug).toLocaleString()} / {(amount * quantity).toLocaleString()}</small></div>)}
+                  {Object.entries(recipe.inputs).map(([slug, amount]) => <div key={slug} className={held(slug) >= amount ? 'is-ready' : 'is-missing'}><NWIcon name={itemIcon(slug)} size={20} /><strong>{nameFor(slug)}</strong><small className="nw-numeric">{held(slug).toLocaleString()} / {amount.toLocaleString()}</small></div>)}
                 </div>
                 <div className="fabrication-arrow"><NWIcon name="signal" size={24} /><span>{recipe.durationSeconds * quantity}s</span></div>
                 <div className="fabrication-output">
                   <span>Output</span>
-                  {Object.entries(recipe.outputs).map(([slug, amount]) => <div key={slug}><NWIcon name={itemIcon(slug)} size={32} /><strong>{amount * quantity} × {nameFor(slug)}</strong></div>)}
+                  {Object.entries(recipe.outputs).map(([slug, amount]) => <div key={slug}><NWIcon name={itemIcon(slug)} size={32} /><strong>{amount} × {nameFor(slug)}</strong></div>)}
                 </div>
               </div>
 
               <div className="fabrication-card__economy">
-                <div><span>Input Value</span><strong className="nw-numeric">{(recipe.inputValue * quantity).toLocaleString()} cr</strong></div>
-                <div><span>Output Value</span><strong className="nw-numeric">{(recipe.outputValue * quantity).toLocaleString()} cr</strong></div>
+                <div><span>Input Value</span><strong className="nw-numeric">{recipe.inputValue.toLocaleString()} cr</strong></div>
+                <div><span>Output Value</span><strong className="nw-numeric">{recipe.outputValue.toLocaleString()} cr</strong></div>
                 <div><span>Efficiency</span><strong className="nw-numeric">{Math.round(recipe.efficiency * 100)}%</strong></div>
               </div>
 
-              <div className="fabrication-card__batch">
-                <span>Batch Size</span>
-                <Button type="button" size="sm" variant="ghost" disabled={quantity <= 1} aria-label={`Decrease ${recipe.name} batch`} onClick={() => setQuantity(quantity - 1)}>−</Button>
-                <strong className="nw-numeric">{quantity}</strong>
-                <Button type="button" size="sm" variant="ghost" disabled={quantity >= 10} aria-label={`Increase ${recipe.name} batch`} onClick={() => setQuantity(quantity + 1)}>+</Button>
-                <Pill tone={ready ? 'success' : 'warning'}>{maxAffordable} affordable</Pill>
-              </div>
-
-              <Button fullWidth disabled={!recipe.unlocked || !ready || remaining > 0} onClick={() => void craft(recipe, quantity)}>{remaining > 0 ? `Ready in ${formatCountdown(remaining)}` : !recipe.unlocked ? 'Station Module Offline' : ready ? `Fabricate Batch ×${quantity}` : `Need Materials for ×${quantity}`}</Button>
+              <div className="fabrication-card__batch"><span>Production Capacity</span><Pill tone={ready ? 'success' : 'warning'}>{maxAffordable} batches affordable</Pill></div>
+              <Button fullWidth disabled={!recipe.unlocked || remaining > 0} onClick={() => { setSelectedRecipe(recipe); setQuantity(1); }}>{remaining > 0 ? `Ready in ${formatCountdown(remaining)}` : !recipe.unlocked ? 'Station Module Offline' : 'Configure fabrication'}</Button>
             </article>
           );
         })}
       </div>
 
       {!recipes.length && <Notification title="No fabrication schematics" tone="info">No crafting recipes were returned by the content service.</Notification>}
+      <Modal
+        open={Boolean(selectedRecipe)}
+        onClose={() => setSelectedRecipe(null)}
+        title={selectedRecipe ? `Fabricate ${selectedRecipe.name}` : 'Configure fabrication'}
+        description="Choose a batch size and review the exact material flow before starting production."
+        footer={<><Button variant="ghost" onClick={() => setSelectedRecipe(null)}>Cancel</Button><Button disabled={!selectedRecipe || affordableFor(selectedRecipe) < quantity} onClick={() => { if (selectedRecipe) void craft(selectedRecipe, quantity); setSelectedRecipe(null); }}>Fabricate ×{quantity}</Button></>}
+      >
+        {selectedRecipe && <div className="side-stack">
+          <Field label="Batch size"><div className="inline-actions"><Button type="button" variant="ghost" disabled={quantity <= 1} onClick={() => setQuantity(value => value - 1)}>−</Button><strong className="nw-numeric">{quantity}</strong><Button type="button" variant="ghost" disabled={quantity >= Math.min(10, affordableFor(selectedRecipe))} onClick={() => setQuantity(value => value + 1)}>+</Button></div></Field>
+          {Object.entries(selectedRecipe.inputs).map(([slug, amount]) => <div key={slug} className="material-readout"><span>{nameFor(slug)}</span><strong className="nw-numeric">{held(slug).toLocaleString()} held / {(amount * quantity).toLocaleString()} required</strong></div>)}
+          {Object.entries(selectedRecipe.outputs).map(([slug, amount]) => <div key={slug} className="material-readout"><span>Output: {nameFor(slug)}</span><strong className="nw-numeric">{amount * quantity}</strong></div>)}
+          <ProgressBar label="Material capacity" value={quantity} max={Math.max(1, affordableFor(selectedRecipe))} tone={affordableFor(selectedRecipe) >= quantity ? 'success' : 'warning'} />
+        </div>}
+      </Modal>
     </div>
   );
 }

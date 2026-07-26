@@ -25,7 +25,7 @@ test('OBS overlay explicitly removes the full-canvas raster layer', () => {
 });
 
 test('Rustlight Tug uses the final generated ship portrait as its primary artwork', () => {
-  assert.match(fleetPage, /ship\.visualKey\?\.startsWith\('ship-'\)/);
+  assert.match(fleetPage, /ship\.visualKey\?\.startsWith\(["']ship-["']\)/);
   assert.match(gameArtwork, /function primaryArtwork/);
   assert.match(gameArtwork, /rustlight-tug\.webp'[\s\S]*rustlight-tug\.svg/);
 
@@ -49,7 +49,11 @@ test('quarters expose functional fixture actions through the API and player surf
   assert.match(quartersRoute, /post\('\/api\/v1\/quarters\/use'/);
   for (const fixture of ['bed', 'relic-shelf', 'espresso-rig']) {
     assert.ok(quartersRoute.includes(`quarters:${fixture}`), `Missing persistent cooldown for ${fixture}`);
-    assert.ok(quartersPage.includes(`key: '${fixture}'`), `Missing player fixture definition for ${fixture}`);
+    assert.match(
+      quartersPage,
+      new RegExp(`key: ["']${fixture}["']`),
+      `Missing player fixture definition for ${fixture}`,
+    );
   }
   assert.match(webApp, /from '\.\/pages\/quarters\.js'/);
   assert.match(webApp, /quarters: <QuartersPage \{\.\.\.pageProps\} \/>/);
@@ -64,7 +68,10 @@ test('raster-skinned controls retain readable foreground contrast', () => {
 });
 
 test('crew star ratings cannot pass a negative count to String.repeat', () => {
-  assert.match(fleetPage, /Math\.min\(5, Math\.max\(0, Math\.trunc\(/);
+  assert.match(
+    fleetPage,
+    /Math\.min\(\s*5,\s*Math\.max\(\s*0,\s*Math\.trunc\(/,
+  );
   assert.match(fleetPage, /formatCrewStars\(member\.jobStars\)/);
   assert.match(fleetPage, /formatCrewStars\(member\.talentStars\)/);
   assert.doesNotMatch(fleetPage, /'☆'\.repeat\(5 - value\)/);
