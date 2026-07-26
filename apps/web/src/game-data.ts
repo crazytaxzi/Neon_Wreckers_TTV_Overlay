@@ -132,11 +132,11 @@ export function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null |
       const message = parseRealtimeMessage(event.data);
       if (!message) return;
       if (message.type === 'station.updated') setStation(message.station);
-      if (message.type === 'wreck.updated') setWreck(message.wreck);
+      if (message.type === 'wreck.updated') void refresh();
       if (message.type === 'history.added') setHistory(current => [message.entry, ...current].slice(0, 50));
     };
     return () => socket.close();
-  }, []);
+  }, [refresh]);
 
   useEffect(() => {
     if (!me) return;

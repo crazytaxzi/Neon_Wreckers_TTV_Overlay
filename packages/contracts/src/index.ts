@@ -152,7 +152,7 @@ export const currentWreckSchema = z.object({
   remainingLootBudget: z.number(),
   createdAt: serializedDateTimeSchema,
   updatedAt: serializedDateTimeSchema,
-  salvageProfile: z.object({ cutters: salvageModeSchema, cargo: salvageModeSchema })
+  salvageProfile: z.object({ cutters: salvageModeSchema, cargo: salvageModeSchema }).optional()
 }).passthrough();
 
 export const authenticatedUserSummarySchema = z.object({

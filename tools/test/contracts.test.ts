@@ -48,6 +48,8 @@ test('API success envelopes validate their payload schema', () => {
 test('realtime events are a discriminated union', () => {
   assert.equal(realtimeEventSchema.parse({ type: 'station.updated', station }).type, 'station.updated');
   assert.equal(realtimeEventSchema.parse({ type: 'wreck.updated', wreck }).type, 'wreck.updated');
+  const { salvageProfile: _profile, ...broadcastWreck } = wreck;
+  assert.equal(realtimeEventSchema.parse({ type: 'wreck.updated', wreck: broadcastWreck }).type, 'wreck.updated');
   assert.equal(realtimeEventSchema.parse({ type: 'history.added', entry: history }).type, 'history.added');
   assert.equal(realtimeEventSchema.parse({ type: 'presence.updated', count: 3 }).type, 'presence.updated');
 });

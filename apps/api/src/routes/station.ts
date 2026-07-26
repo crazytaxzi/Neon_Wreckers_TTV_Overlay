@@ -4,7 +4,7 @@ import { GameRuleError, salvageWreckProfile } from '@neon-wreckers/game-engine';
 import { crewMemberSchema, historyRecordSchema, inventoryItemSchema, shipSchema, stationSnapshotSchema } from '@neon-wreckers/contracts';
 import { careerRules, itemsBySlug } from '@neon-wreckers/content';
 import type { ApiContext } from '../types.js';
-import { requireUser } from '../services/auth.js';
+import { getUserFromRequest, requireUser } from '../services/auth.js';
 import { getOrCreateCurrentWreck } from '../services/salvage.js';
 import { stationDto } from '../services/station.js';
 import { enforceDurableCooldown } from '../services/actions.js';
@@ -14,8 +14,14 @@ export async function registerStationRoutes(app: FastifyInstance, context: ApiCo
   app.get('/api/v1/station', async request => ({ data: stationSnapshotSchema.parse(await stationDto(context.prisma)), requestId: request.id }));
 
   app.get('/api/v1/wrecks/current', async request => {
-    const user = await requireUser(context.prisma, request);
-    const [wreck, station] = await Promise.all([getOrCreateCurrentWreck(context), stationDto(context.prisma)]);
+    const [wreck, user] = await Promise.all([
+      getOrCreateCurrentWreck(context),
+      getUserFromRequest(context.prisma, request)
+    ]);
+    if (!user?.player) {
+      return { data: wreck, requestId: request.id };
+    }
+    const station = await stationDto(context.prisma);
     const commandBonus = Number(station.modules.find(module => module.slug === 'command-pod')?.effects.scanBonus ?? 0);
     const researchBonus = Number(station.modules.find(module => module.slug === 'research-lab')?.effects.rareDiscoveryBonus ?? 0);
     const profile = salvageWreckProfile({ wreck, careerBonus: commandBonus + Number(careerRules[user.player.career]?.salvageSuccessBonus ?? 0), rareDiscoveryBonus: researchBonus + Number(careerRules[user.player.career]?.rareDiscoveryBonus ?? 0) });
