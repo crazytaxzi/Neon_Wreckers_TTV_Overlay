@@ -31,6 +31,12 @@ const worker = new Worker(
     const expeditionCrew = await prisma.crewMember.findMany({ where: { id: { in: expedition.crewIds } } });
     const crewSuccessBonus = expeditionCrew.reduce((total, member) => total + (member.role === 'pilot' ? member.jobStars * .01 + member.talentStars * .004 : member.role === 'scout' ? member.jobStars * .006 + member.talentStars * .008 : member.talentStars * .002), 0);
     const crewLootBonus = expeditionCrew.some(member => member.role === 'quartermaster' && member.jobStars >= 4) ? 1 : 0;
+    const traitSuccessBonus = expeditionCrew.filter(member => member.traits.includes('Pathfinder') && expedition.route === 'bold').length * .02;
+    const routeSuccessBonus = expedition.route === 'safe' ? .05 : expedition.route === 'bold' ? -.06 : 0;
+    const routeLootBonus = expedition.route === 'bold' ? 1 : expedition.route === 'safe' ? -1 : 0;
+    const installedModules = shipRules.upgrades.filter((upgrade: { slug: string }) => expedition.ship?.upgrades.includes(upgrade.slug));
+    const moduleSuccessBonus = installedModules.reduce((sum: number, upgrade: { successBonus?: number }) => sum + Number(upgrade.successBonus ?? 0), 0);
+    const moduleLootBonus = installedModules.reduce((sum: number, upgrade: { lootRollBonus?: number }) => sum + Number(upgrade.lootRollBonus ?? 0), 0);
 
     const resolved = resolveExpedition({
       expedition: {
@@ -40,8 +46,8 @@ const worker = new Worker(
       },
       expeditionDefinition: expeditionDefinitions[expedition.definition],
       items: itemsBySlug,
-      lootRollBonus: (expedition.ship?.upgrades.includes('expanded-hold') ? Number(shipRules.upgrades.find((upgrade: { slug: string; lootRollBonus?: number }) => upgrade.slug === 'expanded-hold')?.lootRollBonus ?? 0) : 0) + Number(expeditionSkin?.lootRollBonus ?? 0) + crewLootBonus,
-      successBonus: Number(expeditionSkin?.successBonus ?? 0) + Number(shipClass?.successBonus ?? 0) + crewSuccessBonus,
+      lootRollBonus: Math.max(0, moduleLootBonus + Number(expeditionSkin?.lootRollBonus ?? 0) + Number(shipClass?.lootRollBonus ?? 0) + crewLootBonus + routeLootBonus),
+      successBonus: Number(expeditionSkin?.successBonus ?? 0) + Number(shipClass?.successBonus ?? 0) + moduleSuccessBonus + crewSuccessBonus + traitSuccessBonus + routeSuccessBonus,
       now: expedition.resolvesAt.toISOString()
     });
 
@@ -70,6 +76,12 @@ const worker = new Worker(
         where: { id: expedition.id, status: 'active' },
         data: {
           status: resolvedStatus,
+          stage: 3,
+          stages: [
+            { name: 'Departure', status: 'complete', detail: 'Fleet departure confirmed.' },
+            { name: 'Approach', status: 'complete', detail: `${expedition.route} route completed through the outer lanes.` },
+            { name: 'Recovery', status: resolvedStatus === 'resolved' ? 'complete' : 'failed', detail: resolved.incidentLog.at(-1) ?? 'Field telemetry closed.' }
+          ],
           rewards: JSON.parse(JSON.stringify(resolved.rewards)),
           incidentLog: JSON.parse(JSON.stringify(resolved.incidentLog))
         }
@@ -91,6 +103,7 @@ const worker = new Worker(
           if (member) await transaction.crewMember.update({ where: { id: crewId }, data: { morale: Math.min(100, member.morale + 3) } });
         }
       }
+      await transaction.crewMember.updateMany({ where: { id: { in: expedition.crewIds } }, data: { fatigue: { decrement: 5 } } });
 
       await transaction.notification.create({
         data: {

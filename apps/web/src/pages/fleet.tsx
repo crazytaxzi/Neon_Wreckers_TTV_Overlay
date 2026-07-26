@@ -238,6 +238,11 @@ export function ShipsPage({
               </Badge>
             </div>
             <HealthBar label="Hull condition" value={ship.condition} />
+            <ProgressBar
+              label={`Mastery rank ${ship.masteryRank} · ${Math.min(4, 1 + ship.masteryRank)} module slots`}
+              value={ship.masteryRank >= 3 ? 100 : ship.masteryRank === 2 ? ((ship.masteryXp - 150) / 200) * 100 : ship.masteryRank === 1 ? ((ship.masteryXp - 50) / 100) * 100 : (ship.masteryXp / 50) * 100}
+              tone="purple"
+            />
             <div className="ship-card__stats">
               <StatusDisplay
                 compact
@@ -310,6 +315,9 @@ export function ShipsPage({
           )}
           {operation === "upgrade" && (
             <Card>
+              <Notification title={`${selected.upgrades.length}/${Math.min(4, 1 + selected.masteryRank)} module slots installed`} tone={selected.upgrades.length < Math.min(4, 1 + selected.masteryRank) ? "info" : "warning"}>
+                Complete expeditions with this ship to earn mastery XP. Module slots unlock at 50, 150, and 350 mastery XP.
+              </Notification>
               <Field label="Upgrade preview">
                 <Select
                   value={upgradeSlug}
@@ -340,6 +348,9 @@ export function ShipsPage({
                         −{Math.round(upgrade.repairDiscount * 100)}% repair
                       </Pill>
                     ) : null}
+                    {upgrade.lootRollBonus ? <Pill tone="info">+{upgrade.lootRollBonus} recovery roll</Pill> : null}
+                    {upgrade.successBonus ? <Pill tone="success">+{Math.round(upgrade.successBonus * 100)}% expedition success</Pill> : null}
+                    {upgrade.blueprints ? <Pill tone="purple">{upgrade.blueprints} prototype blueprint</Pill> : null}
                   </div>
                 </>
               ) : (
@@ -437,6 +448,7 @@ export function ShipsPage({
                 (renameName.trim().length < 2 ||
                   renameName.trim() === selected.name)) ||
               (operation === "upgrade" && !upgrade) ||
+              (operation === "upgrade" && selected.upgrades.length >= Math.min(4, 1 + selected.masteryRank)) ||
               (operation === "license" && (!skin || skinRemaining > 0)) ||
               (operation === "refuel" && fuelHeld < fuelCells) ||
               (operation === "repair" && selected.condition >= 100)
@@ -472,6 +484,8 @@ export function ShipsPage({
                 <Pill tone="purple">{definition.fuel} fuel</Pill>
                 {definition.successBonus ? <Pill tone="success">+{Math.round(definition.successBonus * 100)}% expedition success</Pill> : null}
                 {definition.injuryReduction ? <Pill tone="success">−{Math.round(definition.injuryReduction * 100)}% injury recovery</Pill> : null}
+                {definition.lootRollBonus ? <Pill tone="info">+{definition.lootRollBonus} recovery roll</Pill> : null}
+                {definition.maxCrew ? <Pill tone="purple">{definition.maxCrew} crew capacity</Pill> : null}
               </div>
               <Button
                 fullWidth
@@ -987,7 +1001,7 @@ function PremiumSkinsPanel({
     </Panel>
   );
 }
-export function CrewPage({ crew, action }: Pick<GameData, "crew" | "action">) {
+export function CrewPage({ crew, crewCandidates, action }: Pick<GameData, "crew" | "crewCandidates" | "action">) {
   const [recruitName, setRecruitName] = useState("Nova");
   const [recruitRole, setRecruitRole] = useState("engineer");
   const [recruitOpen, setRecruitOpen] = useState(false);
@@ -1076,6 +1090,15 @@ export function CrewPage({ crew, action }: Pick<GameData, "crew" | "action">) {
                 value={member.morale}
                 tone={toneForValue(member.morale)}
               />
+              <ProgressBar
+                label="Fatigue"
+                value={member.fatigue}
+                tone={member.fatigue >= 80 ? "danger" : member.fatigue >= 50 ? "warning" : "info"}
+              />
+              <div className="trait-list">
+                <Pill tone="purple">{member.specialty} specialist</Pill>
+                {member.assignment ? <Pill tone="info">Assigned: {member.assignment}</Pill> : null}
+              </div>
               <div className="crew-rating">
                 <div>
                   <span>Job certification</span>
@@ -1141,7 +1164,27 @@ export function CrewPage({ crew, action }: Pick<GameData, "crew" | "action">) {
                 <Button size="sm" variant="ghost" onClick={() => setRetiringCrew(member)}>
                   Retire
                 </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={exhaustion > 0 || (member.fatigue <= 0 && member.morale >= 100)}
+                  onClick={() => void action(`/api/v1/crew/${member.id}/shore-leave`, undefined, "Shore leave scheduled")}
+                >
+                  Shore leave · 150 cr
+                </Button>
               </div>
+              <Field label="Station assignment">
+                <Select
+                  value={member.assignment ?? ""}
+                  disabled={exhaustion > 0}
+                  onChange={(event) => void action(`/api/v1/crew/${member.id}/assignment`, { assignment: event.target.value || null }, "Crew assignment updated")}
+                >
+                  <option value="">Expedition reserve</option>
+                  <option value="shipyard">Shipyard duty</option>
+                  <option value="refinery">Refinery duty</option>
+                  <option value="quarters">Quarters support</option>
+                </Select>
+              </Field>
             </Card>
           );
         })}
@@ -1159,6 +1202,20 @@ export function CrewPage({ crew, action }: Pick<GameData, "crew" | "action">) {
         footer={<><Button variant="ghost" onClick={() => setRecruitOpen(false)}>Cancel</Button><Button disabled={recruitName.trim().length < 2} onClick={() => { void action("/api/v1/crew/recruit", { name: recruitName, role: recruitRole }, "Crew recruited"); setRecruitOpen(false); }}>Recruit for 400 credits</Button></>}
       >
         <div className="crew-recruitment-panel">
+        {crewCandidates?.candidates.map((candidate) => (
+          <Card key={candidate.id}>
+            <Badge tone="purple">{candidate.specialty}</Badge>
+            <h3>{candidate.name}</h3>
+            <p>{candidate.role} · {candidate.traits.join(", ")}</p>
+            <small>{candidate.description}</small>
+            <Button fullWidth onClick={() => { void action("/api/v1/crew/recruit", { candidateId: candidate.id }, `${candidate.name} recruited`); setRecruitOpen(false); }}>
+              Recruit candidate · {crewCandidates.recruitCredits} cr
+            </Button>
+          </Card>
+        ))}
+        <Notification title="Direct recruitment" tone="info">
+          Rotating candidates carry specialties and traits. Direct recruits remain available as dependable generalists.
+        </Notification>
         <Field label="Crew name">
           <Input
             value={recruitName}
@@ -1220,6 +1277,8 @@ export function ExpeditionPage({
   const availableCrew = crew.filter(
     (member) =>
       !activeCrewIds.has(member.id) &&
+      !member.assignment &&
+      member.fatigue < 80 &&
       (!member.injuredUntil || Date.parse(member.injuredUntil) <= Date.now()),
   );
   const [crewIds, setCrewIds] = useState<string[]>(
@@ -1228,6 +1287,7 @@ export function ExpeditionPage({
   const [now, setNow] = useState(Date.now());
   const [lootInfo, setLootInfo] = useState<ExpeditionDefinition | null>(null);
   const [selectedMission, setSelectedMission] = useState<ExpeditionDefinition | null>(null);
+  const [route, setRoute] = useState<"safe" | "balanced" | "bold">("balanced");
   useEffect(() => {
     if (!availableShips.some((ship) => ship.id === shipId))
       setShipId(availableShips[0]?.id ?? "");
@@ -1250,19 +1310,20 @@ export function ExpeditionPage({
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+  const selectedShip = availableShips.find((ship) => ship.id === shipId);
+  const crewLimit = selectedShip?.classSlug === "command-cruiser" ? 5 : 4;
   const toggleCrew = (id: string) =>
     setCrewIds((current) =>
       current.includes(id)
         ? current.filter((candidate) => candidate !== id)
-        : [...current, id].slice(0, 4),
+        : [...current, id].slice(0, crewLimit),
     );
   const launch = (definition: string) =>
     action(
       "/api/v1/expeditions/launch",
-      { definition, shipId: shipId || undefined, crewIds },
+      { definition, shipId: shipId || undefined, crewIds, route },
       "Expedition launched",
     );
-  const selectedShip = availableShips.find((ship) => ship.id === shipId);
   return (
     <div className="page-stack expedition-console">
       <section className="expedition-console__masthead">
@@ -1374,17 +1435,22 @@ export function ExpeditionPage({
             const resting = Boolean(
               member.injuredUntil && Date.parse(member.injuredUntil) > now,
             );
+            const unavailable = resting || member.fatigue >= 80 || Boolean(member.assignment);
             return (
               <Button
                 key={member.id}
                 size="sm"
-                disabled={busy || resting}
+                disabled={busy || unavailable}
                 variant={crewIds.includes(member.id) ? "primary" : "ghost"}
                 onClick={() => toggleCrew(member.id)}
               >
                 {member.name} ·{" "}
                 {busy
                   ? "deployed"
+                  : member.assignment
+                    ? `assigned ${member.assignment}`
+                    : member.fatigue >= 80
+                      ? `fatigued ${member.fatigue}%`
                   : resting
                     ? `resting ${formatCountdown(Date.parse(member.injuredUntil!) - now)}`
                     : member.role}
@@ -1394,8 +1460,15 @@ export function ExpeditionPage({
         </div>
         <p>
           {crewIds.length} crew assigned. Deployed ships and crew are excluded;
-          up to four crew may deploy.
+          up to {crewLimit} crew may deploy on this frame.
         </p>
+        <Field label="Mission route">
+          <Select value={route} onChange={(event) => setRoute(event.target.value as "safe" | "balanced" | "bold")}>
+            <option value="safe">Safe · +5% success, one fewer bonus roll</option>
+            <option value="balanced">Balanced · standard risk and recovery</option>
+            <option value="bold">Bold · −6% success, one extra recovery roll</option>
+          </Select>
+        </Field>
           {selectedMission && <div className="trait-list"><Pill tone="purple">{selectedMission.fuelCost} fuel required</Pill><Pill tone="neutral">{selectedMission.minCrew} crew required</Pill></div>}
         </div>
       </Modal>
@@ -1438,9 +1511,11 @@ export function ExpeditionPage({
             },
             {
               key: "log",
-              header: "Incident log",
+              header: "Mission stages",
               render: (expedition) =>
-                expedition.incidentLog?.join(" ") || "Awaiting telemetry",
+                expedition.stages?.length
+                  ? expedition.stages.map(stage => `${stage.name}: ${stage.status}`).join(" · ")
+                  : expedition.incidentLog?.join(" ") || "Awaiting telemetry",
             },
             {
               key: "action",

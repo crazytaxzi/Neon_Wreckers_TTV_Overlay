@@ -696,6 +696,34 @@
           "600w": "/ships/base/medical-cutter-600w.webp"
         }
       }
+    },
+    {
+      "key": "ship-mining-barge",
+      "type": "webp-raster",
+      "tags": ["ship"],
+      "alt": "Heavy mining barge with ore drums and articulated extraction booms",
+      "source": {
+        "kind": "raster",
+        "path": "/ships/base/mining-barge.webp",
+        "variants": {
+          "360w": "/ships/base/mining-barge-360w.webp",
+          "600w": "/ships/base/mining-barge-600w.webp"
+        }
+      }
+    },
+    {
+      "key": "ship-command-cruiser",
+      "type": "webp-raster",
+      "tags": ["ship"],
+      "alt": "Armored command cruiser with tactical sensor arrays",
+      "source": {
+        "kind": "raster",
+        "path": "/ships/base/command-cruiser.webp",
+        "variants": {
+          "360w": "/ships/base/command-cruiser-360w.webp",
+          "600w": "/ships/base/command-cruiser-600w.webp"
+        }
+      }
     }
   ]
 }

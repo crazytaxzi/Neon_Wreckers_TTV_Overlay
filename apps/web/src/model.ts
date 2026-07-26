@@ -101,6 +101,8 @@ export type Ship = {
   fuel: number;
   cargoCapacity: number;
   upgrades: string[];
+  masteryXp: number;
+  masteryRank: number;
   ownedSkins: string[];
   activeSkin: string | null;
   visualKey: string;
@@ -115,8 +117,16 @@ export type CrewMember = {
   jobStars: number;
   talentStars: number;
   morale: number;
+  fatigue: number;
+  specialty: string;
+  assignment: string | null;
   injuredUntil: string | null;
   traits: string[];
+};
+export type CrewCandidates = {
+  candidates: Array<{ id: string; name: string; role: string; specialty: string; traits: string[]; description: string }>;
+  nextRotation: string;
+  recruitCredits: number;
 };
 
 export type Expedition = {
@@ -131,6 +141,9 @@ export type Expedition = {
   resolvesAt: string | null;
   rewards: unknown[];
   incidentLog: string[];
+  route: string;
+  stage: number;
+  stages: Array<{ name: string; status: string; detail: string }>;
   createdAt: string;
   updatedAt: string;
 };
@@ -169,8 +182,8 @@ export type Marketplace = {
   unlocked: boolean;
   listings: MarketplaceListing[];
   ships: {
-    purchases: Array<{ slug: string; name: string; description?: string; credits: number; cargoCapacity: number; fuel: number; visualKey: string; successBonus?: number; injuryReduction?: number }>;
-    upgrades: Array<{ slug: string; name: string; description: string; credits: number; alloys?: number; electronics?: number; conditionBonus?: number; cargoBonus?: number; fuelDiscount?: number; repairDiscount?: number; lootRollBonus?: number }>;
+    purchases: Array<{ slug: string; name: string; description?: string; credits: number; cargoCapacity: number; fuel: number; visualKey: string; successBonus?: number; injuryReduction?: number; lootRollBonus?: number; maxCrew?: number }>;
+    upgrades: Array<{ slug: string; name: string; description: string; credits: number; alloys?: number; electronics?: number; blueprints?: number; conditionBonus?: number; cargoBonus?: number; fuelDiscount?: number; repairDiscount?: number; lootRollBonus?: number; successBonus?: number }>;
     skins: Array<{ slug: string; classSlug: string; name: string; description: string; credits: number; cargoBonus?: number; fuelDiscount?: number; repairDiscount?: number; lootRollBonus?: number; successBonus?: number }>;
     skinCooldownSeconds: number;
     repair: { creditsPerCondition: number; alloysPerTwentyCondition: number };
@@ -243,6 +256,7 @@ export type GameData = {
   inventory: InventoryItem[];
   ships: Ship[];
   crew: CrewMember[];
+  crewCandidates: CrewCandidates | null;
   history: HistoryEntry[];
   expeditions: Expedition[];
   expeditionDefinitions: ExpeditionDefinition[];

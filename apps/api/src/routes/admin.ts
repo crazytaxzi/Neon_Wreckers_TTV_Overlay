@@ -51,6 +51,36 @@ export async function registerAdminRoutes(app: FastifyInstance, context: ApiCont
     return { data: { service: { uptimeSeconds: Math.floor(process.uptime()), startedAt: context.metrics.startedAt, node: process.version, loadAverage: os.loadavg(), cpuCount: os.cpus().length, memory: { rss: memory.rss, heapUsed: memory.heapUsed, heapTotal: memory.heapTotal }, disk: disk ? { total: disk.blocks * disk.bsize, free: disk.bfree * disk.bsize, used: (disk.blocks - disk.bfree) * disk.bsize } : null, sockets: context.realtime.connectionCount }, throughput: context.metrics.snapshot(), database: { players, activeExpeditions, activeEvents, activeCooldowns: cooldowns, pendingTransactions }, queue, timers: timers.map(timer => ({ id: timer.id, name: timer.name, playerName: timer.player.user.displayName, resolvesAt: timer.resolvesAt })), cloudSafeZone: { machine: 'e2-micro', eligibleRegions: ['us-west1', 'us-central1', 'us-east1'], vmHoursPerMonth: 'one eligible instance for the number of hours in the month', standardDiskGbMonth: 30, outboundGbMonth: 1, estimatedOverage: { vmUsdPerHour: 0.01, standardDiskUsdPerGbMonth: 0.04, premiumEgressUsdPerGbFrom: 0.08 }, disclaimer: 'Estimates only; region, network tier, taxes, discounts, and current Google pricing affect billing.' } }, requestId: request.id };
   });
 
+  app.get('/api/v1/admin/balance-telemetry', async request => {
+    await requireAdmin(context.prisma, request);
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60_000);
+    const [expeditions, totalShips, activeShips, shipsByClass] = await Promise.all([
+      context.prisma.expedition.findMany({ where: { createdAt: { gte: since } }, select: { status: true, launchedAt: true, resolvesAt: true, rewards: true, route: true } }),
+      context.prisma.ship.count(),
+      context.prisma.expedition.count({ where: { status: 'active' } }),
+      context.prisma.ship.groupBy({ by: ['classSlug'], _count: { _all: true }, _avg: { masteryXp: true } })
+    ]);
+    const finished = expeditions.filter(expedition => ['resolved', 'failed', 'claimed'].includes(expedition.status));
+    const failures = expeditions.filter(expedition => expedition.status === 'failed').length;
+    const completionMinutes = finished
+      .filter(expedition => expedition.launchedAt && expedition.resolvesAt)
+      .map(expedition => (expedition.resolvesAt!.getTime() - expedition.launchedAt!.getTime()) / 60_000);
+    const creditsGenerated = finished.reduce((total, expedition) => total + Number((expedition.rewards as Array<{ itemSlug?: string; quantity?: number }>).find(reward => reward.itemSlug === 'credits')?.quantity ?? 0), 0);
+    return {
+      data: {
+        windowDays: 30,
+        expeditions: expeditions.length,
+        averageCompletionMinutes: completionMinutes.length ? Math.round(completionMinutes.reduce((sum, value) => sum + value, 0) / completionMinutes.length) : 0,
+        creditsGenerated,
+        fleetUtilization: totalShips ? activeShips / totalShips : 0,
+        failureRate: finished.length ? failures / finished.length : 0,
+        routes: Object.fromEntries(['safe', 'balanced', 'bold'].map(route => [route, expeditions.filter(expedition => expedition.route === route).length])),
+        shipsByClass: shipsByClass.map(group => ({ classSlug: group.classSlug, ships: group._count._all, averageMasteryXp: Math.round(group._avg.masteryXp ?? 0) }))
+      },
+      requestId: request.id
+    };
+  });
+
   app.get('/api/v1/admin/players', async request => {
     await requireAdmin(context.prisma, request);
     const query = z.object({ q: z.string().max(100).optional() }).parse(request.query);

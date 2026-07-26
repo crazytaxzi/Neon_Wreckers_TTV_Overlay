@@ -47,20 +47,28 @@
       { "slug": "cargo-hauler", "name": "Cargo Hauler", "credits": 2200, "cargoCapacity": 40, "fuel": 5, "visualKey": "ship-cargo-hauler" },
       { "slug": "survey-corvette", "name": "Survey Corvette", "credits": 6500, "cargoCapacity": 30, "fuel": 7, "visualKey": "ship-survey-corvette", "description": "A deep-range telemetry vessel with an integrated scanner array and efficient expedition plotting.", "successBonus": 0.05 },
       { "slug": "medical-cutter", "name": "Medical Cutter", "credits": 7800, "cargoCapacity": 34, "fuel": 6, "visualKey": "ship-medical-cutter", "description": "A hardened recovery ship whose treatment pods reduce expedition injury time.", "injuryReduction": 0.35 }
+      ,{ "slug": "mining-barge", "name": "Mining Barge", "credits": 9500, "cargoCapacity": 60, "fuel": 5, "visualKey": "ship-mining-barge", "description": "A heavy ore-processing platform that trades agility for a larger hold and an extra expedition recovery roll.", "lootRollBonus": 1 }
+      ,{ "slug": "command-cruiser", "name": "Command Cruiser", "credits": 14000, "cargoCapacity": 42, "fuel": 9, "visualKey": "ship-command-cruiser", "description": "A fleet coordination vessel with room for a fifth specialist and reinforced tactical plotting.", "successBonus": 0.06, "maxCrew": 5 }
     ],
     "refuel": { "fuelPerCell": 1 },
     "repair": { "creditsPerCondition": 8, "alloysPerTwentyCondition": 1 },
     "upgrades": [
       { "slug": "reinforced-hull", "name": "Reinforced Hull", "description": "Reduces all ship repair credit costs by 20%.", "credits": 600, "alloys": 8, "repairDiscount": 0.2 },
       { "slug": "expanded-hold", "name": "Expanded Hold", "description": "Adds 8 cargo capacity and one weighted loot roll to every successful expedition.", "credits": 500, "alloys": 5, "cargoBonus": 8, "lootRollBonus": 1 },
-      { "slug": "efficient-drive", "name": "Efficient Drive", "description": "Reduces every expedition fuel cost by 1, to a minimum cost of 1.", "credits": 750, "electronics": 8, "fuelDiscount": 1 }
+      { "slug": "efficient-drive", "name": "Efficient Drive", "description": "Reduces every expedition fuel cost by 1, to a minimum cost of 1.", "credits": 750, "electronics": 8, "fuelDiscount": 1 },
+      { "slug": "prospector-array", "name": "Prototype Prospector Array", "description": "Adds one weighted recovery roll to successful expeditions.", "credits": 1600, "electronics": 12, "blueprints": 1, "lootRollBonus": 1 },
+      { "slug": "command-uplink", "name": "Prototype Command Uplink", "description": "Adds 3% expedition success through predictive fleet telemetry.", "credits": 1900, "electronics": 14, "blueprints": 1, "successBonus": 0.03 }
     ]
   },
   "crew": {
     "recruitCredits": 400,
     "trainCreditsPerLevel": 250,
     "maxRoster": 24,
-    "injuryMinutes": [15, 60]
+    "injuryMinutes": [15, 60],
+    "shoreLeaveCredits": 150,
+    "fatiguePerExpedition": 20,
+    "candidateRotationHours": 24,
+    "specialties": ["generalist", "deep-space", "salvage", "engineering", "medical", "logistics"]
   },
   "marketplace": {
     "sellMultiplier": 0.55,
@@ -126,7 +134,7 @@
       "risk": "high",
       "fuelCost": 2,
       "minCrew": 3,
-      "lootPool": ["research-data", "electronics", "sensor-lens", "navigation-chart", "plasma-conduit", "quantum-key", "grid-relay"],
+      "lootPool": ["research-data", "electronics", "sensor-lens", "navigation-chart", "plasma-conduit", "quantum-key", "grid-relay", "prototype-blueprint"],
       "lootRolls": 2,
       "durationMinutes": [
         30,
@@ -162,7 +170,7 @@
       "risk": "extreme",
       "fuelCost": 4,
       "minCrew": 4,
-      "lootPool": ["unknown-relic", "quantum-key", "grid-relay", "power-core", "navigation-chart", "plasma-conduit", "research-data"],
+      "lootPool": ["unknown-relic", "quantum-key", "grid-relay", "power-core", "navigation-chart", "plasma-conduit", "research-data", "prototype-blueprint"],
       "lootRolls": 4,
       "durationMinutes": [50, 80]
     }

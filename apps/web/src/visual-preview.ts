@@ -57,21 +57,22 @@ const previewGame: GameData = {
     { id: 'i8', itemSlug: 'unknown-relic', name: 'Unknown Relic', quantity: 8, rarity: 'legendary', visualKey: 'item.unknown-relic', updatedAt: at(-1) }
   ],
   ships: [
-    { id: 'ship-1', name: 'Titan Interceptor', classSlug: 'salvage-skiff', condition: 78, fuel: 42, cargoCapacity: 64, upgrades: ['reinforced-cutters'], ownedSkins: ['salvage-skiff-reclaimer'], activeSkin: 'salvage-skiff-reclaimer', visualKey: 'ship.salvage-skiff-reclaimer', createdAt: at(-4000) },
-    { id: 'ship-2', name: 'Void Lantern', classSlug: 'cargo-hauler', condition: 94, fuel: 81, cargoCapacity: 120, upgrades: ['expanded-hold'], ownedSkins: ['cargo-hauler-leviathan'], activeSkin: 'cargo-hauler-leviathan', visualKey: 'ship.cargo-hauler-leviathan', createdAt: at(-3000) }
+    { id: 'ship-1', name: 'Titan Interceptor', classSlug: 'salvage-skiff', condition: 78, fuel: 42, cargoCapacity: 64, upgrades: ['reinforced-cutters'], masteryXp: 188, masteryRank: 2, ownedSkins: ['salvage-skiff-reclaimer'], activeSkin: 'salvage-skiff-reclaimer', visualKey: 'ship.salvage-skiff-reclaimer', createdAt: at(-4000) },
+    { id: 'ship-2', name: 'Void Lantern', classSlug: 'cargo-hauler', condition: 94, fuel: 81, cargoCapacity: 120, upgrades: ['expanded-hold'], masteryXp: 74, masteryRank: 1, ownedSkins: ['cargo-hauler-leviathan'], activeSkin: 'cargo-hauler-leviathan', visualKey: 'ship.cargo-hauler-leviathan', createdAt: at(-3000) }
   ],
   crew: [
-    { id: 'crew-1', name: 'KAL-7', role: 'Engineer', level: 18, jobStars: 4, talentStars: 3, morale: 91, injuredUntil: null, traits: ['Refinery bonus', 'Rapid repair'] },
-    { id: 'crew-2', name: 'NOVA-9', role: 'Production', level: 16, jobStars: 4, talentStars: 2, morale: 86, injuredUntil: null, traits: ['Cargo specialist'] },
-    { id: 'crew-3', name: 'RIGGS', role: 'Builder', level: 14, jobStars: 3, talentStars: 3, morale: 78, injuredUntil: null, traits: ['Hull speed'] },
-    { id: 'crew-4', name: 'FLINT', role: 'Logistics', level: 12, jobStars: 3, talentStars: 2, morale: 82, injuredUntil: null, traits: ['Fuel economy'] }
+    { id: 'crew-1', name: 'KAL-7', role: 'Engineer', level: 18, jobStars: 4, talentStars: 3, morale: 91, fatigue: 20, specialty: 'engineering', assignment: null, injuredUntil: null, traits: ['Field Mechanic'] },
+    { id: 'crew-2', name: 'NOVA-9', role: 'Production', level: 16, jobStars: 4, talentStars: 2, morale: 86, fatigue: 35, specialty: 'salvage', assignment: null, injuredUntil: null, traits: ['Salvage Instinct'] },
+    { id: 'crew-3', name: 'RIGGS', role: 'Builder', level: 14, jobStars: 3, talentStars: 3, morale: 78, fatigue: 0, specialty: 'engineering', assignment: 'shipyard', injuredUntil: null, traits: ['Field Mechanic'] },
+    { id: 'crew-4', name: 'FLINT', role: 'Logistics', level: 12, jobStars: 3, talentStars: 2, morale: 82, fatigue: 10, specialty: 'logistics', assignment: null, injuredUntil: null, traits: ['Loadmaster'] }
   ],
+  crewCandidates: null,
   history: [
     { id: 'h1', category: 'construction', title: 'Station upgrade complete', body: 'Refinery Complex reached level 3.', actorDisplayName: 'WRECKER_77', details: { operation: 'upgrade' }, createdAt: at(-15) },
     { id: 'h2', category: 'market', title: 'Auction won', body: 'Reactor Core secured from the Void Exchange.', actorDisplayName: 'WRECKER_77', details: { operation: 'auction' }, createdAt: at(-45) },
     { id: 'h3', category: 'salvage', title: 'Breach detected', body: 'Dread Frigate entered the salvage bay.', actorDisplayName: null, details: { wreckName: 'Dread Frigate' }, createdAt: at(-65) }
   ],
-  expeditions: [{ id: 'exp-1', definition: 'dead-relay-ping', shipId: 'ship-1', crewIds: ['crew-1', 'crew-2'], name: 'Dead Relay Ping', status: 'active', risk: 'high', launchedAt: at(-90), resolvesAt: at(157), rewards: [], incidentLog: ['Signal lock acquired.'], createdAt: at(-90), updatedAt: at(-1) }],
+  expeditions: [{ id: 'exp-1', definition: 'dead-relay-ping', shipId: 'ship-1', crewIds: ['crew-1', 'crew-2'], name: 'Dead Relay Ping', status: 'active', risk: 'high', route: 'bold', stage: 2, stages: [{ name: 'Departure', status: 'complete', detail: 'Cleared station traffic.' }, { name: 'Approach', status: 'active', detail: 'Bold route plotted.' }], launchedAt: at(-90), resolvesAt: at(157), rewards: [], incidentLog: ['Signal lock acquired.'], createdAt: at(-90), updatedAt: at(-1) }],
   expeditionDefinitions: [{ slug: 'dead-relay-ping', name: 'Dead Relay Ping', description: 'Recover encrypted telemetry from a silent relay.', risk: 'high', fuelCost: 12, minCrew: 2, durationMinutes: [180, 240], lootRolls: 4, successChance: 0.72, rewardQuantity: [2, 6], baseRewards: { success: 'Research Data', failure: 'Scrap' }, lootPool: [{ slug: 'quantum-key', name: 'Quantum Key', rarity: 'legendary', chancePerRoll: 0.04 }] }],
   notifications: [
     { id: 'n1', type: 'danger', priority: 10, title: 'Reactor breach detected', body: 'Dread Frigate hazard profile escalated to extreme.', deepLink: 'salvage', readAt: null, expiresAt: null, createdAt: at(-16) },

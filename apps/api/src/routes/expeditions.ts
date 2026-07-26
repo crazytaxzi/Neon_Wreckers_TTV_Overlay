@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { GameRuleError, launchExpedition, lootWeightForRarity, resolveExpedition } from '@neon-wreckers/game-engine';
-import { expeditionDefinitions, itemsBySlug, progressionRules, shipRules } from '@neon-wreckers/content';
+import { crewRules, expeditionDefinitions, itemsBySlug, progressionRules, shipRules } from '@neon-wreckers/content';
 import type { ApiContext } from '../types.js';
 import { requireAdmin, requireUser } from '../services/auth.js';
 import { acquireTransactionLock } from '../lib/database.js';
@@ -11,7 +11,8 @@ import { levelForXp } from '../services/actions.js';
 const launchSchema = z.object({
   definition: z.string().min(1).default('glass-belt-run'),
   shipId: z.string().optional(),
-  crewIds: z.array(z.string()).optional()
+  crewIds: z.array(z.string()).optional(),
+  route: z.enum(['safe', 'balanced', 'bold']).default('balanced')
 });
 
 export async function registerExpeditionRoutes(app: FastifyInstance, context: ApiContext) {
@@ -72,9 +73,14 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
         playerId,
         ...(body.crewIds?.length ? { id: { in: body.crewIds } } : {})
       },
-      take: 4
+      take: 5
     });
+    const shipClass = shipRules.purchases.find((candidate: { slug: string; maxCrew?: number }) => candidate.slug === ship.classSlug);
+    const maxCrew = Number(shipClass?.maxCrew ?? 4);
+    if (crew.length > maxCrew) throw new GameRuleError('CREW_LIMIT', `${ship.name} supports at most ${maxCrew} expedition crew.`);
     if (crew.some(member => member.injuredUntil && member.injuredUntil > new Date())) throw new GameRuleError('CREW_INJURED', 'An assigned crew member is still recovering.');
+    if (crew.some(member => member.assignment)) throw new GameRuleError('CREW_ASSIGNED', 'Remove station assignments before deploying that crew member.');
+    if (crew.some(member => member.fatigue >= 80)) throw new GameRuleError('CREW_EXHAUSTED', 'A selected crew member is too fatigued to deploy. Schedule shore leave.');
     const driveUpgrade = shipRules.upgrades.find((candidate: { slug: string; fuelDiscount?: number }) => candidate.slug === 'efficient-drive');
     const skin = shipRules.skins.find((candidate: { slug: string; fuelDiscount?: number; successBonus?: number }) => candidate.slug === ship.activeSkin);
     const engineerFuelDiscount = crew.some(member => member.role === 'engineer' && member.jobStars >= 3) ? 1 : 0;
@@ -94,6 +100,7 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
       if (crew.some(member => busyCrew.has(member.id))) throw new GameRuleError('CREW_BUSY', 'An assigned crew member is already away.');
       const consumed = await transaction.ship.updateMany({ where: { id: ship.id, playerId, fuel: { gte: effectiveDefinition.fuelCost }, condition: { gt: 0 } }, data: { fuel: { decrement: effectiveDefinition.fuelCost } } });
       if (!consumed.count) throw new GameRuleError('NO_FUEL', 'The selected ship is unavailable or lacks fuel.');
+      await transaction.crewMember.updateMany({ where: { id: { in: crew.map(member => member.id) } }, data: { fatigue: { increment: Number(crewRules.fatiguePerExpedition) } } });
       return transaction.expedition.create({
         data: {
           playerId,
@@ -103,6 +110,13 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
           name: launched.name,
           status: 'active',
           risk: launched.risk,
+          route: body.route,
+          stage: 1,
+          stages: [
+            { name: 'Departure', status: 'complete', detail: `${ship.name} cleared Station Zero traffic.` },
+            { name: 'Approach', status: 'active', detail: `${body.route} route plotted through the outer debris lanes.` },
+            { name: 'Recovery', status: 'pending', detail: 'Awaiting field telemetry.' }
+          ],
           launchedAt: new Date(launched.launchedAt),
           resolvesAt: new Date(launched.resolvesAt),
           incidentLog: launched.incidentLog,
@@ -231,6 +245,15 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
       const currentPlayer = await transaction.player.findUniqueOrThrow({ where: { id: playerId } });
       const xpGain = expedition.status === 'resolved' ? 30 : 10;
       await transaction.player.update({ where: { id: playerId }, data: { xp: { increment: xpGain }, level: levelForXp(currentPlayer.xp + xpGain, progressionRules.levelXp), reputation: { increment: expedition.status === 'resolved' ? 2 : 0 } } });
+      if (expedition.shipId) {
+        const ship = await transaction.ship.findUnique({ where: { id: expedition.shipId } });
+        if (ship) {
+          const masteryGain = expedition.status === 'resolved' ? 30 : 12;
+          const masteryXp = ship.masteryXp + masteryGain;
+          const masteryRank = masteryXp >= 350 ? 3 : masteryXp >= 150 ? 2 : masteryXp >= 50 ? 1 : 0;
+          await transaction.ship.update({ where: { id: ship.id }, data: { masteryXp, masteryRank } });
+        }
+      }
       const station = await transaction.station.findUniqueOrThrow({ where: { slug: 'station-zero' } });
       return transaction.historyEntry.create({
         data: {

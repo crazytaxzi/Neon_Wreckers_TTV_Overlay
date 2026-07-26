@@ -8,6 +8,7 @@ import type {
   AuctionListing,
   CraftingRecipe,
   CrewMember,
+  CrewCandidates,
   CurrentUser,
   Expedition,
   ExpeditionDefinition,
@@ -65,6 +66,7 @@ export function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null |
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [ships, setShips] = useState<Ship[]>([]);
   const [crew, setCrew] = useState<CrewMember[]>([]);
+  const [crewCandidates, setCrewCandidates] = useState<CrewCandidates | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [expeditions, setExpeditions] = useState<Expedition[]>([]);
   const [expeditionDefinitions, setExpeditionDefinitions] = useState<ExpeditionDefinition[]>([]);
@@ -83,12 +85,13 @@ export function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null |
     if (refreshInFlight.current) return refreshInFlight.current;
     const pending = (async () => {
       setMe(await requestApi<CurrentUser>('/api/v1/me', {}, authenticatedUserSummarySchema));
-      const [stationResult, wreckResult, inventoryResult, shipsResult, crewResult, historyResult, expeditionsResult, expeditionDefinitionsResult, notificationsResult, marketplaceResult, quartersResult, catalogResult, auctionResult, recipesResult, cooldownResult, endgameResult] = await Promise.allSettled([
+      const [stationResult, wreckResult, inventoryResult, shipsResult, crewResult, crewCandidatesResult, historyResult, expeditionsResult, expeditionDefinitionsResult, notificationsResult, marketplaceResult, quartersResult, catalogResult, auctionResult, recipesResult, cooldownResult, endgameResult] = await Promise.allSettled([
         requestApi<Station>('/api/v1/station', {}, stationSnapshotSchema),
         requestApi<Wreck>('/api/v1/wrecks/current', {}, currentWreckSchema),
         requestApi<InventoryItem[]>('/api/v1/inventory', {}, inventoryItemSchema.array()),
         requestApi<Ship[]>('/api/v1/ships', {}, shipSchema.array()),
         requestApi<CrewMember[]>('/api/v1/crew', {}, crewMemberSchema.array()),
+        requestApi<CrewCandidates>('/api/v1/crew/candidates'),
         requestApi<HistoryEntry[]>('/api/v1/history', {}, historyRecordSchema.array()),
         requestApi<Expedition[]>('/api/v1/expeditions', {}, expeditionSchema.array()),
         requestApi<ExpeditionDefinition[]>('/api/v1/expeditions/definitions'),
@@ -106,6 +109,7 @@ export function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null |
       if (inventoryResult.status === 'fulfilled') setInventory(inventoryResult.value);
       if (shipsResult.status === 'fulfilled') setShips(shipsResult.value);
       if (crewResult.status === 'fulfilled') setCrew(crewResult.value);
+      if (crewCandidatesResult.status === 'fulfilled') setCrewCandidates(crewCandidatesResult.value);
       if (historyResult.status === 'fulfilled') setHistory(historyResult.value);
       if (expeditionsResult.status === 'fulfilled') setExpeditions(expeditionsResult.value);
       if (expeditionDefinitionsResult.status === 'fulfilled') setExpeditionDefinitions(expeditionDefinitionsResult.value);
@@ -179,5 +183,5 @@ export function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null |
     }
   }, [pushToast, refresh]);
 
-  return { me, station, wreck, inventory, ships, crew, history, expeditions, expeditionDefinitions, notifications, marketplace, catalog, auctions, recipes, cooldowns, quarters, endgame, login, action, refresh };
+  return { me, station, wreck, inventory, ships, crew, crewCandidates, history, expeditions, expeditionDefinitions, notifications, marketplace, catalog, auctions, recipes, cooldowns, quarters, endgame, login, action, refresh };
 }

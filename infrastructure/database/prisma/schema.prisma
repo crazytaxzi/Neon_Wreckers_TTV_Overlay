@@ -254,6 +254,8 @@ model Ship {
   fuel          Int      @default(4)
   cargoCapacity Int      @default(24)
   upgrades      String[] @default([])
+  masteryXp     Int      @default(0)
+  masteryRank   Int      @default(0)
   ownedSkins    String[] @default([])
   activeSkin    String?
   visualKey     String
@@ -273,6 +275,9 @@ model CrewMember {
   jobStars     Int       @default(1)
   talentStars  Int       @default(1)
   morale       Int       @default(75)
+  fatigue      Int       @default(0)
+  specialty    String    @default("generalist")
+  assignment   String?
   injuredUntil DateTime?
   traits       String[]  @default([])
 
@@ -294,6 +299,9 @@ model Expedition {
   resolvesAt  DateTime?
   rewards     Json             @default("[]")
   incidentLog Json             @default("[]")
+  route       String           @default("balanced")
+  stage       Int              @default(1)
+  stages      Json             @default("[]")
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 

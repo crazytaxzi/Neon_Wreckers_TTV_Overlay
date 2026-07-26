@@ -165,6 +165,16 @@ type AdminOverview = {
     disclaimer: string;
   };
 };
+type BalanceTelemetry = {
+  windowDays: number;
+  expeditions: number;
+  averageCompletionMinutes: number;
+  creditsGenerated: number;
+  fleetUtilization: number;
+  failureRate: number;
+  routes: Record<string, number>;
+  shipsByClass: Array<{ classSlug: string; ships: number; averageMasteryXp: number }>;
+};
 
 type MetricWindow = {
   requests: number;
@@ -229,6 +239,7 @@ function AdminApp() {
   const [commands, setCommands] = useState<ChatCommand[]>([]);
   const [station, setStation] = useState<StationSummary | null>(null);
   const [overview, setOverview] = useState<AdminOverview | null>(null);
+  const [balanceTelemetry, setBalanceTelemetry] = useState<BalanceTelemetry | null>(null);
   const [players, setPlayers] = useState<AdminPlayer[]>([]);
   const [transactions, setTransactions] = useState<LoyaltyTransaction[]>([]);
   const [confirmSpawn, setConfirmSpawn] = useState(false);
@@ -243,6 +254,7 @@ function AdminApp() {
       overviewData,
       playersData,
       transactionsData,
+      balanceTelemetryData,
     ] = await Promise.all([
       requestApi<StationSummary>("/api/v1/station"),
       requestApi<StreamElementsStatus>(
@@ -253,6 +265,7 @@ function AdminApp() {
       requestApi<AdminOverview>("/api/v1/admin/overview"),
       requestApi<AdminPlayer[]>("/api/v1/admin/players"),
       requestApi<LoyaltyTransaction[]>("/api/v1/admin/transactions"),
+      requestApi<BalanceTelemetry>("/api/v1/admin/balance-telemetry"),
     ]);
     setStation(stationData);
     setStreamElements(streamElementsData);
@@ -261,6 +274,7 @@ function AdminApp() {
     setOverview(overviewData);
     setPlayers(playersData);
     setTransactions(transactionsData);
+    setBalanceTelemetry(balanceTelemetryData);
   }, []);
 
   useEffect(() => {
@@ -437,7 +451,7 @@ function AdminApp() {
         pushToast={pushToast}
       />
     ),
-    server: <ServerPage overview={overview} />,
+    server: <ServerPage overview={overview} balanceTelemetry={balanceTelemetry} />,
     timers: (
       <TimersPage overview={overview} refresh={refresh} pushToast={pushToast} />
     ),
@@ -1223,7 +1237,7 @@ function CardCommand({
   );
 }
 
-function ServerPage({ overview }: { overview: AdminOverview | null }) {
+function ServerPage({ overview, balanceTelemetry }: { overview: AdminOverview | null; balanceTelemetry: BalanceTelemetry | null }) {
   if (!overview) return <LoadingScreen label="Loading server telemetry" />;
   const memoryPercent = overview.service.memory.heapTotal
     ? (overview.service.memory.heapUsed / overview.service.memory.heapTotal) *
@@ -1347,6 +1361,33 @@ function ServerPage({ overview }: { overview: AdminOverview | null }) {
           />
         </Panel>
       </ResponsiveGrid>
+      {balanceTelemetry && (
+        <Panel tone="purple">
+          <SectionTitle
+            eyebrow={`${balanceTelemetry.windowDays}-DAY GAMEPLAY WINDOW`}
+            title="Fleet Balance Telemetry"
+            description="Completion speed, generated expedition income, utilization, failure rates, route selection, and mastery by ship class."
+            icon="diagnostics"
+          />
+          <ResponsiveGrid min="12rem">
+            <StatusDisplay label="Expeditions" value={balanceTelemetry.expeditions} icon="expedition" tone="info" />
+            <StatusDisplay label="Average duration" value={balanceTelemetry.averageCompletionMinutes} unit=" min" icon="events" tone="purple" />
+            <StatusDisplay label="Credits generated" value={balanceTelemetry.creditsGenerated} icon="credits" tone="success" />
+            <StatusDisplay label="Fleet utilization" value={Math.round(balanceTelemetry.fleetUtilization * 100)} unit="%" icon="expedition" tone="info" />
+            <StatusDisplay label="Failure rate" value={Math.round(balanceTelemetry.failureRate * 100)} unit="%" icon="danger" tone={balanceTelemetry.failureRate > .35 ? "warning" : "success"} />
+          </ResponsiveGrid>
+          <DataGrid
+            rows={balanceTelemetry.shipsByClass}
+            getRowKey={row => row.classSlug}
+            empty="No fleet records in this window."
+            columns={[
+              { key: "class", header: "Ship class", render: row => row.classSlug },
+              { key: "ships", header: "Registered", align: "right", render: row => row.ships },
+              { key: "mastery", header: "Average mastery XP", align: "right", render: row => row.averageMasteryXp },
+            ]}
+          />
+        </Panel>
+      )}
       <Panel tone="info">
         <SectionTitle
           eyebrow="GOOGLE CLOUD SAFE ZONE"

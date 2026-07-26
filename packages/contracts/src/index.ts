@@ -190,6 +190,8 @@ export const shipSchema = z.object({
   fuel: z.number(),
   cargoCapacity: z.number(),
   upgrades: z.array(z.string()),
+  masteryXp: z.number().int().nonnegative(),
+  masteryRank: z.number().int().min(0).max(3),
   ownedSkins: z.array(z.string()),
   activeSkin: z.string().nullable(),
   visualKey: z.string(),
@@ -205,6 +207,9 @@ export const crewMemberSchema = z.object({
   jobStars: z.number(),
   talentStars: z.number(),
   morale: z.number(),
+  fatigue: z.number().int().min(0).max(100),
+  specialty: z.string(),
+  assignment: z.string().nullable(),
   injuredUntil: serializedDateTimeSchema.nullable(),
   traits: z.array(z.string())
 }).passthrough();
@@ -222,6 +227,9 @@ export const expeditionSchema = z.object({
   resolvesAt: serializedDateTimeSchema.nullable(),
   rewards: z.array(z.unknown()),
   incidentLog: z.array(z.string()),
+  route: z.string(),
+  stage: z.number().int().positive(),
+  stages: z.array(z.object({ name: z.string(), status: z.string(), detail: z.string() }).passthrough()),
   createdAt: serializedDateTimeSchema,
   updatedAt: serializedDateTimeSchema
 }).passthrough();

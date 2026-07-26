@@ -34,14 +34,16 @@ export async function registerPlayerRoutes(app: FastifyInstance, context: ApiCon
   }));
 
   app.get('/api/v1/crafting/recipes', async request => {
-    await requireUser(context.prisma, request);
+    const user = await requireUser(context.prisma, request);
     const station = await stationDto(context.prisma);
+    const assignedCrew = await context.prisma.crewMember.count({ where: { playerId: user.player.id, assignment: 'refinery' } });
+    const assignmentBonus = Math.min(.15, assignedCrew * .03);
     return { data: Object.entries(craftingRules).map(([slug, recipe]) => {
       const module = station.modules.find(candidate => candidate.slug === recipe.stationModule);
       const speedBonus = Math.min(0.4, Number(module?.effects.craftingSpeedBonus ?? 0));
       const inputValue = Object.entries(recipe.inputs).reduce((total, [itemSlug, quantity]) => total + itemsBySlug[itemSlug].valueCredits * quantity, 0);
       const outputValue = Object.entries(recipe.outputs).reduce((total, [itemSlug, quantity]) => total + itemsBySlug[itemSlug].valueCredits * quantity, 0);
-      return { slug, ...recipe, baseDurationSeconds: recipe.durationSeconds, durationSeconds: Math.max(1, Math.ceil(recipe.durationSeconds * (1 - speedBonus))), inputValue, outputValue, valueAdded: outputValue - inputValue, efficiency: inputValue ? outputValue / inputValue : 0, unlocked: module?.state === 'active' };
+      return { slug, ...recipe, baseDurationSeconds: recipe.durationSeconds, durationSeconds: Math.max(1, Math.ceil(recipe.durationSeconds * (1 - speedBonus - assignmentBonus))), inputValue, outputValue, valueAdded: outputValue - inputValue, efficiency: inputValue ? outputValue / inputValue : 0, unlocked: module?.state === 'active' };
     }), requestId: request.id };
   });
 
@@ -53,7 +55,9 @@ export async function registerPlayerRoutes(app: FastifyInstance, context: ApiCon
     const station = await stationDto(context.prisma);
     const craftingModule = station.modules.find(module => module.slug === recipe.stationModule);
     if (craftingModule?.state !== 'active') throw new GameRuleError('CRAFTING_STATION_OFFLINE', `Requires the active ${recipe.stationModule.replaceAll('-', ' ')} module.`);
-    const durationSeconds = Math.max(1, Math.ceil(recipe.durationSeconds * (1 - Math.min(0.4, Number(craftingModule.effects.craftingSpeedBonus ?? 0))))) * body.quantity;
+    const assignedCrew = await context.prisma.crewMember.count({ where: { playerId: user.player.id, assignment: 'refinery' } });
+    const assignmentBonus = Math.min(.15, assignedCrew * .03);
+    const durationSeconds = Math.max(1, Math.ceil(recipe.durationSeconds * (1 - Math.min(0.4, Number(craftingModule.effects.craftingSpeedBonus ?? 0)) - assignmentBonus))) * body.quantity;
     const result = await context.prisma.$transaction(async transaction => {
       const cooldownEndsAt = await enforceDurableCooldown(transaction, user.player.id, `craft:${body.recipeSlug}`, durationSeconds);
       await acquireTransactionLock(transaction, `player:${user.player.id}:crafting`);

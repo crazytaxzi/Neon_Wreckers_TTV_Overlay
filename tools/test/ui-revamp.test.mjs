@@ -56,7 +56,7 @@ test('player artwork uses responsive project assets instead of concept screensho
   const originals = assets.filter(file => !/-\d+w\.webp$/.test(file));
   const mobile = assets.filter(file => file.endsWith('-360w.webp'));
   const tablet = assets.filter(file => file.endsWith('-600w.webp'));
-  assert.equal(originals.length, 33, 'Expected the 33 canonical project artwork sources.');
+  assert.equal(originals.length, 35, 'Expected the 35 canonical project artwork sources.');
   assert.equal(mobile.length, originals.length, 'Every canonical artwork source needs a 360px mobile variant.');
   assert.equal(tablet.length, originals.length, 'Every canonical artwork source needs a 600px tablet variant.');
   assert.match(component, /srcSet=/);
