@@ -10,6 +10,7 @@ RUN apt-get update \
 
 ENV CI=true
 ENV PNPM_HOME=/pnpm
+ENV NODE_OPTIONS=--max-old-space-size=768
 ENV PATH=$PNPM_HOME:$PATH
 
 RUN corepack enable \
