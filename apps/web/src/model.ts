@@ -209,6 +209,37 @@ export type Endgame = {
     contributed: Record<string, number>;
     completed: boolean;
   };
+  prestige: {
+    index: number;
+    name: string;
+    population: number;
+    bonus: string;
+    progress: number;
+    next: { name: string; population: number; bonus: string } | null;
+  };
+  vote: {
+    slug: string;
+    name: string;
+    description: string;
+    endsAt: string;
+    selected: string | null;
+    tallies: Record<string, number>;
+    options: Array<{ slug: string; name: string; bonus: string }>;
+  };
+  seasonal: {
+    name: string;
+    tokens: number;
+    owned: string[];
+    store: Array<{ slug: string; name: string; description: string; tokens: number; unlocked: boolean; owned: boolean }>;
+  };
+  quartersDirectory: Array<{
+    playerId: string;
+    displayName: string;
+    avatarUrl: string | null;
+    theme: string;
+    objects: QuartersObject[];
+    updatedAt: string;
+  }>;
 };
 export type ExpeditionDefinition = {
   slug: string;

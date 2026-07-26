@@ -15,6 +15,31 @@ const contracts = [
   { slug: 'fabricator-duty', name: 'Fabricator Duty', description: 'Start 5 fabrication jobs today.', target: 5, metric: 'crafting', credits: 500, xp: 300 }
 ] as const;
 
+const prestigeTiers = [
+  { name: 'Outpost', population: 0, bonus: 'Standard station services' },
+  { name: 'Settlement', population: 100, bonus: '+5% contract token yield' },
+  { name: 'Colony', population: 300, bonus: '+10% community event rewards' },
+  { name: 'Trade Hub', population: 700, bonus: 'Expanded seasonal storefront' },
+  { name: 'Sector Capital', population: 1_200, bonus: 'Capital display collection' }
+] as const;
+
+const communityVotes = [{
+  slug: 'frontier-doctrine',
+  name: 'Frontier Doctrine',
+  description: 'Choose Station Zero’s operating doctrine for the next weekly cycle.',
+  options: [
+    { slug: 'salvage-yield', name: 'Recovery Surge', bonus: '+10% salvage contract rewards' },
+    { slug: 'fleet-readiness', name: 'Fleet Readiness', bonus: 'Reduced expedition fatigue pressure' },
+    { slug: 'trade-dividend', name: 'Trade Dividend', bonus: '+10% station sale value' }
+  ]
+}] as const;
+
+const seasonalStore = [
+  { slug: 'neon-pennant', name: 'Neon Wreckers Pennant', description: 'A durable quarters display from the current circuit.', tokens: 8, minPrestige: 0 },
+  { slug: 'convoy-holomap', name: 'Convoy Holomap', description: 'Animated route-table cosmetic for veteran haulers.', tokens: 14, minPrestige: 2 },
+  { slug: 'capital-command-plaque', name: 'Capital Command Plaque', description: 'A permanent Sector Capital collection piece.', tokens: 24, minPrestige: 4 }
+] as const;
+
 const operations = [
   {
     slug: 'deep-range-array',
@@ -58,6 +83,26 @@ function activeOperation(now = new Date()) {
   return { ...operations[week % operations.length], period: week, projectKind: `operation:${operations[week % operations.length].slug}:${week}` };
 }
 
+function weekWindow(now = new Date()) {
+  const start = new Date(now);
+  start.setUTCDate(start.getUTCDate() - ((start.getUTCDay() + 6) % 7));
+  start.setUTCHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 7);
+  return { start, end, period: Math.floor(start.getTime() / (7 * 24 * 60 * 60_000)) };
+}
+
+function prestigeFor(population: number) {
+  let rawIndex = 0;
+  for (let index = 0; index < prestigeTiers.length; index += 1) {
+    if (population >= prestigeTiers[index].population) rawIndex = index;
+  }
+  const index = Math.max(0, rawIndex);
+  const current = prestigeTiers[index];
+  const next = prestigeTiers[index + 1] ?? null;
+  return { index, ...current, next, progress: next ? Math.min(100, Math.round(((population - current.population) / (next.population - current.population)) * 100)) : 100 };
+}
+
 async function contractProgress(transaction: Prisma.TransactionClient, playerId: string, metric: string, since: Date) {
   if (metric === 'salvage') return transaction.historyEntry.count({ where: { playerId, category: 'salvage', createdAt: { gte: since } } });
   if (metric === 'expedition') return transaction.historyEntry.count({ where: { playerId, category: 'expedition', title: 'Expedition rewards claimed', createdAt: { gte: since } } });
@@ -75,6 +120,15 @@ export async function registerEndgameRoutes(app: FastifyInstance, context: ApiCo
       ? await context.prisma.constructionProject.findFirst({ where: { moduleId: module.id, kind: operation.projectKind }, orderBy: { createdAt: 'desc' } })
       : null;
     const cooldowns = await context.prisma.actionCooldown.findMany({ where: { playerId: user.player.id, actionKey: { startsWith: 'contract:' } } });
+    const { start: weekStart, end: weekEnd, period } = weekWindow();
+    const [voteEntries, publicQuarters] = await Promise.all([
+      context.prisma.historyEntry.findMany({ where: { category: 'community-vote', createdAt: { gte: weekStart, lt: weekEnd } }, select: { playerId: true, details: true } }),
+      context.prisma.quartersLayout.findMany({ include: { player: { include: { user: { select: { displayName: true, avatarUrl: true } } } } }, orderBy: { updatedAt: 'desc' }, take: 24 })
+    ]);
+    const vote = communityVotes[period % communityVotes.length];
+    const tallies = Object.fromEntries(vote.options.map(option => [option.slug, voteEntries.filter(entry => (entry.details as { option?: string }).option === option.slug).length]));
+    const myVote = voteEntries.find(entry => entry.playerId === user.player.id);
+    const prestige = prestigeFor(station.population);
     const progress = await Promise.all(contracts.map(async contract => ({
       ...contract,
       progress: Math.min(contract.target, await contractProgress(context.prisma, user.player.id, contract.metric, start)),
@@ -88,7 +142,23 @@ export async function registerEndgameRoutes(app: FastifyInstance, context: ApiCo
           requirements: operation.requirements,
           contributed: (project?.contributed ?? {}) as Record<string, number>,
           completed: project?.status === 'completed'
-        }
+        },
+        prestige,
+        vote: { ...vote, tallies, selected: (myVote?.details as { option?: string } | undefined)?.option ?? null, endsAt: weekEnd.toISOString() },
+        seasonal: {
+          name: station.activeSeason ?? 'Independent Circuit',
+          tokens: user.player.seasonalTokens,
+          owned: user.player.cosmetics,
+          store: seasonalStore.map(item => ({ ...item, unlocked: prestige.index >= item.minPrestige, owned: user.player.cosmetics.includes(item.slug) }))
+        },
+        quartersDirectory: publicQuarters.map(layout => ({
+          playerId: layout.playerId,
+          displayName: layout.player.user.displayName,
+          avatarUrl: layout.player.user.avatarUrl,
+          theme: layout.theme,
+          objects: layout.objects,
+          updatedAt: layout.updatedAt.toISOString()
+        }))
       },
       requestId: request.id
     };
@@ -105,8 +175,9 @@ export async function registerEndgameRoutes(app: FastifyInstance, context: ApiCo
       if (progress < contract.target) throw new GameRuleError('CONTRACT_INCOMPLETE', `${contract.name} requires ${contract.target} progress.`);
       await enforceDurableCooldown(transaction, user.player.id, `contract:${contract.slug}`, Math.max(1, Math.ceil((end.getTime() - Date.now()) / 1000)));
       const player = await transaction.player.findUniqueOrThrow({ where: { id: user.player.id } });
-      const updated = await transaction.player.update({ where: { id: player.id }, data: { credits: { increment: contract.credits }, xp: { increment: contract.xp }, level: levelForXp(player.xp + contract.xp, progressionRules.levelXp) } });
-      return { progress, credits: contract.credits, xp: contract.xp, level: updated.level };
+      const tokenYield = 2;
+      const updated = await transaction.player.update({ where: { id: player.id }, data: { credits: { increment: contract.credits }, xp: { increment: contract.xp }, seasonalTokens: { increment: tokenYield }, level: levelForXp(player.xp + contract.xp, progressionRules.levelXp) } });
+      return { progress, credits: contract.credits, xp: contract.xp, seasonalTokens: tokenYield, level: updated.level };
     });
     return { data: result, requestId: request.id };
   });
@@ -146,7 +217,7 @@ export async function registerEndgameRoutes(app: FastifyInstance, context: ApiCo
       await transaction.constructionProject.update({ where: { id: project.id }, data: { contributed: contributed as Prisma.InputJsonValue, status: completed ? 'completed' : 'active', completedAt: completed ? new Date() : null } });
       if (completed) {
         const player = await transaction.player.findUniqueOrThrow({ where: { id: user.player.id } });
-        await transaction.player.update({ where: { id: player.id }, data: { credits: { increment: 1000 }, xp: { increment: 500 }, level: levelForXp(player.xp + 500, progressionRules.levelXp) } });
+        await transaction.player.update({ where: { id: player.id }, data: { credits: { increment: 1000 }, xp: { increment: 500 }, seasonalTokens: { increment: 5 }, level: levelForXp(player.xp + 500, progressionRules.levelXp) } });
         await transaction.station.update({ where: { id: station.id }, data: { morale: Math.min(100, station.morale + 10), power: Math.min(100, station.power + 10), population: { increment: 25 } } });
         await transaction.plaque.create({ data: { moduleId: module.id, title: operation.name, body: `${user.displayName} delivered the final load for the weekly station operation.`, playerName: user.displayName } });
       }
@@ -156,5 +227,60 @@ export async function registerEndgameRoutes(app: FastifyInstance, context: ApiCo
     context.realtime.broadcast({ type: 'station.updated', station: await stationDto(context.prisma) });
     context.realtime.broadcast({ type: 'history.added', entry: result.history });
     return { data: { contributed: result.contributed, completed: result.completed }, requestId: request.id };
+  });
+
+  app.post('/api/v1/endgame/vote', async request => {
+    const user = await requireUser(context.prisma, request);
+    const option = z.object({ option: z.string().min(1) }).parse(request.body ?? {}).option;
+    const { start, end, period } = weekWindow();
+    const vote = communityVotes[period % communityVotes.length];
+    const selected = vote.options.find(candidate => candidate.slug === option);
+    if (!selected) throw new GameRuleError('VOTE_OPTION_NOT_FOUND', 'That community vote option is not active.');
+    await context.prisma.$transaction(async transaction => {
+      await acquireTransactionLock(transaction, `community-vote:${period}:player:${user.player.id}`);
+      if (await transaction.historyEntry.findFirst({ where: { playerId: user.player.id, category: 'community-vote', createdAt: { gte: start, lt: end } } })) {
+        throw new GameRuleError('VOTE_ALREADY_CAST', 'Your vote is locked for this weekly cycle.');
+      }
+      const station = await transaction.station.findUniqueOrThrow({ where: { slug: 'station-zero' } });
+      await transaction.historyEntry.create({ data: { stationId: station.id, playerId: user.player.id, category: 'community-vote', title: `${vote.name}: ${selected.name}`, body: `${user.displayName} backed ${selected.name}.`, actorDisplayName: user.displayName, details: { vote: vote.slug, option: selected.slug, period } } });
+    });
+    return { data: { option, endsAt: end.toISOString() }, requestId: request.id };
+  });
+
+  app.post('/api/v1/endgame/store/:slug/purchase', async request => {
+    const user = await requireUser(context.prisma, request);
+    const slug = z.string().min(1).parse((request.params as { slug: string }).slug);
+    const item = seasonalStore.find(candidate => candidate.slug === slug);
+    if (!item) throw new GameRuleError('COSMETIC_NOT_FOUND', 'That seasonal cosmetic is not available.');
+    const result = await context.prisma.$transaction(async transaction => {
+      await acquireTransactionLock(transaction, `player:${user.player.id}:seasonal-store`);
+      const [player, station] = await Promise.all([
+        transaction.player.findUniqueOrThrow({ where: { id: user.player.id } }),
+        transaction.station.findUniqueOrThrow({ where: { slug: 'station-zero' } })
+      ]);
+      if (prestigeFor(station.population).index < item.minPrestige) throw new GameRuleError('PRESTIGE_REQUIRED', 'Station prestige is not high enough for this collection.');
+      if (player.cosmetics.includes(item.slug)) throw new GameRuleError('COSMETIC_OWNED', 'You already own this cosmetic.');
+      if (player.seasonalTokens < item.tokens) throw new GameRuleError('NOT_ENOUGH_TOKENS', `You need ${item.tokens} seasonal tokens.`);
+      return transaction.player.update({ where: { id: player.id }, data: { seasonalTokens: { decrement: item.tokens }, cosmetics: { push: item.slug } }, select: { seasonalTokens: true, cosmetics: true } });
+    });
+    return { data: result, requestId: request.id };
+  });
+
+  app.post('/api/v1/endgame/quarters/:playerId/rate', async request => {
+    const user = await requireUser(context.prisma, request);
+    const targetPlayerId = z.string().min(1).parse((request.params as { playerId: string }).playerId);
+    const rating = z.object({ rating: z.number().int().min(1).max(5) }).parse(request.body ?? {}).rating;
+    if (targetPlayerId === user.player.id) throw new GameRuleError('SELF_RATING', 'You cannot rate your own quarters.');
+    const { start, end } = utcDay();
+    await context.prisma.$transaction(async transaction => {
+      await acquireTransactionLock(transaction, `quarters-rating:${targetPlayerId}:${user.player.id}`);
+      if (!await transaction.quartersLayout.findUnique({ where: { playerId: targetPlayerId } })) throw new GameRuleError('QUARTERS_NOT_FOUND', 'Those quarters are unavailable.');
+      if (await transaction.historyEntry.findFirst({ where: { playerId: user.player.id, category: 'quarters-rating', createdAt: { gte: start, lt: end }, details: { path: ['targetPlayerId'], equals: targetPlayerId } } })) {
+        throw new GameRuleError('RATING_COOLDOWN', 'You may rate these quarters again tomorrow.');
+      }
+      const station = await transaction.station.findUniqueOrThrow({ where: { slug: 'station-zero' } });
+      await transaction.historyEntry.create({ data: { stationId: station.id, playerId: user.player.id, category: 'quarters-rating', title: 'Public quarters rated', body: `${user.displayName} rated a public quarters display ${rating}/5.`, actorDisplayName: user.displayName, details: { targetPlayerId, rating } } });
+    });
+    return { data: { targetPlayerId, rating }, requestId: request.id };
   });
 }

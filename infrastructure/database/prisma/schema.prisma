@@ -100,6 +100,8 @@ model Player {
   xp                Int              @default(0)
   level             Int              @default(1)
   reputation        Int              @default(0)
+  seasonalTokens    Int              @default(0)
+  cosmetics         String[]         @default([])
   career            Career           @default(salvager)
   title             String           @default("Cutter Pilot")
   careerChosenAt    DateTime?

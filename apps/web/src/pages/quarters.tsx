@@ -120,6 +120,7 @@ export function QuartersPage({
   inventory,
   cooldowns,
   expeditions,
+  endgame,
   action,
 }: Pick<
   GameData,
@@ -129,6 +130,7 @@ export function QuartersPage({
   | "inventory"
   | "cooldowns"
   | "expeditions"
+  | "endgame"
   | "action"
 >) {
   const [theme, setTheme] = useState(
@@ -530,6 +532,41 @@ export function QuartersPage({
           Recovery and galley actions remain available, but no off-duty crew can
           receive the morale bonus until a team returns.
         </Notification>
+      )}
+
+      {endgame && (
+        <Panel tone="purple" depth="high">
+          <SectionTitle
+            eyebrow="PUBLIC HABITAT DIRECTORY"
+            title="Visit the community"
+            description="Browse current quarters displays and leave one rating per habitat each day."
+            icon="crew"
+          />
+          <ResponsiveGrid min="16rem">
+            {endgame.quartersDirectory.map((room) => (
+              <Card key={room.playerId}>
+                <Badge tone={room.playerId === quarters?.playerId ? "success" : "neutral"}>
+                  {room.theme.replaceAll("-", " ")}
+                </Badge>
+                <h3>{room.displayName}</h3>
+                <p>{room.objects.length} fixtures on public display</p>
+                <div className="inline-actions">
+                  {[3, 4, 5].map((rating) => (
+                    <Button
+                      key={rating}
+                      size="sm"
+                      variant="ghost"
+                      disabled={room.playerId === quarters?.playerId}
+                      onClick={() => void action(`/api/v1/endgame/quarters/${room.playerId}/rate`, { rating }, `${room.displayName}'s quarters rated`)}
+                    >
+                      {rating}★
+                    </Button>
+                  ))}
+                </div>
+              </Card>
+            ))}
+          </ResponsiveGrid>
+        </Panel>
       )}
     </div>
   );

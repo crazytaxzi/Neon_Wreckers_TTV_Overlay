@@ -12,6 +12,8 @@ export type PlayerSummary = {
   xp: number;
   level: number;
   reputation: number;
+  seasonalTokens: number;
+  cosmetics: string[];
   title: string;
   inventoryCapacity: number;
 };

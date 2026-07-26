@@ -1040,6 +1040,39 @@ export function ConstructionPage({
         action={<Button onClick={() => setProjectOpen(true)}>Manage project</Button>}
       />
       {endgame && (
+        <>
+        <Panel className="project-console">
+          <SectionTitle
+            eyebrow="STATION PRESTIGE"
+            title={endgame.prestige.name}
+            description={endgame.prestige.bonus}
+            icon="station"
+          />
+          <ProgressBar
+            label={endgame.prestige.next ? `${station?.population ?? 0}/${endgame.prestige.next.population} residents toward ${endgame.prestige.next.name}` : "Maximum prestige achieved"}
+            value={endgame.prestige.progress}
+            tone="purple"
+          />
+          <ResponsiveGrid min="15rem">
+            {endgame.vote.options.map((option) => (
+              <Card key={option.slug}>
+                <Badge tone={endgame.vote.selected === option.slug ? "success" : "neutral"}>
+                  {endgame.vote.tallies[option.slug] ?? 0} votes
+                </Badge>
+                <h3>{option.name}</h3>
+                <p>{option.bonus}</p>
+                <Button
+                  size="sm"
+                  fullWidth
+                  disabled={Boolean(endgame.vote.selected)}
+                  onClick={() => void action("/api/v1/endgame/vote", { option: option.slug }, "Community vote cast")}
+                >
+                  {endgame.vote.selected === option.slug ? "Your vote" : "Back doctrine"}
+                </Button>
+              </Card>
+            ))}
+          </ResponsiveGrid>
+        </Panel>
         <Panel className="project-console">
           <SectionTitle
             eyebrow="REPEATABLE OPERATIONS"
@@ -1101,6 +1134,34 @@ export function ConstructionPage({
             ))}
           </ResponsiveGrid>
         </Panel>
+        <Panel className="project-console">
+          <SectionTitle
+            eyebrow={`${endgame.seasonal.tokens} SEASONAL TOKENS`}
+            title={`${endgame.seasonal.name} Collection`}
+            description="Earn tokens from contracts and community operations. Purchases are permanent."
+            icon="market"
+          />
+          <ResponsiveGrid min="15rem">
+            {endgame.seasonal.store.map((item) => (
+              <Card key={item.slug}>
+                <Badge tone={item.owned ? "success" : item.unlocked ? "info" : "neutral"}>
+                  {item.owned ? "Owned" : `${item.tokens} tokens`}
+                </Badge>
+                <h3>{item.name}</h3>
+                <p>{item.description}</p>
+                <Button
+                  size="sm"
+                  fullWidth
+                  disabled={item.owned || !item.unlocked || endgame.seasonal.tokens < item.tokens}
+                  onClick={() => void action(`/api/v1/endgame/store/${item.slug}/purchase`, undefined, "Cosmetic acquired")}
+                >
+                  {item.owned ? "In collection" : item.unlocked ? "Acquire" : "Prestige locked"}
+                </Button>
+              </Card>
+            ))}
+          </ResponsiveGrid>
+        </Panel>
+        </>
       )}
       <>
         <ResponsiveGrid min="17rem">
