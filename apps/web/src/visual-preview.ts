@@ -86,12 +86,14 @@ const previewGame: GameData = {
       { slug: 'hull-kit', name: 'Titan Armor Frame', priceCredits: 6400, itemSlug: 'hull-plate', quantity: 8 }
     ],
     ships: {
-      purchases: [{ slug: 'cargo-hauler', name: 'Cargo Hauler', credits: 18000, cargoCapacity: 120, fuel: 80 }],
+      purchases: [{ slug: 'cargo-hauler', name: 'Cargo Hauler', credits: 18000, cargoCapacity: 120, fuel: 80, visualKey: 'ship-cargo-hauler' }],
       upgrades: [{ slug: 'expanded-hold', name: 'Expanded Hold', description: 'Adds cargo capacity.', credits: 2800, alloys: 8, cargoBonus: 20 }],
       skins: [{ slug: 'salvage-skiff-reclaimer', classSlug: 'salvage-skiff', name: 'Reclaimer Frame', description: 'Industrial salvage frame.', credits: 4200, lootRollBonus: 1 }],
       skinCooldownSeconds: 2592000,
       repair: { creditsPerCondition: 8, alloysPerTwentyCondition: 1 },
       crewPerShip: 4,
+      baseFleetCapacity: 2,
+      berthsPerShipyardLevel: 2,
       renameCredits: 100
     }
   },
@@ -111,6 +113,7 @@ const previewGame: GameData = {
   ],
   recipes: [{ slug: 'fuel-cell', name: 'Fuel Cell Batch', baseDurationSeconds: 90, durationSeconds: 72, inputValue: 120, outputValue: 180, valueAdded: 60, efficiency: 1.5, inputs: { scrap: 20, electronics: 2 }, outputs: { fuel: 5 }, stationModule: 'refinery', unlocked: true }],
   cooldowns: [],
+  endgame: null,
   quarters: { playerId: me.id, layout: { theme: 'station-zero-default', objects: [{ key: 'console', x: 1, y: 1 }, { key: 'trophy-case', x: 5, y: 2 }] } },
   login: () => undefined,
   action: async () => undefined,

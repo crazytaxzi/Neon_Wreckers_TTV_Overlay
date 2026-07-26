@@ -23,12 +23,11 @@ export async function registerFleetRoutes(app: FastifyInstance, context: ApiCont
       const modules = await transaction.stationModule.findMany({ where: { stationId: station.id, slug: { in: ['marketplace', 'shipyard'] } } });
       if (modules.find(module => module.slug === 'marketplace')?.state !== 'active') throw new GameRuleError('MARKET_LOCKED', 'Repair the Marketplace before purchasing ships.');
       if (modules.find(module => module.slug === 'shipyard')?.state !== 'active') throw new GameRuleError('SHIPYARD_LOCKED', 'Complete the Shipyard before purchasing ships.');
-      const [crewCount, shipCount] = await Promise.all([
-        transaction.crewMember.count({ where: { playerId: user.player.id } }),
-        transaction.ship.count({ where: { playerId: user.player.id } })
-      ]);
-      const fleetCapacity = Math.max(1, Math.floor(crewCount / shipRules.crewPerShip));
-      if (shipCount >= fleetCapacity) throw new GameRuleError('FLEET_CREW_REQUIRED', `Recruit more crew. Each ship requires ${shipRules.crewPerShip} crew on the roster.`);
+      const shipCount = await transaction.ship.count({ where: { playerId: user.player.id } });
+      const shipyardLevel = modules.find(module => module.slug === 'shipyard')?.level ?? 0;
+      const levelBonus = user.player.level >= 15 ? 1 : 0;
+      const fleetCapacity = shipRules.baseFleetCapacity + shipyardLevel * shipRules.berthsPerShipyardLevel + levelBonus;
+      if (shipCount >= fleetCapacity) throw new GameRuleError('FLEET_CAPACITY_REACHED', `All ${fleetCapacity} fleet berths are occupied. Upgrade the Shipyard or reach level 15 for another berth.`);
       const charged = await transaction.player.updateMany({ where: { id: user.player.id, credits: { gte: definition.credits } }, data: { credits: { decrement: definition.credits } } });
       if (!charged.count) throw new GameRuleError('NOT_ENOUGH_CREDITS', 'Not enough credits to purchase this ship.');
       return transaction.ship.create({ data: { playerId: user.player.id, name: body.name ?? `${definition.name} ${shipCount + 1}`, classSlug: definition.slug, condition: 100, fuel: definition.fuel, cargoCapacity: definition.cargoCapacity, upgrades: [], visualKey: definition.visualKey } });
@@ -177,5 +176,21 @@ export async function registerFleetRoutes(app: FastifyInstance, context: ApiCont
       return transaction.crewMember.update({ where: { id }, data: { level: { increment: 1 }, ...(focus === 'job' ? { jobStars: { increment: 1 } } : { talentStars: { increment: 1 } }), morale: Math.min(100, member.morale + 5) } });
     });
     return { data: crew, requestId: request.id };
+  });
+
+  app.post('/api/v1/crew/:id/retire', async request => {
+    const user = await requireUser(context.prisma, request);
+    const { id } = idSchema.parse(request.params);
+    const retired = await context.prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
+      await acquireTransactionLock(transaction, `player:${user.player.id}:crew`);
+      const member = await transaction.crewMember.findFirstOrThrow({ where: { id, playerId: user.player.id } });
+      if (await transaction.expedition.findFirst({ where: { crewIds: { has: id }, status: 'active' } })) throw new GameRuleError('CREW_BUSY', 'Crew cannot retire while deployed.');
+      await transaction.crewMember.delete({ where: { id } });
+      const station = await transaction.station.findUniqueOrThrow({ where: { slug: 'station-zero' } });
+      const history = await transaction.historyEntry.create({ data: { stationId: station.id, playerId: user.player.id, category: 'crew', title: 'Crew member retired', body: `${member.name} retired from ${user.displayName}'s active roster at level ${member.level}.`, actorDisplayName: user.displayName, details: { operation: 'crew-retire', crewId: member.id, crewName: member.name, level: member.level } } });
+      return { member, history };
+    });
+    context.realtime.broadcast({ type: 'history.added', entry: retired.history });
+    return { data: { retired: true, crewId: retired.member.id }, requestId: request.id };
   });
 }

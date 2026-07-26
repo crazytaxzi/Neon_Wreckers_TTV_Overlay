@@ -143,6 +143,7 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
     const id = String((request.params as { id: string }).id);
     const expedition = await context.prisma.expedition.findUniqueOrThrow({ where: { id }, include: { ship: true } });
     const expeditionSkin = shipRules.skins.find((skin: { slug: string; successBonus?: number; lootRollBonus?: number }) => skin.slug === expedition.ship?.activeSkin);
+    const expeditionClass = shipRules.purchases.find((candidate: { slug: string }) => candidate.slug === expedition.ship?.classSlug);
     const expeditionCrew = await context.prisma.crewMember.findMany({ where: { id: { in: expedition.crewIds } } });
     const crewSuccessBonus = expeditionCrew.reduce((total, member) => total + (member.role === 'pilot' ? member.jobStars * .01 + member.talentStars * .004 : member.role === 'scout' ? member.jobStars * .006 + member.talentStars * .008 : member.talentStars * .002), 0);
     const crewLootBonus = expeditionCrew.some(member => member.role === 'quartermaster' && member.jobStars >= 4) ? 1 : 0;
@@ -155,7 +156,7 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
       expeditionDefinition: expeditionDefinitions[expedition.definition],
       items: itemsBySlug,
       lootRollBonus: (expedition.ship?.upgrades.includes('expanded-hold') ? Number(shipRules.upgrades.find((upgrade: { slug: string; lootRollBonus?: number }) => upgrade.slug === 'expanded-hold')?.lootRollBonus ?? 0) : 0) + Number(expeditionSkin?.lootRollBonus ?? 0) + crewLootBonus,
-      successBonus: Number(expeditionSkin?.successBonus ?? 0) + crewSuccessBonus,
+      successBonus: Number(expeditionSkin?.successBonus ?? 0) + Number(expeditionClass?.successBonus ?? 0) + crewSuccessBonus,
       now: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
     });
     const resolvedStatus =

@@ -16,7 +16,7 @@
     "alloysProgress": 3
   },
   "progression": {
-    "levelXp": [0, 100, 300, 650, 1100, 1700, 2500, 3500, 4800, 6400],
+    "levelXp": [0, 100, 300, 650, 1100, 1700, 2500, 3500, 4800, 6400, 8500, 11000, 14000, 17500, 21500, 26000, 31000, 36500, 42500, 50000],
     "careerChangeCredits": 500,
     "careerChangeCooldownSeconds": 604800
   },
@@ -30,6 +30,8 @@
   },
   "ships": {
     "crewPerShip": 2,
+    "baseFleetCapacity": 2,
+    "berthsPerShipyardLevel": 2,
     "renameCredits": 100,
     "skinCooldownSeconds": 2592000,
     "skins": [
@@ -42,7 +44,9 @@
     ],
     "purchases": [
       { "slug": "salvage-skiff", "name": "Salvage Skiff", "credits": 1200, "cargoCapacity": 24, "fuel": 4, "visualKey": "ship-salvage-skiff" },
-      { "slug": "cargo-hauler", "name": "Cargo Hauler", "credits": 2200, "cargoCapacity": 40, "fuel": 5, "visualKey": "ship-cargo-hauler" }
+      { "slug": "cargo-hauler", "name": "Cargo Hauler", "credits": 2200, "cargoCapacity": 40, "fuel": 5, "visualKey": "ship-cargo-hauler" },
+      { "slug": "survey-corvette", "name": "Survey Corvette", "credits": 6500, "cargoCapacity": 30, "fuel": 7, "visualKey": "ship-survey-corvette", "description": "A deep-range telemetry vessel with an integrated scanner array and efficient expedition plotting.", "successBonus": 0.05 },
+      { "slug": "medical-cutter", "name": "Medical Cutter", "credits": 7800, "cargoCapacity": 34, "fuel": 6, "visualKey": "ship-medical-cutter", "description": "A hardened recovery ship whose treatment pods reduce expedition injury time.", "injuryReduction": 0.35 }
     ],
     "refuel": { "fuelPerCell": 1 },
     "repair": { "creditsPerCondition": 8, "alloysPerTwentyCondition": 1 },
@@ -55,7 +59,7 @@
   "crew": {
     "recruitCredits": 400,
     "trainCreditsPerLevel": 250,
-    "maxRoster": 12,
+    "maxRoster": 24,
     "injuryMinutes": [15, 60]
   },
   "marketplace": {
@@ -95,10 +99,10 @@
     "grid-relay": { "name": "Grid Relay", "durationSeconds": 60, "inputs": { "copper-coil": 2, "electronics": 3, "power-core": 1 }, "outputs": { "grid-relay": 1 }, "stationModule": "research-lab" }
   },
   "quarters": {
-    "width": 8,
-    "height": 5,
-    "themes": ["station-zero-default", "frost-wrecks"],
-    "objects": ["bed", "relic-shelf", "espresso-rig"]
+    "width": 10,
+    "height": 7,
+    "themes": ["station-zero-default", "frost-wrecks", "nebula-observatory", "industrial-garden"],
+    "objects": ["bed", "relic-shelf", "espresso-rig", "scanner-console", "salvage-trophy", "hydroponic-wall", "tool-locker", "star-map", "crew-table", "floor-lamp", "parts-crate", "observation-chair", "music-terminal"]
   },
   "expeditions": [
     {

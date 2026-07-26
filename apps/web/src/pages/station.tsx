@@ -1010,8 +1010,9 @@ export function SalvagePage({
 export function ConstructionPage({
   station,
   inventory,
+  endgame,
   action,
-}: Pick<GameData, "station" | "inventory" | "action">) {
+}: Pick<GameData, "station" | "inventory" | "endgame" | "action">) {
   const modules = station?.modules ?? [];
   const defaultProject =
     modules.find((module) =>
@@ -1038,6 +1039,69 @@ export function ConstructionPage({
         icon="construction"
         action={<Button onClick={() => setProjectOpen(true)}>Manage project</Button>}
       />
+      {endgame && (
+        <Panel className="project-console">
+          <SectionTitle
+            eyebrow="REPEATABLE OPERATIONS"
+            title={endgame.operation.name}
+            description={endgame.operation.description}
+            icon="expedition"
+          />
+          <ProgressBar
+            label={endgame.operation.completed ? "Weekly operation complete" : "Community delivery progress"}
+            value={
+              Object.entries(endgame.operation.requirements).reduce(
+                (sum, [slug, target]) =>
+                  sum + Math.min(1, (endgame.operation.contributed[slug] ?? 0) / target),
+                0,
+              ) / Math.max(1, Object.keys(endgame.operation.requirements).length) * 100
+            }
+            tone={endgame.operation.completed ? "success" : "info"}
+          />
+          <div className="material-readout">
+            <span>Station-wide manifest</span>
+            <strong>{Object.entries(endgame.operation.requirements).map(([slug, target]) => `${slug} ${endgame.operation.contributed[slug] ?? 0}/${target}`).join(" · ")}</strong>
+          </div>
+          <p>{endgame.operation.reward}</p>
+          <div className="inline-actions">
+            {[
+              ["scrap", 100],
+              ["electronics", 10],
+              ["alloys", 10],
+              ["researchData", 5],
+            ].map(([material, amount]) => (
+              <Button
+                key={material}
+                size="sm"
+                variant="ghost"
+                disabled={endgame.operation.completed}
+                onClick={() => void action("/api/v1/endgame/operations/contribute", { [material]: amount }, "Operation supplied")}
+              >
+                Deliver {amount} {material === "researchData" ? "research data" : material}
+              </Button>
+            ))}
+          </div>
+          <ResponsiveGrid min="15rem">
+            {endgame.contracts.map((contract) => (
+              <Card key={contract.slug}>
+                <Badge tone={contract.claimed ? "success" : contract.progress >= contract.target ? "info" : "neutral"}>
+                  {contract.claimed ? "Claimed" : `${contract.progress}/${contract.target}`}
+                </Badge>
+                <h3>{contract.name}</h3>
+                <p>{contract.description}</p>
+                <Button
+                  size="sm"
+                  fullWidth
+                  disabled={contract.claimed || contract.progress < contract.target}
+                  onClick={() => void action(`/api/v1/endgame/contracts/${contract.slug}/claim`, undefined, "Contract claimed")}
+                >
+                  {contract.claimed ? "Returns tomorrow" : `Claim ${contract.credits} cr · ${contract.xp} XP`}
+                </Button>
+              </Card>
+            ))}
+          </ResponsiveGrid>
+        </Panel>
+      )}
       <>
         <ResponsiveGrid min="17rem">
           {modules.map((module) => {

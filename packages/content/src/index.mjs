@@ -113,10 +113,12 @@ const balanceSchema = z.object({
   careers: z.record(z.record(z.number())),
   ships: z.object({
     crewPerShip: z.number().int().positive(),
+    baseFleetCapacity: z.number().int().positive(),
+    berthsPerShipyardLevel: z.number().int().positive(),
     renameCredits: z.number().int().nonnegative(),
     skinCooldownSeconds: z.number().int().positive(),
     skins: z.array(z.object({ slug, classSlug: slug, name: z.string().min(1), description: z.string().min(1), credits: z.number().int().positive(), cargoBonus: z.number().int().nonnegative().optional(), fuelDiscount: z.number().int().nonnegative().optional(), repairDiscount: z.number().min(0).max(1).optional(), lootRollBonus: z.number().int().nonnegative().optional(), successBonus: z.number().min(0).max(1).optional() })),
-    purchases: z.array(z.object({ slug, name: z.string().min(1), credits: z.number().int().positive(), cargoCapacity: z.number().int().positive(), fuel: z.number().int().nonnegative(), visualKey: slug })),
+    purchases: z.array(z.object({ slug, name: z.string().min(1), description: z.string().min(1).optional(), credits: z.number().int().positive(), cargoCapacity: z.number().int().positive(), fuel: z.number().int().nonnegative(), visualKey: slug, successBonus: z.number().min(0).max(1).optional(), injuryReduction: z.number().min(0).max(1).optional() })),
     refuel: z.object({ fuelPerCell: z.number().int().positive() }),
     repair: z.object({ creditsPerCondition: z.number().int().positive(), alloysPerTwentyCondition: z.number().int().nonnegative() }),
     upgrades: z.array(z.object({ slug, name: z.string().min(1), description: z.string().min(1), credits: z.number().int().nonnegative(), alloys: z.number().int().nonnegative().optional(), electronics: z.number().int().nonnegative().optional(), conditionBonus: z.number().int().optional(), cargoBonus: z.number().int().optional(), fuelDiscount: z.number().int().optional(), repairDiscount: z.number().min(0).max(1).optional(), lootRollBonus: z.number().int().nonnegative().optional() }))

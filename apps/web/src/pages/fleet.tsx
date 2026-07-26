@@ -74,7 +74,6 @@ export function formatCrewStars(value: number): string {
 
 export function ShipsPage({
   ships,
-  crew,
   expeditions,
   cooldowns,
   inventory,
@@ -120,6 +119,12 @@ export function ShipsPage({
   const skin = marketplace?.ships.skins.find((item) => item.slug === skinSlug);
   const fuelHeld =
     inventory.find((item) => item.itemSlug === "fuel")?.quantity ?? 0;
+  const shipyardLevel =
+    station?.modules.find((module) => module.slug === "shipyard")?.level ?? 0;
+  const fleetCapacity =
+    (marketplace?.ships.baseFleetCapacity ?? 2) +
+    shipyardLevel * (marketplace?.ships.berthsPerShipyardLevel ?? 2) +
+    ((me.player?.level ?? 1) >= 15 ? 1 : 0);
   const skinRemaining = selected
     ? cooldownRemaining(cooldowns, `ship-skin:${selected.id}`, Date.now())
     : 0;
@@ -195,18 +200,12 @@ export function ShipsPage({
         <div className="fleet-console__capacity">
           <span>Fleet Capacity</span>
           <strong className="nw-numeric">
-            {ships.length} / {Math.max(1, Math.floor(crew.length / 2))}
+            {ships.length} / {fleetCapacity}
           </strong>
           <Badge
-            tone={
-              ships.length < Math.max(1, Math.floor(crew.length / 2))
-                ? "success"
-                : "warning"
-            }
+            tone={ships.length < fleetCapacity ? "success" : "warning"}
           >
-            {ships.length < Math.max(1, Math.floor(crew.length / 2))
-              ? "BERTH AVAILABLE"
-              : "CREW LIMIT"}
+            {ships.length < fleetCapacity ? "BERTH AVAILABLE" : "BERTH LIMIT"}
           </Badge>
         </div>
       </section>
@@ -453,34 +452,51 @@ export function ShipsPage({
         <SectionTitle
           eyebrow="SHIP BROKER"
           title="Expand the Fleet"
-          description="Purchases require two crew per registered ship and active Marketplace and Shipyard modules."
+          description="Fleet berths come from the Shipyard, with a bonus berth at level 15. Purchases require active Marketplace and Shipyard modules."
           icon="trade"
         />
-        <div className="inline-actions">
+        <ResponsiveGrid min="16rem">
           {marketplace?.ships.purchases.map((definition) => (
-            <Button
-              key={definition.slug}
-              disabled={
-                !marketplace.unlocked ||
-                station?.modules.find((module) => module.slug === "shipyard")
-                  ?.state !== "active" ||
-                ships.length >= Math.max(1, Math.floor(crew.length / 2)) ||
-                (me.player?.credits ?? 0) < definition.credits
-              }
-              onClick={() =>
-                setConfirm({
-                  path: "/api/v1/ships/purchase",
-                  payload: { classSlug: definition.slug },
-                  label: `${definition.name} purchased`,
-                  title: `Confirm ${definition.name} purchase`,
-                  body: `Purchase for ${definition.credits.toLocaleString()} credits? Base capacity: ${definition.cargoCapacity} cargo and ${definition.fuel} fuel.`,
-                })
-              }
-            >
-              {definition.name} · {definition.credits.toLocaleString()} cr
-            </Button>
+            <Card key={definition.slug} className="ship-card">
+              {definition.visualKey && (
+                <GameArtwork
+                  src={`/ships/base/${definition.visualKey.replace(/^ship-/, "")}.webp`}
+                  alt={`${definition.name} ship`}
+                  sizes="(max-width: 760px) 88vw, 24rem"
+                />
+              )}
+              <h3>{definition.name}</h3>
+              <p>{definition.description ?? "A reliable independent vessel ready for Station Zero service."}</p>
+              <div className="trait-list">
+                <Pill tone="info">{definition.cargoCapacity} cargo</Pill>
+                <Pill tone="purple">{definition.fuel} fuel</Pill>
+                {definition.successBonus ? <Pill tone="success">+{Math.round(definition.successBonus * 100)}% expedition success</Pill> : null}
+                {definition.injuryReduction ? <Pill tone="success">−{Math.round(definition.injuryReduction * 100)}% injury recovery</Pill> : null}
+              </div>
+              <Button
+                fullWidth
+                disabled={
+                  !marketplace.unlocked ||
+                  station?.modules.find((module) => module.slug === "shipyard")
+                    ?.state !== "active" ||
+                  ships.length >= fleetCapacity ||
+                  (me.player?.credits ?? 0) < definition.credits
+                }
+                onClick={() =>
+                  setConfirm({
+                    path: "/api/v1/ships/purchase",
+                    payload: { classSlug: definition.slug },
+                    label: `${definition.name} purchased`,
+                    title: `Confirm ${definition.name} purchase`,
+                    body: `Purchase for ${definition.credits.toLocaleString()} credits? Base capacity: ${definition.cargoCapacity} cargo and ${definition.fuel} fuel.`,
+                  })
+                }
+              >
+                Purchase · {definition.credits.toLocaleString()} cr
+              </Button>
+            </Card>
           ))}
-        </div>
+        </ResponsiveGrid>
       </Panel>
       <ConfirmWindow
         open={Boolean(confirm)}
@@ -975,6 +991,7 @@ export function CrewPage({ crew, action }: Pick<GameData, "crew" | "action">) {
   const [recruitName, setRecruitName] = useState("Nova");
   const [recruitRole, setRecruitRole] = useState("engineer");
   const [recruitOpen, setRecruitOpen] = useState(false);
+  const [retiringCrew, setRetiringCrew] = useState<(typeof crew)[number] | null>(null);
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -1121,6 +1138,9 @@ export function CrewPage({ crew, action }: Pick<GameData, "crew" | "action">) {
                       ? "Talent maxed"
                       : `Train talent · ${cost.toLocaleString()} cr`}
                 </Button>
+                <Button size="sm" variant="ghost" onClick={() => setRetiringCrew(member)}>
+                  Retire
+                </Button>
               </div>
             </Card>
           );
@@ -1159,6 +1179,19 @@ export function CrewPage({ crew, action }: Pick<GameData, "crew" | "action">) {
         </Field>
         </div>
       </Modal>
+      <ConfirmWindow
+        open={Boolean(retiringCrew)}
+        onClose={() => setRetiringCrew(null)}
+        onConfirm={() => {
+          if (retiringCrew) void action(`/api/v1/crew/${retiringCrew.id}/retire`, undefined, "Crew member retired");
+          setRetiringCrew(null);
+        }}
+        title={`Retire ${retiringCrew?.name ?? "crew member"}?`}
+        confirmLabel="Retire from roster"
+        tone="danger"
+      >
+        <p>This permanently frees a roster slot. Crew assigned to an active expedition cannot retire.</p>
+      </ConfirmWindow>
     </div>
   );
 }

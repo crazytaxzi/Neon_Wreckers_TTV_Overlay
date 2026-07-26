@@ -5,6 +5,7 @@ import path from 'node:path';
 
 const routeRoot = 'apps/api/src/routes';
 const expectedRoutes = [
+  'GET /api/v1/endgame',
   'DELETE /api/v1/admin/chat-commands/:id',
   'DELETE /api/v1/integrations/streamelements/connections/:id',
   'GET /api/v1/admin/chat-commands',
@@ -60,6 +61,8 @@ const expectedRoutes = [
   'POST /api/v1/expeditions/:id/claim',
   'POST /api/v1/expeditions/:id/resolve-now',
   'POST /api/v1/expeditions/launch',
+  'POST /api/v1/endgame/contracts/:slug/claim',
+  'POST /api/v1/endgame/operations/contribute',
   'POST /api/v1/integrations/streamelements/connections/:id/select',
   'POST /api/v1/integrations/streamelements/connections/:id/settings',
   'POST /api/v1/integrations/streamelements/connections/:id/verify',
@@ -72,6 +75,7 @@ const expectedRoutes = [
   'POST /api/v1/notifications/:id/read',
   'POST /api/v1/notifications/read-all',
   'POST /api/v1/player/career',
+  'POST /api/v1/crew/:id/retire',
   'POST /api/v1/points/actions/:actionSlug',
   'POST /api/v1/quarters',
   'POST /api/v1/quarters/use',

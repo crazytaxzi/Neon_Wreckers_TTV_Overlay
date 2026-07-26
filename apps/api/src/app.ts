@@ -17,6 +17,7 @@ import { registerChatCommandRoutes } from './routes/chat-commands.js';
 import { registerConstructionRoutes } from './routes/construction.js';
 import { registerExpeditionRoutes } from './routes/expeditions.js';
 import { registerEventSubRoutes } from './routes/eventsub.js';
+import { registerEndgameRoutes } from './routes/endgame.js';
 import { registerFleetRoutes } from './routes/fleet.js';
 import { registerIntegrationRoutes } from './routes/integrations.js';
 import { registerPlayerRoutes } from './routes/player.js';
@@ -86,6 +87,7 @@ export async function buildApp() {
   await registerConstructionRoutes(app, context);
   await registerPointRoutes(app, context);
   await registerExpeditionRoutes(app, context);
+  await registerEndgameRoutes(app, context);
   await registerFleetRoutes(app, context);
   await registerPlayerRoutes(app, context);
   await registerQuartersRoutes(app, context);

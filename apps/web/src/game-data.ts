@@ -11,6 +11,7 @@ import type {
   CurrentUser,
   Expedition,
   ExpeditionDefinition,
+  Endgame,
   GameData,
   HistoryEntry,
   InventoryItem,
@@ -74,6 +75,7 @@ export function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null |
   const [recipes, setRecipes] = useState<CraftingRecipe[]>([]);
   const [cooldowns, setCooldowns] = useState<ActionCooldown[]>([]);
   const [quarters, setQuarters] = useState<Quarters | null>(null);
+  const [endgame, setEndgame] = useState<Endgame | null>(null);
   const { pushToast } = useToast();
   const refreshInFlight = useRef<Promise<void> | null>(null);
 
@@ -81,7 +83,7 @@ export function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null |
     if (refreshInFlight.current) return refreshInFlight.current;
     const pending = (async () => {
       setMe(await requestApi<CurrentUser>('/api/v1/me', {}, authenticatedUserSummarySchema));
-      const [stationResult, wreckResult, inventoryResult, shipsResult, crewResult, historyResult, expeditionsResult, expeditionDefinitionsResult, notificationsResult, marketplaceResult, quartersResult, catalogResult, auctionResult, recipesResult, cooldownResult] = await Promise.allSettled([
+      const [stationResult, wreckResult, inventoryResult, shipsResult, crewResult, historyResult, expeditionsResult, expeditionDefinitionsResult, notificationsResult, marketplaceResult, quartersResult, catalogResult, auctionResult, recipesResult, cooldownResult, endgameResult] = await Promise.allSettled([
         requestApi<Station>('/api/v1/station', {}, stationSnapshotSchema),
         requestApi<Wreck>('/api/v1/wrecks/current', {}, currentWreckSchema),
         requestApi<InventoryItem[]>('/api/v1/inventory', {}, inventoryItemSchema.array()),
@@ -96,7 +98,8 @@ export function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null |
         requestApi<ItemDefinition[]>('/api/v1/items/catalog'),
         requestApi<AuctionListing[]>('/api/v1/auction/listings'),
         requestApi<CraftingRecipe[]>('/api/v1/crafting/recipes'),
-        requestApi<ActionCooldown[]>('/api/v1/cooldowns')
+        requestApi<ActionCooldown[]>('/api/v1/cooldowns'),
+        requestApi<Endgame>('/api/v1/endgame')
       ]);
       if (stationResult.status === 'fulfilled') setStation(stationResult.value);
       if (wreckResult.status === 'fulfilled') setWreck(wreckResult.value);
@@ -113,6 +116,7 @@ export function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null |
       if (auctionResult.status === 'fulfilled') setAuctions(auctionResult.value);
       if (recipesResult.status === 'fulfilled') setRecipes(recipesResult.value);
       if (cooldownResult.status === 'fulfilled') setCooldowns(cooldownResult.value);
+      if (endgameResult.status === 'fulfilled') setEndgame(endgameResult.value);
     })();
     refreshInFlight.current = pending;
     const clearPending = () => {
@@ -175,5 +179,5 @@ export function useGameData(): Omit<GameData, 'me'> & { me: CurrentUser | null |
     }
   }, [pushToast, refresh]);
 
-  return { me, station, wreck, inventory, ships, crew, history, expeditions, expeditionDefinitions, notifications, marketplace, catalog, auctions, recipes, cooldowns, quarters, login, action, refresh };
+  return { me, station, wreck, inventory, ships, crew, history, expeditions, expeditionDefinitions, notifications, marketplace, catalog, auctions, recipes, cooldowns, quarters, endgame, login, action, refresh };
 }

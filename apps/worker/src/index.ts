@@ -27,6 +27,7 @@ const worker = new Worker(
     if (expedition.status !== 'active') return { skipped: true, status: expedition.status };
     if (!expedition.resolvesAt) throw new Error(`Active expedition ${expedition.id} has no resolution time.`);
     const expeditionSkin = shipRules.skins.find((skin: { slug: string; successBonus?: number; lootRollBonus?: number }) => skin.slug === expedition.ship?.activeSkin);
+    const shipClass = shipRules.purchases.find((candidate: { slug: string }) => candidate.slug === expedition.ship?.classSlug);
     const expeditionCrew = await prisma.crewMember.findMany({ where: { id: { in: expedition.crewIds } } });
     const crewSuccessBonus = expeditionCrew.reduce((total, member) => total + (member.role === 'pilot' ? member.jobStars * .01 + member.talentStars * .004 : member.role === 'scout' ? member.jobStars * .006 + member.talentStars * .008 : member.talentStars * .002), 0);
     const crewLootBonus = expeditionCrew.some(member => member.role === 'quartermaster' && member.jobStars >= 4) ? 1 : 0;
@@ -40,7 +41,7 @@ const worker = new Worker(
       expeditionDefinition: expeditionDefinitions[expedition.definition],
       items: itemsBySlug,
       lootRollBonus: (expedition.ship?.upgrades.includes('expanded-hold') ? Number(shipRules.upgrades.find((upgrade: { slug: string; lootRollBonus?: number }) => upgrade.slug === 'expanded-hold')?.lootRollBonus ?? 0) : 0) + Number(expeditionSkin?.lootRollBonus ?? 0) + crewLootBonus,
-      successBonus: Number(expeditionSkin?.successBonus ?? 0) + crewSuccessBonus,
+      successBonus: Number(expeditionSkin?.successBonus ?? 0) + Number(shipClass?.successBonus ?? 0) + crewSuccessBonus,
       now: expedition.resolvesAt.toISOString()
     });
 
@@ -82,7 +83,8 @@ const worker = new Worker(
         }
         const medic = expeditionCrew.filter(member => member.role === 'medic').sort((a, b) => b.talentStars - a.talentStars)[0];
         const medicMultiplier = Math.max(.5, 1 - Number(medic?.talentStars ?? 0) * .08);
-        await transaction.crewMember.updateMany({ where: { id: { in: expedition.crewIds } }, data: { morale: { decrement: 8 }, injuredUntil: new Date(Date.now() + 30 * 60_000 * recoveryMultiplier * medicMultiplier) } });
+        const shipMedicalMultiplier = 1 - Number(shipClass?.injuryReduction ?? 0);
+        await transaction.crewMember.updateMany({ where: { id: { in: expedition.crewIds } }, data: { morale: { decrement: 8 }, injuredUntil: new Date(Date.now() + 30 * 60_000 * recoveryMultiplier * medicMultiplier * shipMedicalMultiplier) } });
       } else {
         for (const crewId of expedition.crewIds) {
           const member = await transaction.crewMember.findUnique({ where: { id: crewId } });

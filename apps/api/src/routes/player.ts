@@ -77,7 +77,7 @@ export async function registerPlayerRoutes(app: FastifyInstance, context: ApiCon
     return {
       data: {
         unlocked,
-        ships: { purchases: shipRules.purchases, upgrades: shipRules.upgrades, skins: shipRules.skins, skinCooldownSeconds: shipRules.skinCooldownSeconds, repair: shipRules.repair, crewPerShip: shipRules.crewPerShip, renameCredits: shipRules.renameCredits },
+        ships: { purchases: shipRules.purchases, upgrades: shipRules.upgrades, skins: shipRules.skins, skinCooldownSeconds: shipRules.skinCooldownSeconds, repair: shipRules.repair, crewPerShip: shipRules.crewPerShip, baseFleetCapacity: shipRules.baseFleetCapacity, berthsPerShipyardLevel: shipRules.berthsPerShipyardLevel, renameCredits: shipRules.renameCredits },
         listings: unlocked
           ? [
               ...marketplaceRules.listings

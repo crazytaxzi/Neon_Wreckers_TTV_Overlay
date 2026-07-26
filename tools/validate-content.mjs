@@ -54,6 +54,10 @@ for (const record of [...items, ...wrecks, ...modules]) {
   assert.equal(record.lifecycle, 'active', `${record.slug} has unsupported base lifecycle ${record.lifecycle}`);
   referencedVisualKeys.add(record.visualKey);
 }
+for (const ship of balance.ships.purchases) {
+  assert.ok(visualKeys.has(ship.visualKey), `Missing asset manifest entry for ${ship.slug}:${ship.visualKey}`);
+  referencedVisualKeys.add(ship.visualKey);
+}
 for (const assetKey of visualKeys) {
   assert.ok(referencedVisualKeys.has(assetKey), `Unused asset manifest entry: ${assetKey}`);
 }

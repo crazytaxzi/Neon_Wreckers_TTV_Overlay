@@ -169,12 +169,14 @@ export type Marketplace = {
   unlocked: boolean;
   listings: MarketplaceListing[];
   ships: {
-    purchases: Array<{ slug: string; name: string; credits: number; cargoCapacity: number; fuel: number }>;
+    purchases: Array<{ slug: string; name: string; description?: string; credits: number; cargoCapacity: number; fuel: number; visualKey: string; successBonus?: number; injuryReduction?: number }>;
     upgrades: Array<{ slug: string; name: string; description: string; credits: number; alloys?: number; electronics?: number; conditionBonus?: number; cargoBonus?: number; fuelDiscount?: number; repairDiscount?: number; lootRollBonus?: number }>;
     skins: Array<{ slug: string; classSlug: string; name: string; description: string; credits: number; cargoBonus?: number; fuelDiscount?: number; repairDiscount?: number; lootRollBonus?: number; successBonus?: number }>;
     skinCooldownSeconds: number;
     repair: { creditsPerCondition: number; alloysPerTwentyCondition: number };
     crewPerShip: number;
+    baseFleetCapacity: number;
+    berthsPerShipyardLevel: number;
     renameCredits: number;
   };
 };
@@ -183,6 +185,18 @@ export type ItemDefinition = { slug: string; name: string; rarity: string; value
 export type AuctionListing = { id: string; itemSlug: string; itemName: string; quantity: number; priceCredits: number; sellerName: string; ownListing: boolean; cancellationFee: number; expiresAt: string };
 export type CraftingRecipe = { slug: string; name: string; baseDurationSeconds: number; durationSeconds: number; inputValue: number; outputValue: number; valueAdded: number; efficiency: number; inputs: Record<string, number>; outputs: Record<string, number>; stationModule: string; unlocked: boolean };
 export type ActionCooldown = { actionKey: string; expiresAt: string };
+export type Endgame = {
+  contracts: Array<{ slug: string; name: string; description: string; target: number; progress: number; credits: number; xp: number; claimed: boolean }>;
+  operation: {
+    slug: string;
+    name: string;
+    description: string;
+    reward: string;
+    requirements: Record<string, number>;
+    contributed: Record<string, number>;
+    completed: boolean;
+  };
+};
 export type ExpeditionDefinition = {
   slug: string;
   name: string;
@@ -238,6 +252,7 @@ export type GameData = {
   auctions: AuctionListing[];
   recipes: CraftingRecipe[];
   cooldowns: ActionCooldown[];
+  endgame: Endgame | null;
   quarters: Quarters | null;
   login: () => void;
   action: ActionHandler;

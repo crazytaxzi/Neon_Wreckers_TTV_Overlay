@@ -21,17 +21,40 @@ import {
 } from "../page-utils.js";
 import "../quarters.css";
 
-type FixtureKey = "bed" | "relic-shelf" | "espresso-rig";
+type FixtureKey =
+  | "bed"
+  | "relic-shelf"
+  | "espresso-rig"
+  | "scanner-console"
+  | "salvage-trophy"
+  | "hydroponic-wall"
+  | "tool-locker"
+  | "star-map"
+  | "crew-table"
+  | "floor-lamp"
+  | "parts-crate"
+  | "observation-chair"
+  | "music-terminal";
 
 type FixtureDefinition = {
   key: FixtureKey;
   name: string;
-  icon: "crew" | "archive" | "resources";
+  icon:
+    | "crew"
+    | "archive"
+    | "resources"
+    | "scanner"
+    | "salvage"
+    | "module"
+    | "engineering"
+    | "expedition"
+    | "events";
   action: string;
   description: string;
   cost: string;
   reward: string;
   cooldownKey: string;
+  functional?: boolean;
 };
 
 const fixtures: FixtureDefinition[] = [
@@ -45,6 +68,7 @@ const fixtures: FixtureDefinition[] = [
     cost: "No supplies",
     reward: "+12 idle crew morale · +10 XP",
     cooldownKey: "quarters:bed",
+    functional: true,
   },
   {
     key: "relic-shelf",
@@ -56,6 +80,7 @@ const fixtures: FixtureDefinition[] = [
     cost: "1 Research Data",
     reward: "125 credits · 50 XP · 1 reputation",
     cooldownKey: "quarters:relic-shelf",
+    functional: true,
   },
   {
     key: "espresso-rig",
@@ -67,7 +92,18 @@ const fixtures: FixtureDefinition[] = [
     cost: "1 Water Cartridge · 1 Nutrient Paste",
     reward: "+8 idle crew morale · +5 XP",
     cooldownKey: "quarters:espresso-rig",
+    functional: true,
   },
+  { key: "scanner-console", name: "Deep-Range Scanner", icon: "scanner", action: "Decorative fixture", description: "A compact telemetry desk for plotting distant wreck signatures.", cost: "Unlocked", reward: "Habitat customization", cooldownKey: "" },
+  { key: "salvage-trophy", name: "Salvage Trophy", icon: "salvage", action: "Decorative fixture", description: "A polished fragment from a particularly stubborn wreck.", cost: "Unlocked", reward: "Habitat customization", cooldownKey: "" },
+  { key: "hydroponic-wall", name: "Hydroponic Wall", icon: "module", action: "Decorative fixture", description: "Living color, breathable air, and something aboard that is not rusted.", cost: "Unlocked", reward: "Habitat customization", cooldownKey: "" },
+  { key: "tool-locker", name: "Wrecker Tool Locker", icon: "engineering", action: "Decorative fixture", description: "A secured rack for cutters, sealant, and field repair equipment.", cost: "Unlocked", reward: "Habitat customization", cooldownKey: "" },
+  { key: "star-map", name: "Holographic Star Map", icon: "expedition", action: "Decorative fixture", description: "A luminous chart of explored routes and dangerous unanswered pings.", cost: "Unlocked", reward: "Habitat customization", cooldownKey: "" },
+  { key: "crew-table", name: "Crew Briefing Table", icon: "crew", action: "Decorative fixture", description: "A scarred planning table with room for the whole shore team.", cost: "Unlocked", reward: "Habitat customization", cooldownKey: "" },
+  { key: "floor-lamp", name: "Dockside Floor Lamp", icon: "module", action: "Decorative fixture", description: "Warm task lighting reclaimed from a merchant habitat.", cost: "Unlocked", reward: "Habitat customization", cooldownKey: "" },
+  { key: "parts-crate", name: "Sorted Parts Crate", icon: "resources", action: "Decorative fixture", description: "Organized components awaiting the next inspired repair.", cost: "Unlocked", reward: "Habitat customization", cooldownKey: "" },
+  { key: "observation-chair", name: "Observation Chair", icon: "events", action: "Decorative fixture", description: "A reinforced chair pointed toward the best surviving viewport.", cost: "Unlocked", reward: "Habitat customization", cooldownKey: "" },
+  { key: "music-terminal", name: "Signal Music Terminal", icon: "events", action: "Decorative fixture", description: "A restored receiver for broadcasts, field recordings, and contraband synthwave.", cost: "Unlocked", reward: "Habitat customization", cooldownKey: "" },
 ];
 
 function fixtureName(key: string) {
@@ -146,6 +182,7 @@ export function QuartersPage({
   const isInstalled = (key: FixtureKey) =>
     objects.some((object) => object.key === key);
   const suppliesReady = (key: FixtureKey) =>
+    !fixtures.find((fixture) => fixture.key === key)?.functional ||
     key === "bed" ||
     (key === "relic-shelf" && held("research-data") >= 1) ||
     (key === "espresso-rig" &&
@@ -157,8 +194,8 @@ export function QuartersPage({
     const occupied = new Set(
       objects.map((object) => `${object.x}:${object.y}`),
     );
-    for (let y = 0; y < 5; y += 1) {
-      for (let x = 0; x < 8; x += 1) {
+    for (let y = 0; y < 7; y += 1) {
+      for (let x = 0; x < 10; x += 1) {
         if (!occupied.has(`${x}:${y}`)) {
           setObjects((current) => [...current, { key, x, y }]);
           setSelectedKey(key);
@@ -180,8 +217,8 @@ export function QuartersPage({
     if (selectedIndex < 0) return;
     setObjects((current) => {
       const selected = current[selectedIndex];
-      const x = Math.max(0, Math.min(7, selected.x + dx));
-      const y = Math.max(0, Math.min(4, selected.y + dy));
+      const x = Math.max(0, Math.min(9, selected.x + dx));
+      const y = Math.max(0, Math.min(6, selected.y + dy));
       if (
         current.some(
           (object, index) =>
@@ -236,7 +273,7 @@ export function QuartersPage({
         <StatusDisplay
           label="Installed Fixtures"
           value={objects.length}
-          unit="/3"
+          unit="/13"
           icon="diagnostics"
           tone="info"
         />
@@ -253,7 +290,7 @@ export function QuartersPage({
         <Panel depth="high" className="quarters-room-panel">
           <SectionTitle
             eyebrow="HABITAT EDITOR"
-            title="Eight-by-Five Room Grid"
+            title="Ten-by-Seven Room Grid"
             description="Select a fixture, move it through the room, then save the server-backed layout."
             icon="diagnostics"
           />
@@ -268,6 +305,12 @@ export function QuartersPage({
                     Station Zero Industrial
                   </option>
                   <option value="frost-wrecks">Frost Wrecks</option>
+                  <option value="nebula-observatory">
+                    Nebula Observatory
+                  </option>
+                  <option value="industrial-garden">
+                    Industrial Garden
+                  </option>
                 </Select>
               </Field>
               <div
@@ -424,7 +467,7 @@ export function QuartersPage({
           icon="events"
         />
         <ResponsiveGrid min="18rem">
-          {fixtures.map((fixture) => {
+          {fixtures.filter((fixture) => fixture.functional).map((fixture) => {
             const remaining = cooldownRemaining(
               cooldowns,
               fixture.cooldownKey,

@@ -90,6 +90,10 @@ export async function registerQuartersRoutes(app: FastifyInstance, context: ApiC
       let rewards: Record<string, number> = {};
       let cooldownEndsAt: Date;
 
+      if (!['bed', 'relic-shelf', 'espresso-rig'].includes(objectKey)) {
+        throw new GameRuleError('QUARTERS_FIXTURE_DECORATIVE', 'That fixture is decorative and has no operation to run.');
+      }
+
       if (objectKey === 'bed') {
         cooldownEndsAt = await enforceDurableCooldown(transaction, user.player.id, 'quarters:bed', 6 * 60 * 60);
         const crewAffected = await boostIdleCrew(transaction, user.player.id, 12);

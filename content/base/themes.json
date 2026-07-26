@@ -26,5 +26,33 @@
       "cold-breath-vents",
       "blue-warning-strobes"
     ]
+  },
+  "nebula-observatory": {
+    "name": "Nebula Observatory",
+    "colors": {
+      "green": "#61f6ff",
+      "purple": "#c06bff",
+      "cyan": "#5de8ff",
+      "bg": "#08051a"
+    },
+    "decorations": [
+      "panoramic-starfield",
+      "violet-floor-lighting",
+      "scanner-holograms"
+    ]
+  },
+  "industrial-garden": {
+    "name": "Industrial Garden",
+    "colors": {
+      "green": "#8dff68",
+      "purple": "#9b76d8",
+      "cyan": "#61d7c8",
+      "bg": "#07100c"
+    },
+    "decorations": [
+      "hydroponic-panels",
+      "warm-task-lights",
+      "reclaimed-wood"
+    ]
   }
 }
