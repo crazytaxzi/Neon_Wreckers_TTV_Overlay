@@ -1324,8 +1324,11 @@ p {
 
 .nw-modal {
   position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   width: min(100%, 36rem);
   max-height: min(88vh, 50rem);
+  max-height: min(calc(100dvh - 2rem), 50rem);
   border: 1px solid var(--nw-color-line-strong);
   border-top-color: rgba(var(--nw-color-green-rgb), 0.5);
   border-radius: var(--nw-radius-panel);
@@ -1365,8 +1368,11 @@ p {
 }
 
 .nw-modal__body {
+  min-height: 0;
   padding: var(--nw-space-5);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .nw-modal > footer {
@@ -1855,6 +1861,7 @@ p {
 
   .nw-modal {
     max-height: 92vh;
+    max-height: calc(100dvh - 1rem);
   }
 
   .nw-modal > header,

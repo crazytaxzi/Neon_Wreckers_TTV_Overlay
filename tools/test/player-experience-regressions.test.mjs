@@ -13,8 +13,12 @@ const quartersRoute = read('apps/api/src/routes/quarters.ts');
 const webApp = read('apps/web/src/app.tsx');
 const quartersPage = read('apps/web/src/pages/quarters.tsx');
 const fleetPage = read('apps/web/src/pages/fleet.tsx');
+const communityPage = read('apps/web/src/pages/community.tsx');
+const playerHeader = read('apps/web/src/components/PlayerHeader.tsx');
+const playerStyles = read('apps/web/src/styles.css');
 const gameArtwork = read('apps/web/src/components/GameArtwork.tsx');
 const uiIndex = read('packages/ui/src/index.ts');
+const uiStyles = read('packages/ui/src/styles.css');
 const controlContrast = read('packages/ui/src/control-contrast.css');
 
 test('OBS overlay explicitly removes the full-canvas raster layer', () => {
@@ -75,4 +79,39 @@ test('crew star ratings cannot pass a negative count to String.repeat', () => {
   assert.match(fleetPage, /formatCrewStars\(member\.jobStars\)/);
   assert.match(fleetPage, /formatCrewStars\(member\.talentStars\)/);
   assert.doesNotMatch(fleetPage, /'☆'\.repeat\(5 - value\)/);
+});
+
+test('Sell From Hold supports multi-item station sales and player auctions', () => {
+  assert.match(communityPage, /title="Sell From Hold"/);
+  assert.match(communityPage, />\s*Sell to Station\s*</);
+  assert.match(communityPage, />\s*Create Auction\s*</);
+  assert.match(
+    communityPage,
+    /"\/api\/v1\/marketplace\/sell"[\s\S]*\{ itemSlug: sellItem, quantity: sellQuantity \}/,
+  );
+});
+
+test('tall modal bodies remain scrollable within the visible viewport', () => {
+  assert.match(
+    uiStyles,
+    /\.nw-modal\s*\{[\s\S]*grid-template-rows: auto minmax\(0, 1fr\) auto/,
+  );
+  assert.match(
+    uiStyles,
+    /\.nw-modal__body\s*\{[\s\S]*min-height: 0;[\s\S]*overflow-y: auto/,
+  );
+  assert.match(uiStyles, /max-height: min\(calc\(100dvh - 2rem\), 50rem\)/);
+});
+
+test('tablet and mobile headers keep actions, resync, and profile reachable', () => {
+  assert.match(playerHeader, /className="player-header-action"/);
+  assert.match(playerHeader, /className="player-header-resync"/);
+  assert.match(
+    playerStyles,
+    /@media \(min-width: 761px\) and \(max-width: 1100px\)[\s\S]*\.player-profile-button \{ display: block/,
+  );
+  assert.match(
+    playerStyles,
+    /@media \(max-width: 760px\)[\s\S]*\.player-header-tools > \.nw-tooltip,[\s\S]*\.player-profile-button \{ display: block/,
+  );
 });

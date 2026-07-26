@@ -422,11 +422,18 @@ export function MarketPage({
     "marketplace" | "auctions" | "mine" | "sell"
   >("marketplace");
   const [sellItem, setSellItem] = useState(
-    inventory.find((item) => item.quantity > 0)?.itemSlug ?? "",
+    inventory.find(
+      (item) =>
+        item.quantity > 0 &&
+        catalog.find((entry) => entry.slug === item.itemSlug)?.sellable,
+    )?.itemSlug ?? "",
   );
   const [sellQuantity, setSellQuantity] = useState(1);
   const [sellPrice, setSellPrice] = useState(100);
   const [auctionDuration, setAuctionDuration] = useState(48);
+  const [sellDestination, setSellDestination] = useState<
+    "station" | "auction"
+  >("station");
   const [cancelListing, setCancelListing] = useState<AuctionListing | null>(
     null,
   );
@@ -451,6 +458,22 @@ export function MarketPage({
   const selectedDefinition = catalog.find((item) => item.slug === sellItem);
   const selectedHeld =
     inventory.find((item) => item.itemSlug === sellItem)?.quantity ?? 0;
+  const stationUnitPrice =
+    selectedDefinition?.vendorSellCredits ??
+    selectedDefinition?.valueCredits ??
+    0;
+  const stationSaleTotal = stationUnitPrice * sellQuantity;
+
+  const selectSellDestination = (destination: "station" | "auction") => {
+    setSellDestination(destination);
+    if (
+      destination === "station" &&
+      !sellableInventory.some((item) => item.itemSlug === sellItem)
+    ) {
+      setSellItem(sellableInventory[0]?.itemSlug ?? "");
+      setSellQuantity(1);
+    }
+  };
 
   const tabs: Array<{ id: typeof view; label: string; count?: number }> = [
     { id: "marketplace", label: "Marketplace", count: marketListings.length },
@@ -797,155 +820,156 @@ export function MarketPage({
       )}
 
       {marketplace?.unlocked && view === "sell" && (
-        <div className="market-sell-layout">
-          <Modal open onClose={() => setView("marketplace")} title="Auction your salvage" description="Choose a held stack, price, and duration without leaving the market catalog." size="lg">
-            <div className="market-sell-panel">
+        <Modal
+          open
+          onClose={() => setView("marketplace")}
+          title="Sell From Hold"
+          description="Sell a chosen quantity directly to the station or create a player auction."
+          size="lg"
+        >
+          <div className="market-sell-panel">
+            <div className="trait-list" aria-label="Sale destination">
+              <Button
+                variant={
+                  sellDestination === "station" ? "primary" : "ghost"
+                }
+                onClick={() => selectSellDestination("station")}
+              >
+                Sell to Station
+              </Button>
+              <Button
+                variant={
+                  sellDestination === "auction" ? "primary" : "ghost"
+                }
+                onClick={() => selectSellDestination("auction")}
+              >
+                Create Auction
+              </Button>
+            </div>
             <div className="market-sell-form">
-              <Field label="Item">
-                <Select
-                  value={sellItem}
-                  onChange={(event) => {
-                    setSellItem(event.target.value);
-                    setSellQuantity(1);
-                  }}
-                >
-                  {inventory
-                    .filter(
-                      (item) =>
-                        item.quantity > 0 && item.itemSlug !== "credits",
-                    )
-                    .map((item) => (
+                <Field label="Item">
+                  <Select
+                    value={sellItem}
+                    onChange={(event) => {
+                      setSellItem(event.target.value);
+                      setSellQuantity(1);
+                    }}
+                  >
+                    {(sellDestination === "station"
+                      ? sellableInventory
+                      : inventory.filter(
+                          (item) =>
+                            item.quantity > 0 && item.itemSlug !== "credits",
+                        )
+                    ).map((item) => (
                       <option key={item.itemSlug} value={item.itemSlug}>
                         {item.name} ({item.quantity})
                       </option>
                     ))}
-                </Select>
-              </Field>
-              <Field label="Quantity">
-                <Input
-                  type="number"
-                  min={1}
-                  max={selectedHeld}
-                  value={sellQuantity}
-                  onChange={(event) =>
-                    setSellQuantity(Number(event.target.value))
-                  }
-                />
-              </Field>
-              <Field label="Full stack price">
-                <Input
-                  type="number"
-                  min={1}
-                  value={sellPrice}
-                  onChange={(event) => setSellPrice(Number(event.target.value))}
-                />
-              </Field>
-              <Field label="Auction duration">
-                <Select
-                  value={auctionDuration}
-                  onChange={(event) =>
-                    setAuctionDuration(Number(event.target.value))
-                  }
-                >
-                  <option value={6}>6 hours</option>
-                  <option value={12}>12 hours</option>
-                  <option value={24}>24 hours</option>
-                  <option value={48}>48 hours</option>
-                  <option value={72}>72 hours</option>
-                </Select>
-              </Field>
+                  </Select>
+                </Field>
+                <Field label="Quantity">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={selectedHeld}
+                    value={sellQuantity}
+                    onChange={(event) =>
+                      setSellQuantity(Number(event.target.value))
+                    }
+                  />
+                </Field>
+                {sellDestination === "auction" && (
+                  <>
+                    <Field label="Full stack price">
+                      <Input
+                        type="number"
+                        min={1}
+                        value={sellPrice}
+                        onChange={(event) =>
+                          setSellPrice(Number(event.target.value))
+                        }
+                      />
+                    </Field>
+                    <Field label="Auction duration">
+                      <Select
+                        value={auctionDuration}
+                        onChange={(event) =>
+                          setAuctionDuration(Number(event.target.value))
+                        }
+                      >
+                        <option value={6}>6 hours</option>
+                        <option value={12}>12 hours</option>
+                        <option value={24}>24 hours</option>
+                        <option value={48}>48 hours</option>
+                        <option value={72}>72 hours</option>
+                      </Select>
+                    </Field>
+                  </>
+                )}
             </div>
             <div className="market-listing-preview">
-              <div className="market-listing-preview__icon">
-                <NWIcon name={itemIcon(sellItem)} size={42} />
-              </div>
-              <div>
-                <span className="nw-eyebrow">Listing Preview</span>
-                <h3>{selectedDefinition?.name ?? "Choose an item"}</h3>
-                <p>
-                  {sellQuantity} of {selectedHeld} held · guide value{" "}
-                  {(guideValue(sellItem) * sellQuantity).toLocaleString()} cr
-                </p>
-              </div>
-              <strong className="nw-numeric">
-                {sellPrice.toLocaleString()} cr
-              </strong>
+                <div className="market-listing-preview__icon">
+                  <NWIcon name={itemIcon(sellItem)} size={42} />
+                </div>
+                <div>
+                  <span className="nw-eyebrow">
+                    {sellDestination === "station"
+                      ? "Station Buyback"
+                      : "Listing Preview"}
+                  </span>
+                  <h3>{selectedDefinition?.name ?? "Choose an item"}</h3>
+                  <p>
+                    {sellQuantity} of {selectedHeld} held ·{" "}
+                    {sellDestination === "station"
+                      ? `${stationUnitPrice.toLocaleString()} base credits each`
+                      : `guide value ${(guideValue(sellItem) * sellQuantity).toLocaleString()} credits`}
+                  </p>
+                </div>
+                <strong className="nw-numeric">
+                  {(sellDestination === "station"
+                    ? stationSaleTotal
+                    : sellPrice
+                  ).toLocaleString()}{" "}
+                  cr
+                </strong>
             </div>
             <Button
-              fullWidth
-              disabled={
-                !sellItem ||
-                sellQuantity < 1 ||
-                sellQuantity > selectedHeld ||
-                sellPrice < 1
-              }
-              onClick={() =>
-                void action(
-                  "/api/v1/auction/list",
-                  {
-                    itemSlug: sellItem,
-                    quantity: sellQuantity,
-                    priceCredits: sellPrice,
-                    durationHours: auctionDuration,
-                  },
-                  "Auction created",
-                )
-              }
-            >
-              List for {auctionDuration} Hours
+                fullWidth
+                disabled={
+                  !sellItem ||
+                  sellQuantity < 1 ||
+                  sellQuantity > selectedHeld ||
+                  (sellDestination === "station"
+                    ? stationUnitPrice < 1
+                    : sellPrice < 1)
+                }
+                onClick={async () => {
+                  const result = await action(
+                    sellDestination === "station"
+                      ? "/api/v1/marketplace/sell"
+                      : "/api/v1/auction/list",
+                    sellDestination === "station"
+                      ? { itemSlug: sellItem, quantity: sellQuantity }
+                      : {
+                          itemSlug: sellItem,
+                          quantity: sellQuantity,
+                          priceCredits: sellPrice,
+                          durationHours: auctionDuration,
+                        },
+                    sellDestination === "station"
+                      ? `${sellQuantity} item${sellQuantity === 1 ? "" : "s"} sold to station`
+                      : "Auction created",
+                  );
+                  if (result) setSellQuantity(1);
+                }}
+              >
+                {sellDestination === "station"
+                  ? `Sell ${sellQuantity} · Estimated ${stationSaleTotal.toLocaleString()} Credits`
+                  : `List for ${auctionDuration} Hours`}
             </Button>
-            </div>
-          </Modal>
-
-          <Panel className="market-buyback-panel">
-            <SectionTitle
-              eyebrow="STATION BUYBACK"
-              title="Quick Sell"
-              description="Sell one item at a time through the existing station buyback route."
-              icon="inventory"
-            />
-            <div className="market-sell-grid">
-              {sellableInventory.map((item) => {
-                const definition = catalog.find(
-                  (entry) => entry.slug === item.itemSlug,
-                );
-                return (
-                  <article
-                    key={item.itemSlug}
-                    className={`market-sell-tile nw-rarity--${item.rarity}`}
-                  >
-                    <div>
-                      <NWIcon name={itemIcon(item.itemSlug)} size={28} />
-                    </div>
-                    <span>{item.name}</span>
-                    <small>{item.quantity.toLocaleString()} held</small>
-                    <strong className="nw-numeric">
-                      {(
-                        definition?.vendorSellCredits ??
-                        definition?.valueCredits ??
-                        0
-                      ).toLocaleString()}{" "}
-                      cr
-                    </strong>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        void action(
-                          "/api/v1/marketplace/sell",
-                          { itemSlug: item.itemSlug, quantity: 1 },
-                          "Item sold",
-                        )
-                      }
-                    >
-                      Sell One
-                    </Button>
-                  </article>
-                );
-              })}
-            </div>
-          </Panel>
-        </div>
+          </div>
+        </Modal>
       )}
 
       <ConfirmWindow

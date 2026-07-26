@@ -77,9 +77,9 @@ export function PlayerHeader({
       </div>
 
       <div className="player-header-tools">
-        <Button variant="primary" size="sm" icon={<NWIcon name="terminal" size={16} />} onClick={() => setActionsOpen(true)}>Actions</Button>
+        <Button className="player-header-action" aria-label="Open actions" variant="primary" size="sm" icon={<NWIcon name="terminal" size={16} />} onClick={() => setActionsOpen(true)}>Actions</Button>
         <Tooltip content="Refresh station telemetry">
-          <Button variant="ghost" size="sm" icon={<NWIcon name="diagnostics" size={16} />} onClick={onRefresh}>Resync</Button>
+          <Button className="player-header-resync" aria-label="Resync station telemetry" variant="ghost" size="sm" icon={<NWIcon name="diagnostics" size={16} />} onClick={onRefresh}>Resync</Button>
         </Tooltip>
         <button className="player-alert-button" type="button" onClick={() => onNavigate('notifications')} aria-label={`${unread} unread notifications`}>
           <NWIcon name="notifications" size={19} />
