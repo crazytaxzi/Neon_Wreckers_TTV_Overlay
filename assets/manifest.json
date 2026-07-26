@@ -465,62 +465,180 @@
     },
     {
       "key": "wreck-ashfall-cutter",
-      "type": "svg-css",
+      "type": "webp-raster",
       "tags": [
         "wreck"
       ],
       "alt": "Damaged Ashfall patrol cutter",
       "source": {
-        "kind": "css",
-        "token": "wreck-ashfall-cutter"
+        "kind": "raster",
+        "path": "/wrecks/ashfall-cutter.webp",
+        "variants": {
+          "360w": "/wrecks/ashfall-cutter-360w.webp",
+          "600w": "/wrecks/ashfall-cutter-600w.webp"
+        }
       }
     },
     {
       "key": "wreck-helios-courier",
-      "type": "svg-css",
+      "type": "webp-raster",
       "tags": [
         "wreck"
       ],
       "alt": "Broken courier ship with fractured cargo spine",
       "source": {
-        "kind": "css",
-        "token": "wreck-helios-courier"
+        "kind": "raster",
+        "path": "/wrecks/helios-courier.webp",
+        "variants": {
+          "360w": "/wrecks/helios-courier-360w.webp",
+          "600w": "/wrecks/helios-courier-600w.webp"
+        }
       }
     },
     {
       "key": "wreck-morrowline-freighter",
-      "type": "svg-css",
+      "type": "webp-raster",
       "tags": [
         "wreck"
       ],
       "alt": "Morrowline commercial freighter",
       "source": {
-        "kind": "css",
-        "token": "wreck-morrowline-freighter"
+        "kind": "raster",
+        "path": "/wrecks/morrowline-freighter.webp",
+        "variants": {
+          "360w": "/wrecks/morrowline-freighter-360w.webp",
+          "600w": "/wrecks/morrowline-freighter-600w.webp"
+        }
       }
     },
     {
       "key": "wreck-orpheus-barge",
-      "type": "svg-css",
+      "type": "webp-raster",
       "tags": [
         "wreck"
       ],
       "alt": "Slag-bitten Orpheus mining barge",
       "source": {
-        "kind": "css",
-        "token": "wreck-orpheus-barge"
+        "kind": "raster",
+        "path": "/wrecks/orpheus-barge.webp",
+        "variants": {
+          "360w": "/wrecks/orpheus-barge-360w.webp",
+          "600w": "/wrecks/orpheus-barge-600w.webp"
+        }
       }
     },
     {
       "key": "wreck-research-skiff",
-      "type": "svg-css",
+      "type": "webp-raster",
       "tags": [
         "wreck"
       ],
       "alt": "Unmarked black research skiff",
       "source": {
-        "kind": "css",
-        "token": "wreck-research-skiff"
+        "kind": "raster",
+        "path": "/wrecks/research-skiff.webp",
+        "variants": {
+          "360w": "/wrecks/research-skiff-360w.webp",
+          "600w": "/wrecks/research-skiff-600w.webp"
+        }
+      }
+    },
+    {
+      "key": "wreck-kestrel-medical-frigate",
+      "type": "webp-raster",
+      "tags": ["wreck"],
+      "alt": "Quarantined Kestrel medical frigate",
+      "source": {
+        "kind": "raster",
+        "path": "/wrecks/kestrel-medical-frigate.webp",
+        "variants": {
+          "360w": "/wrecks/kestrel-medical-frigate-360w.webp",
+          "600w": "/wrecks/kestrel-medical-frigate-600w.webp"
+        }
+      }
+    },
+    {
+      "key": "wreck-cinder-refinery-hulk",
+      "type": "webp-raster",
+      "tags": ["wreck"],
+      "alt": "Cinder orbital refinery hulk",
+      "source": {
+        "kind": "raster",
+        "path": "/wrecks/cinder-refinery-hulk.webp",
+        "variants": {
+          "360w": "/wrecks/cinder-refinery-hulk-360w.webp",
+          "600w": "/wrecks/cinder-refinery-hulk-600w.webp"
+        }
+      }
+    },
+    {
+      "key": "wreck-pilgrim-habitat-ark",
+      "type": "webp-raster",
+      "tags": ["wreck"],
+      "alt": "Silent Pilgrim colony habitat ark",
+      "source": {
+        "kind": "raster",
+        "path": "/wrecks/pilgrim-habitat-ark.webp",
+        "variants": {
+          "360w": "/wrecks/pilgrim-habitat-ark-360w.webp",
+          "600w": "/wrecks/pilgrim-habitat-ark-600w.webp"
+        }
+      }
+    },
+    {
+      "key": "wreck-null-signal-probe",
+      "type": "webp-raster",
+      "tags": ["wreck"],
+      "alt": "Experimental Null-Signal deep probe",
+      "source": {
+        "kind": "raster",
+        "path": "/wrecks/null-signal-probe.webp",
+        "variants": {
+          "360w": "/wrecks/null-signal-probe-360w.webp",
+          "600w": "/wrecks/null-signal-probe-600w.webp"
+        }
+      }
+    },
+    {
+      "key": "wreck-atlas-fuel-tanker",
+      "type": "webp-raster",
+      "tags": ["wreck"],
+      "alt": "Drifting Atlas fuel tanker",
+      "source": {
+        "kind": "raster",
+        "path": "/wrecks/atlas-fuel-tanker.webp",
+        "variants": {
+          "360w": "/wrecks/atlas-fuel-tanker-360w.webp",
+          "600w": "/wrecks/atlas-fuel-tanker-600w.webp"
+        }
+      }
+    },
+    {
+      "key": "wreck-revenant-drone-carrier",
+      "type": "webp-raster",
+      "tags": ["wreck"],
+      "alt": "Hostile Revenant drone carrier",
+      "source": {
+        "kind": "raster",
+        "path": "/wrecks/revenant-drone-carrier.webp",
+        "variants": {
+          "360w": "/wrecks/revenant-drone-carrier-360w.webp",
+          "600w": "/wrecks/revenant-drone-carrier-600w.webp"
+        }
+      }
+    },
+    {
+      "key": "wreck-frostline-cryo-tug",
+      "type": "webp-raster",
+      "tags": ["wreck"],
+      "alt": "Frozen Frostline cryo tug",
+      "source": {
+        "kind": "raster",
+        "path": "/wrecks/frostline-cryo-tug.webp",
+        "variants": {
+          "360w": "/wrecks/frostline-cryo-tug-360w.webp",
+          "600w": "/wrecks/frostline-cryo-tug-600w.webp"
+        }
       }
     }
   ]

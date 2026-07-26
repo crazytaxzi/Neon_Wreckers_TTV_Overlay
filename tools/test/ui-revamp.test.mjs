@@ -92,6 +92,7 @@ test('overlay safety behavior remains present after decomposition', async () => 
   assert.match(components, /resolveRasterAsset/);
   assert.match(assetManifest, /manifest\.assets/);
   assert.match(assetManifest, /asset\.source\.kind !== 'raster'/);
+  assert.match(assetManifest, /source\.variants/);
   assert.doesNotMatch(components, /replace\('\.webp', '-(?:360|600)w\.webp'\)/);
   for (const component of ['StationTelemetry', 'WreckTelemetry', 'ViewerEventRegion', 'DispatchRail', 'FeedIndicator']) assert.match(components, new RegExp(`export function ${component}`));
   assert.match(css, /pointer-events:\s*none/);

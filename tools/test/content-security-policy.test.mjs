@@ -51,6 +51,7 @@ test('player, admin, and overlay receive explicit CSP headers', () => {
   const player = csp(locationBlock('location / {', undefined, true));
 
   for (const policy of [admin, overlay, player]) assertCoreDirectives(policy);
+  for (const policy of [admin, overlay, player]) assert.ok(policy.includes('https://static-cdn.jtvnw.net'));
   assert.ok(admin.includes("frame-ancestors 'none'"));
   assert.ok(overlay.includes("frame-ancestors 'self'"));
   assert.ok(player.includes("frame-ancestors 'self'"));

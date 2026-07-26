@@ -62,3 +62,10 @@ test('raster-skinned controls retain readable foreground contrast', () => {
   assert.match(controlContrast, /\.nw-button:disabled[\s\S]*opacity: 0\.72 !important/);
   assert.match(controlContrast, /outline: 2px solid var\(--nw-color-cyan\) !important/);
 });
+
+test('crew star ratings cannot pass a negative count to String.repeat', () => {
+  assert.match(fleetPage, /Math\.min\(5, Math\.max\(0, Math\.trunc\(/);
+  assert.match(fleetPage, /formatCrewStars\(member\.jobStars\)/);
+  assert.match(fleetPage, /formatCrewStars\(member\.talentStars\)/);
+  assert.doesNotMatch(fleetPage, /'☆'\.repeat\(5 - value\)/);
+});
