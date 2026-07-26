@@ -67,6 +67,25 @@ const operations = [
   }
 ] as const;
 
+const contractRotationSchema = z.object({ entries: z.array(z.object({
+  slug: z.string().regex(/^[a-z0-9-]+$/),
+  name: z.string().min(1).max(80),
+  description: z.string().min(1).max(240),
+  target: z.number().int().min(1).max(100),
+  metric: z.enum(['salvage', 'expedition', 'crafting']),
+  credits: z.number().int().min(0).max(100_000),
+  xp: z.number().int().min(0).max(10_000)
+})).min(1).max(12) });
+
+const operationRotationSchema = z.object({ entries: z.array(z.object({
+  slug: z.string().regex(/^[a-z0-9-]+$/),
+  name: z.string().min(1).max(100),
+  description: z.string().min(1).max(300),
+  moduleSlug: z.string().regex(/^[a-z0-9-]+$/),
+  requirements: z.object({ scrap: z.number().int().positive(), electronics: z.number().int().positive(), alloys: z.number().int().positive(), researchData: z.number().int().positive() }),
+  reward: z.string().min(1).max(240)
+})).min(1).max(12) });
+
 const inventorySlugs = { scrap: 'scrap', electronics: 'electronics', alloys: 'alloys', researchData: 'research-data' } as const;
 type Material = keyof typeof inventorySlugs;
 
@@ -78,9 +97,23 @@ function utcDay() {
   return { start, end };
 }
 
-function activeOperation(now = new Date()) {
+function activeOperation(now = new Date(), available: ReadonlyArray<(typeof operations)[number] | z.infer<typeof operationRotationSchema>['entries'][number]> = operations) {
   const week = Math.floor(now.getTime() / (7 * 24 * 60 * 60_000));
-  return { ...operations[week % operations.length], period: week, projectKind: `operation:${operations[week % operations.length].slug}:${week}` };
+  const selected = available[week % available.length];
+  return { ...selected, period: week, projectKind: `operation:${selected.slug}:${week}` };
+}
+
+async function rotationContent(context: ApiContext) {
+  const versions = await context.prisma.contentVersion.findMany({ where: { slug: { in: ['rotation.contracts', 'rotation.operations'] }, lifecycle: 'active' }, orderBy: { version: 'desc' } });
+  const contractVersion = versions.find(version => version.slug === 'rotation.contracts');
+  const operationVersion = versions.find(version => version.slug === 'rotation.operations');
+  const customContracts = contractVersion ? contractRotationSchema.safeParse(contractVersion.contentJson) : null;
+  const customOperations = operationVersion ? operationRotationSchema.safeParse(operationVersion.contentJson) : null;
+  return {
+    contracts: customContracts?.success ? customContracts.data.entries : contracts,
+    operations: customOperations?.success ? customOperations.data.entries : operations,
+    versions: { contracts: customContracts?.success ? contractVersion?.version ?? null : null, operations: customOperations?.success ? operationVersion?.version ?? null : null }
+  };
 }
 
 function weekWindow(now = new Date()) {
@@ -113,13 +146,14 @@ export async function registerEndgameRoutes(app: FastifyInstance, context: ApiCo
   app.get('/api/v1/endgame', async request => {
     const user = await requireUser(context.prisma, request);
     const { start } = utcDay();
-    const operation = activeOperation();
+    const rotation = await rotationContent(context);
+    const operation = activeOperation(new Date(), rotation.operations);
     const station = await context.prisma.station.findUniqueOrThrow({ where: { slug: 'station-zero' } });
     const module = await context.prisma.stationModule.findUnique({ where: { stationId_slug: { stationId: station.id, slug: operation.moduleSlug } } });
     const project = module
       ? await context.prisma.constructionProject.findFirst({ where: { moduleId: module.id, kind: operation.projectKind }, orderBy: { createdAt: 'desc' } })
       : null;
-    const cooldowns = await context.prisma.actionCooldown.findMany({ where: { playerId: user.player.id, actionKey: { startsWith: 'contract:' } } });
+    const cooldowns = await context.prisma.actionCooldown.findMany({ where: { playerId: user.player.id, OR: [{ actionKey: { startsWith: 'contract:' } }, { actionKey: 'season:catch-up' }] } });
     const { start: weekStart, end: weekEnd, period } = weekWindow();
     const [voteEntries, publicQuarters] = await Promise.all([
       context.prisma.historyEntry.findMany({ where: { category: 'community-vote', createdAt: { gte: weekStart, lt: weekEnd } }, select: { playerId: true, details: true } }),
@@ -129,7 +163,7 @@ export async function registerEndgameRoutes(app: FastifyInstance, context: ApiCo
     const tallies = Object.fromEntries(vote.options.map(option => [option.slug, voteEntries.filter(entry => (entry.details as { option?: string }).option === option.slug).length]));
     const myVote = voteEntries.find(entry => entry.playerId === user.player.id);
     const prestige = prestigeFor(station.population);
-    const progress = await Promise.all(contracts.map(async contract => ({
+    const progress = await Promise.all(rotation.contracts.map(async contract => ({
       ...contract,
       progress: Math.min(contract.target, await contractProgress(context.prisma, user.player.id, contract.metric, start)),
       claimed: cooldowns.some(cooldown => cooldown.actionKey === `contract:${contract.slug}` && cooldown.expiresAt > new Date())
@@ -149,6 +183,7 @@ export async function registerEndgameRoutes(app: FastifyInstance, context: ApiCo
           name: station.activeSeason ?? 'Independent Circuit',
           tokens: user.player.seasonalTokens,
           owned: user.player.cosmetics,
+          catchUpAvailable: user.player.level >= 10 && user.player.seasonalTokens < 8 && !cooldowns.some(cooldown => cooldown.actionKey === 'season:catch-up' && cooldown.expiresAt > new Date()),
           store: seasonalStore.map(item => ({ ...item, unlocked: prestige.index >= item.minPrestige, owned: user.player.cosmetics.includes(item.slug) }))
         },
         quartersDirectory: publicQuarters.map(layout => ({
@@ -158,7 +193,8 @@ export async function registerEndgameRoutes(app: FastifyInstance, context: ApiCo
           theme: layout.theme,
           objects: layout.objects,
           updatedAt: layout.updatedAt.toISOString()
-        }))
+        })),
+        rotationVersions: rotation.versions
       },
       requestId: request.id
     };
@@ -167,7 +203,7 @@ export async function registerEndgameRoutes(app: FastifyInstance, context: ApiCo
   app.post('/api/v1/endgame/contracts/:slug/claim', async request => {
     const user = await requireUser(context.prisma, request);
     const slug = z.string().min(1).parse((request.params as { slug: string }).slug);
-    const contract = contracts.find(candidate => candidate.slug === slug);
+    const contract = (await rotationContent(context)).contracts.find(candidate => candidate.slug === slug);
     if (!contract) throw new GameRuleError('CONTRACT_NOT_FOUND', 'That contract is not active.');
     const { start, end } = utcDay();
     const result = await context.prisma.$transaction(async transaction => {
@@ -190,7 +226,7 @@ export async function registerEndgameRoutes(app: FastifyInstance, context: ApiCo
       alloys: z.number().int().nonnegative().default(0),
       researchData: z.number().int().nonnegative().default(0)
     }).refine(value => Object.values(value).some(amount => amount > 0), 'Contribute at least one material.').parse(request.body ?? {});
-    const operation = activeOperation();
+    const operation = activeOperation(new Date(), (await rotationContent(context)).operations);
     const result = await context.prisma.$transaction(async transaction => {
       await acquireTransactionLock(transaction, `station-zero:operation:${operation.slug}`);
       await acquireTransactionLock(transaction, `player:${user.player.id}:inventory`);
@@ -264,6 +300,18 @@ export async function registerEndgameRoutes(app: FastifyInstance, context: ApiCo
       return transaction.player.update({ where: { id: player.id }, data: { seasonalTokens: { decrement: item.tokens }, cosmetics: { push: item.slug } }, select: { seasonalTokens: true, cosmetics: true } });
     });
     return { data: result, requestId: request.id };
+  });
+
+  app.post('/api/v1/endgame/season/catch-up', async request => {
+    const user = await requireUser(context.prisma, request);
+    if (user.player.level < 10) throw new GameRuleError('CATCH_UP_LOCKED', 'Season catch-up unlocks at level 10.');
+    if (user.player.seasonalTokens >= 8) throw new GameRuleError('CATCH_UP_NOT_REQUIRED', 'Your seasonal token balance is already on pace.');
+    const { end } = weekWindow();
+    const result = await context.prisma.$transaction(async transaction => {
+      await enforceDurableCooldown(transaction, user.player.id, 'season:catch-up', Math.max(1, Math.ceil((end.getTime() - Date.now()) / 1000)));
+      return transaction.player.update({ where: { id: user.player.id }, data: { seasonalTokens: { increment: 5 } }, select: { seasonalTokens: true } });
+    });
+    return { data: { ...result, granted: 5, resetsAt: end.toISOString() }, requestId: request.id };
   });
 
   app.post('/api/v1/endgame/quarters/:playerId/rate', async request => {

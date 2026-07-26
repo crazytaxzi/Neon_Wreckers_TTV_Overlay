@@ -1140,6 +1140,11 @@ export function ConstructionPage({
             title={`${endgame.seasonal.name} Collection`}
             description="Earn tokens from contracts and community operations. Purchases are permanent."
             icon="market"
+            action={endgame.seasonal.catchUpAvailable ? (
+              <Button size="sm" onClick={() => void action("/api/v1/endgame/season/catch-up", undefined, "Season catch-up claimed")}>
+                Claim 5 catch-up tokens
+              </Button>
+            ) : undefined}
           />
           <ResponsiveGrid min="15rem">
             {endgame.seasonal.store.map((item) => (

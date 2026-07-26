@@ -114,6 +114,15 @@ type ConfigVersion = {
   createdAt: string;
 };
 
+type LiveOpsDashboard = {
+  generatedAt: string;
+  economy: { players: number; totalCredits: number; averageCredits: number; averageLevel: number; seasonalTokens: number; marketTransactions30d: number; marketCredits30d: number; marketUnits30d: number };
+  warnings: Array<{ severity: string; code: string; message: string }>;
+  schedule: Array<{ id: string; slug: string; version: number; lifecycle: string; scheduledAt: string | null; expiresAt: string | null }>;
+  events: Array<{ id: string; slug: string; status: string; startsAt: string; endsAt: string | null }>;
+  releaseEvidence: Array<{ id: string; action: string; target: string; requestId: string | null; createdAt: string }>;
+};
+
 type AdminOverview = {
   service: {
     uptimeSeconds: number;
@@ -240,6 +249,7 @@ function AdminApp() {
   const [station, setStation] = useState<StationSummary | null>(null);
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [balanceTelemetry, setBalanceTelemetry] = useState<BalanceTelemetry | null>(null);
+  const [liveOps, setLiveOps] = useState<LiveOpsDashboard | null>(null);
   const [players, setPlayers] = useState<AdminPlayer[]>([]);
   const [transactions, setTransactions] = useState<LoyaltyTransaction[]>([]);
   const [confirmSpawn, setConfirmSpawn] = useState(false);
@@ -255,6 +265,7 @@ function AdminApp() {
       playersData,
       transactionsData,
       balanceTelemetryData,
+      liveOpsData,
     ] = await Promise.all([
       requestApi<StationSummary>("/api/v1/station"),
       requestApi<StreamElementsStatus>(
@@ -266,6 +277,7 @@ function AdminApp() {
       requestApi<AdminPlayer[]>("/api/v1/admin/players"),
       requestApi<LoyaltyTransaction[]>("/api/v1/admin/transactions"),
       requestApi<BalanceTelemetry>("/api/v1/admin/balance-telemetry"),
+      requestApi<LiveOpsDashboard>("/api/v1/admin/live-ops"),
     ]);
     setStation(stationData);
     setStreamElements(streamElementsData);
@@ -275,6 +287,7 @@ function AdminApp() {
     setPlayers(playersData);
     setTransactions(transactionsData);
     setBalanceTelemetry(balanceTelemetryData);
+    setLiveOps(liveOpsData);
   }, []);
 
   useEffect(() => {
@@ -465,7 +478,7 @@ function AdminApp() {
         pushToast={pushToast}
       />
     ),
-    config: <ConfigPage config={config} publish={publish} />,
+    config: <ConfigPage config={config} liveOps={liveOps} publish={publish} refresh={refresh} pushToast={pushToast} />,
     interface: <ComponentShowcase />,
   };
 
@@ -1839,12 +1852,28 @@ function formatDuration(seconds: number) {
 
 function ConfigPage({
   config,
+  liveOps,
   publish,
+  refresh,
+  pushToast,
 }: {
   config: ConfigVersion[];
+  liveOps: LiveOpsDashboard | null;
   publish: (event: FormEvent<HTMLFormElement>) => void;
+  refresh: () => Promise<void>;
+  pushToast: PushToast;
 }) {
   const [editorOpen, setEditorOpen] = useState(false);
+  const changeLifecycle = async (version: ConfigVersion, mode: "activate" | "rollback") => {
+    const reason = mode === "rollback" ? "Operator rollback from live-ops console" : null;
+    try {
+      await requestApi(`/api/v1/admin/config/${version.id}/${mode}`, { method: "POST", ...(reason ? { body: JSON.stringify({ reason }) } : {}) });
+      pushToast({ title: mode === "activate" ? "Configuration activated" : "Rollback release created", message: `${version.slug} v${version.version}`, tone: "success" });
+      await refresh();
+    } catch (error) {
+      pushToast({ title: "Lifecycle change rejected", message: errorMessage(error), tone: "danger" });
+    }
+  };
   return (
     <div className="admin-stack">
       <SectionTitle
@@ -1893,6 +1922,33 @@ function ConfigPage({
           </div>
         </form>
       </Modal>
+        {liveOps && (
+          <>
+            <ResponsiveGrid min="13rem">
+              <StatusDisplay label="Player Credits" value={liveOps.economy.totalCredits} icon="credits" tone="info" />
+              <StatusDisplay label="Average Wallet" value={liveOps.economy.averageCredits} icon="trade" tone="purple" />
+              <StatusDisplay label="Season Tokens" value={liveOps.economy.seasonalTokens} icon="events" tone="success" />
+              <StatusDisplay label="30d Market Trades" value={liveOps.economy.marketTransactions30d} icon="market" tone="info" />
+            </ResponsiveGrid>
+            {liveOps.warnings.map((warning) => (
+              <Notification key={warning.code} title={warning.code.replaceAll("_", " ")} tone={warning.severity === "danger" ? "danger" : "warning"}>
+                {warning.message}
+              </Notification>
+            ))}
+            <Panel>
+              <SectionTitle eyebrow="RELEASE EVIDENCE" title="Recent operator trail" description={`Generated ${new Date(liveOps.generatedAt).toLocaleString()}`} icon="diagnostics" />
+              <div className="admin-stack">
+                {liveOps.releaseEvidence.slice(0, 8).map((entry) => (
+                  <div key={entry.id} className="admin-inline-record">
+                    <strong>{entry.action}</strong>
+                    <span>{entry.target}</span>
+                    <small>{entry.requestId ?? "No request ID"} · {new Date(entry.createdAt).toLocaleString()}</small>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+          </>
+        )}
         <Panel>
           <DataGrid
             rows={config}
@@ -1924,6 +1980,17 @@ function ConfigPage({
                 key: "created",
                 header: "Created",
                 render: (row) => new Date(row.createdAt).toLocaleString(),
+              },
+              {
+                key: "controls",
+                header: "Release controls",
+                align: "right",
+                render: (row) => (
+                  <div className="inline-actions">
+                    <Button size="sm" variant="ghost" disabled={row.lifecycle === "active"} onClick={() => void changeLifecycle(row, "activate")}>Activate</Button>
+                    <Button size="sm" variant="warning" onClick={() => void changeLifecycle(row, "rollback")}>Rollback to</Button>
+                  </div>
+                ),
               },
             ]}
           />

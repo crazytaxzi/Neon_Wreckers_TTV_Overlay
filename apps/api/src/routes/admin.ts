@@ -137,6 +137,42 @@ export async function registerAdminRoutes(app: FastifyInstance, context: ApiCont
     };
   });
 
+  app.get('/api/v1/admin/live-ops', async request => {
+    await requireAdmin(context.prisma, request);
+    const now = new Date();
+    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60_000);
+    const [players, transactions, content, events, audit] = await Promise.all([
+      context.prisma.player.aggregate({ _count: { _all: true }, _sum: { credits: true, seasonalTokens: true }, _avg: { credits: true, level: true } }),
+      context.prisma.marketTransaction.aggregate({ where: { createdAt: { gte: monthAgo } }, _sum: { credits: true, quantity: true }, _count: { _all: true } }),
+      context.prisma.contentVersion.findMany({ where: { lifecycle: { in: ['scheduled', 'active'] } }, orderBy: [{ scheduledAt: 'asc' }, { createdAt: 'desc' }], take: 50 }),
+      context.prisma.runtimeEvent.findMany({ where: { OR: [{ status: 'active' }, { startsAt: { gte: monthAgo } }] }, orderBy: { startsAt: 'desc' }, take: 50 }),
+      context.prisma.auditLog.findMany({ orderBy: { createdAt: 'desc' }, take: 25 })
+    ]);
+    const averageCredits = Math.round(players._avg.credits ?? 0);
+    const totalCredits = players._sum.credits ?? 0;
+    const warnings = [
+      ...(averageCredits > 100_000 ? [{ severity: 'warning', code: 'CREDIT_INFLATION', message: `Average wallet is ${averageCredits.toLocaleString()} credits.` }] : []),
+      ...((transactions._count._all ?? 0) < Math.max(1, (players._count._all ?? 0) / 2) ? [{ severity: 'info', code: 'LOW_MARKET_VELOCITY', message: 'Fewer than 0.5 station transactions per player occurred in the last 30 days.' }] : []),
+      ...(content.filter(version => version.lifecycle === 'scheduled' && version.scheduledAt && version.scheduledAt < now).length ? [{ severity: 'danger', code: 'OVERDUE_ACTIVATION', message: 'A scheduled content version is overdue for worker activation.' }] : [])
+    ];
+    return { data: {
+      generatedAt: now.toISOString(),
+      economy: { players: players._count._all, totalCredits, averageCredits, averageLevel: Number((players._avg.level ?? 0).toFixed(1)), seasonalTokens: players._sum.seasonalTokens ?? 0, marketTransactions30d: transactions._count._all, marketCredits30d: transactions._sum.credits ?? 0, marketUnits30d: transactions._sum.quantity ?? 0 },
+      warnings,
+      schedule: content.map(version => ({ id: version.id, slug: version.slug, version: version.version, lifecycle: version.lifecycle, scheduledAt: version.scheduledAt, expiresAt: version.expiresAt })),
+      events,
+      releaseEvidence: audit.map(entry => ({ id: entry.id, action: entry.action, target: entry.target, requestId: entry.requestId, createdAt: entry.createdAt }))
+    }, requestId: request.id };
+  });
+
+  app.get('/api/v1/admin/config/:id/preview', async request => {
+    await requireAdmin(context.prisma, request);
+    const id = z.string().min(1).parse((request.params as { id: string }).id);
+    const version = await context.prisma.contentVersion.findUnique({ where: { id } });
+    if (!version) throw new GameRuleError('CONFIG_NOT_FOUND', 'Configuration version not found.');
+    return { data: version, requestId: request.id };
+  });
+
   app.post('/api/v1/admin/config', async request => {
     const user = await requireAdmin(context.prisma, request);
     const body = configSchema.parse(request.body);
@@ -170,6 +206,38 @@ export async function registerAdminRoutes(app: FastifyInstance, context: ApiCont
       return version;
     });
     return { data: created, requestId: request.id };
+  });
+
+  app.post('/api/v1/admin/config/:id/activate', async request => {
+    const user = await requireAdmin(context.prisma, request);
+    const id = z.string().min(1).parse((request.params as { id: string }).id);
+    const result = await context.prisma.$transaction(async transaction => {
+      const candidate = await transaction.contentVersion.findUnique({ where: { id } });
+      if (!candidate) throw new GameRuleError('CONFIG_NOT_FOUND', 'Configuration version not found.');
+      await acquireTransactionLock(transaction, `content-version:${candidate.slug}`);
+      await transaction.contentVersion.updateMany({ where: { slug: candidate.slug, lifecycle: 'active', id: { not: id } }, data: { lifecycle: 'retired' } });
+      const activated = await transaction.contentVersion.update({ where: { id }, data: { lifecycle: 'active', publishedAt: new Date(), scheduledAt: null } });
+      await transaction.auditLog.create({ data: { actorId: user.id, action: 'config.activate', target: `${candidate.slug}@${candidate.version}`, before: { lifecycle: candidate.lifecycle }, after: { lifecycle: 'active' }, requestId: request.id } });
+      return activated;
+    });
+    return { data: result, requestId: request.id };
+  });
+
+  app.post('/api/v1/admin/config/:id/rollback', async request => {
+    const user = await requireAdmin(context.prisma, request);
+    const id = z.string().min(1).parse((request.params as { id: string }).id);
+    const reason = z.object({ reason: z.string().trim().min(3).max(300) }).parse(request.body ?? {}).reason;
+    const result = await context.prisma.$transaction(async transaction => {
+      const source = await transaction.contentVersion.findUnique({ where: { id } });
+      if (!source) throw new GameRuleError('CONFIG_NOT_FOUND', 'Rollback source not found.');
+      await acquireTransactionLock(transaction, `content-version:${source.slug}`);
+      const latest = await transaction.contentVersion.findFirst({ where: { slug: source.slug }, orderBy: { version: 'desc' } });
+      await transaction.contentVersion.updateMany({ where: { slug: source.slug, lifecycle: 'active' }, data: { lifecycle: 'retired' } });
+      const restored = await transaction.contentVersion.create({ data: { slug: source.slug, version: (latest?.version ?? 0) + 1, lifecycle: 'active', contentJson: JSON.parse(JSON.stringify(source.contentJson)) as Prisma.InputJsonValue, validation: { rollbackFromVersion: source.version, reason }, publishedAt: new Date(), createdById: user.id } });
+      await transaction.auditLog.create({ data: { actorId: user.id, action: 'config.rollback', target: `${source.slug}@${restored.version}`, ...(latest ? { before: JSON.parse(JSON.stringify(latest.contentJson)) as Prisma.InputJsonValue } : {}), after: { sourceVersion: source.version, reason }, requestId: request.id } });
+      return restored;
+    });
+    return { data: result, requestId: request.id };
   });
 
   app.post('/api/v1/admin/actions/spawn-wreck', async request => {

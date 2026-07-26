@@ -230,6 +230,7 @@ export type Endgame = {
     name: string;
     tokens: number;
     owned: string[];
+    catchUpAvailable: boolean;
     store: Array<{ slug: string; name: string; description: string; tokens: number; unlocked: boolean; owned: boolean }>;
   };
   quartersDirectory: Array<{
