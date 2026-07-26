@@ -136,6 +136,36 @@ export function GuidePage({
     },
   ] as const;
 
+  const crewBriefings = [
+    {
+      icon: "crew",
+      title: "Recruit and train",
+      points: [
+        "Open Crew and choose a rotating candidate, or enter a name and role. Recruitment costs 400 credits and your roster has a maximum size.",
+        "Pilot, engineer, medic, scout, and quartermaster roles each provide different expedition advantages. Job stars strengthen the role benefit; talent stars improve the supporting bonus.",
+        "Training job certification or talent costs credits. Injured or resting members cannot train until their timer clears.",
+      ],
+    },
+    {
+      icon: "construction",
+      title: "Station assignments",
+      points: [
+        "Use the Station assignment selector on a crew card. Expedition reserve means the member is available for a launch.",
+        "Shipyard duty reduces repair costs by 3% per assigned crew member, up to 15%. Refinery duty reduces crafting time by 3% per assigned member, up to 15%.",
+        "Quarters support keeps a member stationed for habitat support. Any assigned member is unavailable for expeditions until you switch them back to Expedition reserve.",
+      ],
+    },
+    {
+      icon: "station",
+      title: "Shore leave and recovery",
+      points: [
+        "Shore leave costs 150 credits, reduces fatigue by 60, restores 15 morale, and clears the member's station assignment.",
+        "Each member has a six-hour shore-leave cooldown. Shore leave cannot be used while that crew member is deployed on an active expedition.",
+        "Use it before a launch when fatigue is high. Crew at 80 or more fatigue cannot deploy; injured, busy, or assigned crew are also blocked.",
+      ],
+    },
+  ] as const;
+
   return (
     <div className="page-stack concept-standard-page guide-console">
       <section className="guide-hero">
@@ -215,6 +245,30 @@ export function GuidePage({
               </div>
               <ul>
                 {system.points.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+            </Card>
+          ))}
+        </ResponsiveGrid>
+      </section>
+
+      <section className="guide-section">
+        <SectionTitle
+          eyebrow="CREW OPERATIONS"
+          title="Assignment, readiness, and shore leave"
+          description="Crew can work for the station or fly with your fleet, but they cannot do both at once."
+          icon="crew"
+        />
+        <ResponsiveGrid min="20rem">
+          {crewBriefings.map((briefing) => (
+            <Card key={briefing.title} className="guide-system-card">
+              <div className="guide-system-card__title">
+                <NWIcon name={briefing.icon} size={26} />
+                <h3>{briefing.title}</h3>
+              </div>
+              <ul>
+                {briefing.points.map((point) => (
                   <li key={point}>{point}</li>
                 ))}
               </ul>
