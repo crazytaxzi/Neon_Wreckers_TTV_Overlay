@@ -100,7 +100,12 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
       if (crew.some(member => busyCrew.has(member.id))) throw new GameRuleError('CREW_BUSY', 'An assigned crew member is already away.');
       const consumed = await transaction.ship.updateMany({ where: { id: ship.id, playerId, fuel: { gte: effectiveDefinition.fuelCost }, condition: { gt: 0 } }, data: { fuel: { decrement: effectiveDefinition.fuelCost } } });
       if (!consumed.count) throw new GameRuleError('NO_FUEL', 'The selected ship is unavailable or lacks fuel.');
-      await transaction.crewMember.updateMany({ where: { id: { in: crew.map(member => member.id) } }, data: { fatigue: { increment: Number(crewRules.fatiguePerExpedition) } } });
+      for (const member of crew) {
+        await transaction.crewMember.update({
+          where: { id: member.id },
+          data: { fatigue: Math.min(100, Math.max(0, member.fatigue + Number(crewRules.fatiguePerExpedition))) }
+        });
+      }
       return transaction.expedition.create({
         data: {
           playerId,

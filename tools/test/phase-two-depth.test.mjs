@@ -16,11 +16,14 @@ test('ship mastery gates module slots and is awarded when expeditions are claime
 test('crew fatigue, shore leave, assignments, and rotating specialists remain connected', () => {
   const fleet = read('apps/api/src/routes/fleet.ts');
   const expeditions = read('apps/api/src/routes/expeditions.ts');
+  const worker = read('apps/worker/src/index.ts');
   assert.match(fleet, /rotatingCandidates/);
   assert.match(fleet, /shore-leave/);
   assert.match(fleet, /assignment: z\.enum/);
   assert.match(expeditions, /CREW_EXHAUSTED/);
-  assert.match(expeditions, /fatigue: \{ increment/);
+  assert.match(expeditions, /fatigue: Math\.min\(100, Math\.max\(0,/);
+  assert.match(worker, /fatigue: clamp\(member\.fatigue - 5, 0, 100\)/);
+  assert.match(worker, /morale: clamp\(member\.morale \+ \(resolvedStatus === 'failed' \? -8 : 3\), 0, 100\)/);
 });
 
 test('expedition route tradeoffs and prototype research affect worker resolution', () => {

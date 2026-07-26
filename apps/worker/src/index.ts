@@ -10,6 +10,11 @@ if (!redisUrl) throw new Error('REDIS_URL is required.');
 const connection = parseRedisConnection(redisUrl);
 const prisma = new PrismaClient();
 const gameQueue = new Queue('neon-wreckers-game', { connection });
+
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.max(minimum, Math.min(maximum, value));
+}
+
 const worker = new Worker(
   'neon-wreckers-game',
   async job => {
@@ -88,6 +93,7 @@ const worker = new Worker(
       });
       if (updated.count === 0) return { skipped: true, status: 'already-resolved' };
 
+      let injuryRecoveryEndsAt: Date | null = null;
       if (resolvedStatus === 'failed') {
         if (expedition.shipId) {
           const ship = await transaction.ship.findUnique({ where: { id: expedition.shipId } });
@@ -96,14 +102,18 @@ const worker = new Worker(
         const medic = expeditionCrew.filter(member => member.role === 'medic').sort((a, b) => b.talentStars - a.talentStars)[0];
         const medicMultiplier = Math.max(.5, 1 - Number(medic?.talentStars ?? 0) * .08);
         const shipMedicalMultiplier = 1 - Number(shipClass?.injuryReduction ?? 0);
-        await transaction.crewMember.updateMany({ where: { id: { in: expedition.crewIds } }, data: { morale: { decrement: 8 }, injuredUntil: new Date(Date.now() + 30 * 60_000 * recoveryMultiplier * medicMultiplier * shipMedicalMultiplier) } });
-      } else {
-        for (const crewId of expedition.crewIds) {
-          const member = await transaction.crewMember.findUnique({ where: { id: crewId } });
-          if (member) await transaction.crewMember.update({ where: { id: crewId }, data: { morale: Math.min(100, member.morale + 3) } });
-        }
+        injuryRecoveryEndsAt = new Date(Date.now() + 30 * 60_000 * recoveryMultiplier * medicMultiplier * shipMedicalMultiplier);
       }
-      await transaction.crewMember.updateMany({ where: { id: { in: expedition.crewIds } }, data: { fatigue: { decrement: 5 } } });
+      for (const member of expeditionCrew) {
+        await transaction.crewMember.update({
+          where: { id: member.id },
+          data: {
+            morale: clamp(member.morale + (resolvedStatus === 'failed' ? -8 : 3), 0, 100),
+            fatigue: clamp(member.fatigue - 5, 0, 100),
+            ...(injuryRecoveryEndsAt ? { injuredUntil: injuryRecoveryEndsAt } : {})
+          }
+        });
+      }
 
       await transaction.notification.create({
         data: {
