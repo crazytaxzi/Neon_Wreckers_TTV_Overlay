@@ -33,6 +33,16 @@ jobs:
         if: steps.repair.outputs.needed == 'true'
         run: python tools/apply-expedition-lifecycle-fix.py
 
+      - name: Commit applied repair
+        if: steps.repair.outputs.needed == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/admin/src/main.tsx apps/api/src/routes/admin.ts apps/api/src/services/expedition-definitions.ts apps/worker/src/index.ts tools/test/api-routes.test.mjs tools/test/expedition-definitions.test.ts
+          git commit -m "Fix expedition lifecycle management"
+          git push origin "HEAD:${{ github.head_ref }}"
+
       - name: Set up Node
         if: steps.repair.outputs.needed == 'true'
         uses: actions/setup-node@v4
@@ -63,13 +73,3 @@ jobs:
           pnpm --filter @neon-wreckers/api run build
           pnpm --filter @neon-wreckers/worker run build
           pnpm --filter @neon-wreckers/admin run build
-
-      - name: Commit verified repair
-        if: steps.repair.outputs.needed == 'true'
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apps/admin/src/main.tsx apps/api/src/routes/admin.ts apps/api/src/services/expedition-definitions.ts apps/worker/src/index.ts tools/test/api-routes.test.mjs tools/test/expedition-definitions.test.ts
-          git commit -m "Fix expedition lifecycle management"
-          git push origin "HEAD:${{ github.head_ref }}"
