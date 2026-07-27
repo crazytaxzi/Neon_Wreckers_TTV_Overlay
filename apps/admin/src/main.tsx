@@ -1982,10 +1982,10 @@ function ExpeditionCreatorPage({
 
   const removeVersion = async (version: ExpeditionVersion) => {
     const displayName = String(version.content.name ?? version.slug.replace("expedition.", ""));
-    if (!window.confirm(`Delete the unpublished ${displayName} v${version.version}? This cannot be undone.`)) return;
+    if (!window.confirm(`Permanently delete ${displayName} v${version.version}? Active missions keep their saved rules, but this authored version cannot be restored.`)) return;
     try {
       await requestApi(`/api/v1/admin/expedition-creator/${encodeURIComponent(version.id)}`, { method: "DELETE" });
-      pushToast({ title: "Expedition draft deleted", message: `${displayName} v${version.version}`, tone: "success" });
+      pushToast({ title: "Expedition version deleted", message: `${displayName} v${version.version}`, tone: "success" });
       await refresh();
     } catch (error) {
       pushToast({ title: "Delete failed", message: errorMessage(error), tone: "danger" });
@@ -2016,7 +2016,7 @@ function ExpeditionCreatorPage({
         ))}
       </ResponsiveGrid>
       <Panel>
-        <SectionTitle eyebrow="AUTHORED VERSIONS" title="Release history" description="Only active versions appear in the player mission catalog. Published versions are retired instead of erased so launched flights keep an audit trail." icon="data" />
+        <SectionTitle eyebrow="AUTHORED VERSIONS" title="Release history" description="Only active versions appear in the player mission catalog. Active versions must be retired before permanent deletion, while launched flights retain immutable rule snapshots." icon="data" />
         <DataGrid
           rows={data?.versions ?? []}
           getRowKey={(row) => row.id}
@@ -2039,7 +2039,7 @@ function ExpeditionCreatorPage({
                     <Button size="sm" variant="warning" onClick={() => void changeLifecycle(row, "retire")}>Retire</Button>
                   )}
                   <Button size="sm" variant="ghost" onClick={() => loadVersion(row)}>Create revision</Button>
-                  {["draft", "scheduled"].includes(row.lifecycle) && (
+                  {["draft", "scheduled", "retired"].includes(row.lifecycle) && (
                     <Button size="sm" variant="ghost" onClick={() => void removeVersion(row)}>Delete</Button>
                   )}
                 </div>

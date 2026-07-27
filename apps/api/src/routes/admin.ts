@@ -226,7 +226,7 @@ export async function registerAdminRoutes(app: FastifyInstance, context: ApiCont
     const deleted = await context.prisma.$transaction(async transaction => {
       const candidate = await transaction.contentVersion.findUnique({ where: { id } });
       if (!candidate || !candidate.slug.startsWith('expedition.')) throw new GameRuleError('EXPEDITION_VERSION_NOT_FOUND', 'Expedition version not found.');
-      if (!['draft', 'scheduled'].includes(candidate.lifecycle)) throw new GameRuleError('EXPEDITION_VERSION_PUBLISHED', 'Published expedition versions must be retired instead of deleted.');
+      if (!['draft', 'scheduled', 'retired'].includes(candidate.lifecycle)) throw new GameRuleError('EXPEDITION_VERSION_ACTIVE', 'Active expedition versions must be retired before deletion.');
       await acquireTransactionLock(transaction, `content-version:${candidate.slug}`);
       await transaction.auditLog.create({ data: { actorId: user.id, action: 'expedition.delete', target: `${candidate.slug}@${candidate.version}`, before: { lifecycle: candidate.lifecycle, content: candidate.contentJson }, requestId: request.id } });
       await transaction.contentVersion.delete({ where: { id } });

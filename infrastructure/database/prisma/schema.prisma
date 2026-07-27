@@ -281,6 +281,7 @@ model CrewMember {
   specialty    String    @default("generalist")
   assignment   String?
   injuredUntil DateTime?
+  portraitKey  String?
   traits       String[]  @default([])
 
   @@index([playerId])
