@@ -27,6 +27,15 @@ jobs:
           else
             python tools/apply-crew-portraits-retired-delete.py
           fi
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('apps/web/src/visual-preview.ts')
+          source = path.read_text(encoding='utf-8')
+          updated = source.replace('injuredUntil: null, traits:', 'injuredUntil: null, portraitKey: null, traits:')
+          if updated == source and 'portraitKey: null' not in source:
+              raise SystemExit('Could not update visual preview crew portraits.')
+          path.write_text(updated, encoding='utf-8')
+          PY
 
       - name: Commit implementation when newly applied
         shell: bash
@@ -46,6 +55,7 @@ jobs:
             apps/web/src/model.ts \
             apps/web/src/pages/fleet.tsx \
             apps/web/src/styles.css \
+            apps/web/src/visual-preview.ts \
             infrastructure/database/prisma/schema.prisma \
             infrastructure/database/prisma/migrations/20260727041000_add_crew_portraits/migration.sql \
             packages/contracts/src/index.ts \
