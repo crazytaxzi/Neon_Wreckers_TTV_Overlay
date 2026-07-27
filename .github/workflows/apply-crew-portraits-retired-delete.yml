@@ -28,33 +28,7 @@ jobs:
             python tools/apply-crew-portraits-retired-delete.py
           fi
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.16.0
-
-      - name: Enable pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@10.32.0 --activate
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Verify repository and API contracts
-        run: |
-          pnpm run test:repository
-          pnpm run test:api
-
-      - name: Build affected applications
-        run: |
-          pnpm --filter @neon-wreckers/contracts run build
-          pnpm run db:generate
-          pnpm --filter @neon-wreckers/api run build
-          pnpm --filter @neon-wreckers/web run build
-          pnpm --filter @neon-wreckers/admin run build
-
-      - name: Commit verified implementation
+      - name: Commit implementation when newly applied
         shell: bash
         run: |
           if git diff --quiet; then
@@ -78,3 +52,36 @@ jobs:
             tools/test/api-routes.test.mjs
           git commit -m 'Add crew portrait selection and retired cleanup'
           git push origin "HEAD:${{ github.head_ref }}"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.32.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify repository and API contracts
+        run: |
+          pnpm run test:repository
+          pnpm run test:api
+
+      - name: Build contracts
+        run: pnpm --filter @neon-wreckers/contracts run build
+
+      - name: Generate database client
+        run: pnpm run db:generate
+
+      - name: Build API
+        run: pnpm --filter @neon-wreckers/api run build
+
+      - name: Build player web app
+        run: pnpm --filter @neon-wreckers/web run build
+
+      - name: Build admin app
+        run: pnpm --filter @neon-wreckers/admin run build
