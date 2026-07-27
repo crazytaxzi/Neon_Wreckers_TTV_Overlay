@@ -40,7 +40,7 @@ test('StreamElements account routing is selectable, verifiable, and guarded', ()
 });
 
 test('encrypted managed configuration is isolated from the generic registry', () => {
-  assert.match(adminRoutes, /reservedConfigPrefixes = \['integration\.', 'chat-command\.'\]/);
+  assert.match(adminRoutes, /reservedConfigPrefixes = \['integration\.', 'chat-command\.', 'expedition\.'\]/);
   assert.match(adminRoutes, /where: \{ NOT: reservedConfigPrefixes\.map/);
   assert.match(adminRoutes, /select: \{ id: true, slug: true, version: true, lifecycle: true, createdAt: true \}/);
   assert.match(adminRoutes, /assertPublicConfigSlug\(body\.slug\)/);

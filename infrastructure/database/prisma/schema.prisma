@@ -291,6 +291,7 @@ model Expedition {
   playerId    String
   player      Player           @relation(fields: [playerId], references: [id], onDelete: Cascade)
   definition  String
+  definitionSnapshot Json             @default("{}")
   shipId      String?
   ship        Ship?            @relation(fields: [shipId], references: [id], onDelete: SetNull)
   crewIds     String[]          @default([])

@@ -5,12 +5,13 @@ import type { ApiContext } from '../types.js';
 import { acquireTransactionLock } from '../lib/database.js';
 import { requireAdmin } from '../services/auth.js';
 import { scanForWreck } from '../services/salvage.js';
-import { eventsBySlug } from '@neon-wreckers/content';
+import { eventsBySlug, expeditionDefinitions, itemsBySlug } from '@neon-wreckers/content';
 import { GameRuleError } from '@neon-wreckers/game-engine';
 import os from 'node:os';
 import { statfs } from 'node:fs/promises';
+import { authoredExpeditionSchema } from '../services/expedition-definitions.js';
 
-const reservedConfigPrefixes = ['integration.', 'chat-command.'] as const;
+const reservedConfigPrefixes = ['integration.', 'chat-command.', 'expedition.'] as const;
 
 const jsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
   z.union([
@@ -135,6 +136,58 @@ export async function registerAdminRoutes(app: FastifyInstance, context: ApiCont
       }),
       requestId: request.id
     };
+  });
+
+  app.get('/api/v1/admin/expedition-creator', async request => {
+    await requireAdmin(context.prisma, request);
+    const versions = await context.prisma.contentVersion.findMany({
+      where: { slug: { startsWith: 'expedition.' } },
+      orderBy: [{ slug: 'asc' }, { version: 'desc' }],
+      take: 100
+    });
+    return {
+      data: {
+        items: Object.values(itemsBySlug).map(item => ({ slug: item.slug, name: item.name, rarity: item.rarity })).sort((a, b) => a.name.localeCompare(b.name)),
+        builtIn: Object.values(expeditionDefinitions),
+        versions: versions.map(version => ({ id: version.id, slug: version.slug, version: version.version, lifecycle: version.lifecycle, content: version.contentJson, scheduledAt: version.scheduledAt, expiresAt: version.expiresAt, createdAt: version.createdAt }))
+      },
+      requestId: request.id
+    };
+  });
+
+  app.post('/api/v1/admin/expedition-creator', async request => {
+    const user = await requireAdmin(context.prisma, request);
+    const body = z.object({
+      definition: authoredExpeditionSchema,
+      lifecycle: z.enum(['draft', 'scheduled', 'active']).default('draft'),
+      scheduledAt: z.string().datetime().optional(),
+      expiresAt: z.string().datetime().optional()
+    }).superRefine((value, refinement) => {
+      if (value.lifecycle === 'scheduled' && !value.scheduledAt) refinement.addIssue({ code: z.ZodIssueCode.custom, message: 'A scheduled expedition requires an activation time.', path: ['scheduledAt'] });
+      if (value.scheduledAt && value.expiresAt && Date.parse(value.expiresAt) <= Date.parse(value.scheduledAt)) refinement.addIssue({ code: z.ZodIssueCode.custom, message: 'Expiry must be after activation.', path: ['expiresAt'] });
+    }).parse(request.body ?? {});
+    const slug = `expedition.${body.definition.slug}`;
+    const created = await context.prisma.$transaction(async transaction => {
+      await acquireTransactionLock(transaction, `content-version:${slug}`);
+      const latest = await transaction.contentVersion.findFirst({ where: { slug }, orderBy: { version: 'desc' } });
+      if (body.lifecycle === 'active') await transaction.contentVersion.updateMany({ where: { slug, lifecycle: 'active' }, data: { lifecycle: 'retired' } });
+      const version = await transaction.contentVersion.create({
+        data: {
+          slug,
+          version: (latest?.version ?? 0) + 1,
+          lifecycle: body.lifecycle,
+          contentJson: JSON.parse(JSON.stringify(body.definition)) as Prisma.InputJsonValue,
+          validation: { validatedAs: 'expedition-definition', itemCount: body.definition.lootPool.length },
+          scheduledAt: body.scheduledAt ? new Date(body.scheduledAt) : null,
+          expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+          publishedAt: body.lifecycle === 'active' ? new Date() : null,
+          createdById: user.id
+        }
+      });
+      await transaction.auditLog.create({ data: { actorId: user.id, action: 'expedition.create', target: `${slug}@${version.version}`, after: JSON.parse(JSON.stringify(body)) as Prisma.InputJsonValue, requestId: request.id } });
+      return version;
+    });
+    return { data: created, requestId: request.id };
   });
 
   app.get('/api/v1/admin/live-ops', async request => {

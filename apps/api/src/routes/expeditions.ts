@@ -7,6 +7,7 @@ import type { ApiContext } from '../types.js';
 import { requireAdmin, requireUser } from '../services/auth.js';
 import { acquireTransactionLock } from '../lib/database.js';
 import { levelForXp } from '../services/actions.js';
+import { activeExpeditionDefinitions, expeditionSnapshot } from '../services/expedition-definitions.js';
 
 const launchSchema = z.object({
   definition: z.string().min(1).default('glass-belt-run'),
@@ -18,8 +19,9 @@ const launchSchema = z.object({
 export async function registerExpeditionRoutes(app: FastifyInstance, context: ApiContext) {
   app.get('/api/v1/expeditions/definitions', async request => {
     await requireUser(context.prisma, request);
+    const definitions = await activeExpeditionDefinitions(context.prisma);
     return {
-      data: Object.values(expeditionDefinitions).map(definition => {
+      data: Object.values(definitions).map(definition => {
         const totalWeight = definition.lootPool.reduce((sum, itemSlug) => sum + lootWeightForRarity(itemsBySlug[itemSlug].rarity), 0);
         return ({
         slug: definition.slug,
@@ -60,7 +62,7 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
     const user = await requireUser(context.prisma, request);
     const playerId = user.player.id;
     const body = launchSchema.parse(request.body ?? {});
-    const definition = expeditionDefinitions[body.definition];
+    const definition = (await activeExpeditionDefinitions(context.prisma))[body.definition];
     if (!definition) {
       throw new GameRuleError('EXPEDITION_NOT_FOUND', `Unknown expedition definition: ${body.definition}`);
     }
@@ -110,6 +112,7 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
         data: {
           playerId,
           definition: body.definition,
+          definitionSnapshot: JSON.parse(JSON.stringify(definition)),
           shipId: ship.id,
           crewIds: crew.map(member => member.id),
           name: launched.name,
@@ -164,6 +167,8 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
     const expeditionSkin = shipRules.skins.find((skin: { slug: string; successBonus?: number; lootRollBonus?: number }) => skin.slug === expedition.ship?.activeSkin);
     const expeditionClass = shipRules.purchases.find((candidate: { slug: string }) => candidate.slug === expedition.ship?.classSlug);
     const expeditionCrew = await context.prisma.crewMember.findMany({ where: { id: { in: expedition.crewIds } } });
+    const definition = expeditionSnapshot(expedition.definitionSnapshot, expeditionDefinitions[expedition.definition]);
+    if (!definition) throw new GameRuleError('EXPEDITION_DEFINITION_MISSING', 'This expedition definition is unavailable.');
     const crewSuccessBonus = expeditionCrew.reduce((total, member) => total + (member.role === 'pilot' ? member.jobStars * .01 + member.talentStars * .004 : member.role === 'scout' ? member.jobStars * .006 + member.talentStars * .008 : member.talentStars * .002), 0);
     const crewLootBonus = expeditionCrew.some(member => member.role === 'quartermaster' && member.jobStars >= 4) ? 1 : 0;
     const resolved = resolveExpedition({
@@ -172,7 +177,7 @@ export async function registerExpeditionRoutes(app: FastifyInstance, context: Ap
         incidentLog: expedition.incidentLog as string[],
         rewards: expedition.rewards as unknown[]
       },
-      expeditionDefinition: expeditionDefinitions[expedition.definition],
+      expeditionDefinition: definition,
       items: itemsBySlug,
       lootRollBonus: (expedition.ship?.upgrades.includes('expanded-hold') ? Number(shipRules.upgrades.find((upgrade: { slug: string; lootRollBonus?: number }) => upgrade.slug === 'expanded-hold')?.lootRollBonus ?? 0) : 0) + Number(expeditionSkin?.lootRollBonus ?? 0) + crewLootBonus,
       successBonus: Number(expeditionSkin?.successBonus ?? 0) + Number(expeditionClass?.successBonus ?? 0) + crewSuccessBonus,

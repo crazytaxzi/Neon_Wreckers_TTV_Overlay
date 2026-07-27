@@ -123,6 +123,12 @@ type LiveOpsDashboard = {
   releaseEvidence: Array<{ id: string; action: string; target: string; requestId: string | null; createdAt: string }>;
 };
 
+type ExpeditionCreatorData = {
+  items: Array<{ slug: string; name: string; rarity: string }>;
+  builtIn: Array<{ slug: string; name: string; description: string; risk: string; fuelCost: number; minCrew: number; lootPool: string[]; lootRolls: number; durationMinutes: [number, number] }>;
+  versions: Array<{ id: string; slug: string; version: number; lifecycle: string; content: Record<string, unknown>; scheduledAt: string | null; expiresAt: string | null; createdAt: string }>;
+};
+
 type AdminOverview = {
   service: {
     uptimeSeconds: number;
@@ -219,6 +225,7 @@ type PushToast = ReturnType<typeof useToast>["pushToast"];
 
 const navigation: TabItem[] = [
   { id: "operations", label: "Operations", icon: "station" },
+  { id: "expeditions", label: "Expedition Creator", icon: "expedition" },
   { id: "integrations", label: "Integrations", icon: "network" },
   { id: "commands", label: "Commands", icon: "terminal" },
   { id: "server", label: "Server", icon: "diagnostics" },
@@ -250,6 +257,7 @@ function AdminApp() {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [balanceTelemetry, setBalanceTelemetry] = useState<BalanceTelemetry | null>(null);
   const [liveOps, setLiveOps] = useState<LiveOpsDashboard | null>(null);
+  const [expeditionCreator, setExpeditionCreator] = useState<ExpeditionCreatorData | null>(null);
   const [players, setPlayers] = useState<AdminPlayer[]>([]);
   const [transactions, setTransactions] = useState<LoyaltyTransaction[]>([]);
   const [confirmSpawn, setConfirmSpawn] = useState(false);
@@ -266,6 +274,7 @@ function AdminApp() {
       transactionsData,
       balanceTelemetryData,
       liveOpsData,
+      expeditionCreatorData,
     ] = await Promise.all([
       requestApi<StationSummary>("/api/v1/station"),
       requestApi<StreamElementsStatus>(
@@ -278,6 +287,7 @@ function AdminApp() {
       requestApi<LoyaltyTransaction[]>("/api/v1/admin/transactions"),
       requestApi<BalanceTelemetry>("/api/v1/admin/balance-telemetry"),
       requestApi<LiveOpsDashboard>("/api/v1/admin/live-ops"),
+      requestApi<ExpeditionCreatorData>("/api/v1/admin/expedition-creator"),
     ]);
     setStation(stationData);
     setStreamElements(streamElementsData);
@@ -288,6 +298,7 @@ function AdminApp() {
     setTransactions(transactionsData);
     setBalanceTelemetry(balanceTelemetryData);
     setLiveOps(liveOpsData);
+    setExpeditionCreator(expeditionCreatorData);
   }, []);
 
   useEffect(() => {
@@ -450,6 +461,7 @@ function AdminApp() {
         onSubscribeTwitch={() => void subscribeTwitch()}
       />
     ),
+    expeditions: <ExpeditionCreatorPage data={expeditionCreator} refresh={refresh} pushToast={pushToast} />,
     integrations: (
       <IntegrationsPage
         status={streamElements}
@@ -1848,6 +1860,141 @@ function formatDuration(seconds: number) {
   const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   return `${days}d ${hours}h ${minutes}m`;
+}
+
+function ExpeditionCreatorPage({
+  data,
+  refresh,
+  pushToast,
+}: {
+  data: ExpeditionCreatorData | null;
+  refresh: () => Promise<void>;
+  pushToast: PushToast;
+}) {
+  const [open, setOpen] = useState(false);
+  const [slug, setSlug] = useState("outer-rim-recovery");
+  const [name, setName] = useState("Outer Rim Recovery");
+  const [description, setDescription] = useState("Recover valuable components from an unstable debris corridor beyond Station Zero.");
+  const [risk, setRisk] = useState("moderate");
+  const [fuelCost, setFuelCost] = useState(2);
+  const [minCrew, setMinCrew] = useState(2);
+  const [lootRolls, setLootRolls] = useState(3);
+  const [durationMin, setDurationMin] = useState(25);
+  const [durationMax, setDurationMax] = useState(45);
+  const [lootPool, setLootPool] = useState<string[]>(["scrap", "alloys", "electronics"]);
+  const [lifecycle, setLifecycle] = useState("draft");
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [expiresAt, setExpiresAt] = useState("");
+
+  const loadTemplate = (template: ExpeditionCreatorData["builtIn"][number]) => {
+    setSlug(`${template.slug}-custom`);
+    setName(`${template.name} Variant`);
+    setDescription(template.description);
+    setRisk(template.risk);
+    setFuelCost(template.fuelCost);
+    setMinCrew(template.minCrew);
+    setLootRolls(template.lootRolls);
+    setDurationMin(template.durationMinutes[0]);
+    setDurationMax(template.durationMinutes[1]);
+    setLootPool([...template.lootPool]);
+    setOpen(true);
+  };
+
+  const save = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    try {
+      await requestApi("/api/v1/admin/expedition-creator", {
+        method: "POST",
+        body: JSON.stringify({
+          definition: { slug, name, description, risk, fuelCost, minCrew, lootRolls, durationMinutes: [durationMin, durationMax], lootPool },
+          lifecycle,
+          ...(scheduledAt ? { scheduledAt: new Date(scheduledAt).toISOString() } : {}),
+          ...(expiresAt ? { expiresAt: new Date(expiresAt).toISOString() } : {}),
+        }),
+      });
+      pushToast({ title: lifecycle === "active" ? "Expedition activated" : "Expedition version saved", message: `${name} is ${lifecycle}.`, tone: "success" });
+      setOpen(false);
+      await refresh();
+    } catch (error) {
+      pushToast({ title: "Expedition rejected", message: errorMessage(error), tone: "danger", duration: 8000 });
+    }
+  };
+
+  return (
+    <div className="admin-stack">
+      <SectionTitle
+        eyebrow="SERVER-AUTHORITATIVE CONTENT"
+        title="Expedition Creator"
+        description="Design, validate, schedule, and activate expedition templates. Every launched flight keeps an immutable copy of its rules."
+        icon="expedition"
+        action={<Button onClick={() => setOpen(true)}>Create expedition</Button>}
+      />
+      <ResponsiveGrid min="17rem">
+        {(data?.builtIn ?? []).map((template) => (
+          <Panel key={template.slug}>
+            <Badge tone={template.risk === "extreme" ? "danger" : template.risk === "high" ? "warning" : "info"}>{template.risk}</Badge>
+            <h3>{template.name}</h3>
+            <p>{template.description}</p>
+            <div className="admin-inline-record">
+              <span>{template.fuelCost} fuel · {template.minCrew}+ crew</span>
+              <small>{template.durationMinutes[0]}–{template.durationMinutes[1]} min · {template.lootRolls} rolls</small>
+            </div>
+            <Button size="sm" variant="ghost" onClick={() => loadTemplate(template)}>Use as template</Button>
+          </Panel>
+        ))}
+      </ResponsiveGrid>
+      <Panel>
+        <SectionTitle eyebrow="AUTHORED VERSIONS" title="Release history" description="Draft, scheduled, active, and retired templates remain available for audit and rollback." icon="data" />
+        <DataGrid
+          rows={data?.versions ?? []}
+          getRowKey={(row) => row.id}
+          empty="No authored expeditions yet."
+          columns={[
+            { key: "name", header: "Expedition", render: (row) => <strong>{String(row.content.name ?? row.slug.replace("expedition.", ""))}</strong> },
+            { key: "version", header: "Version", render: (row) => <span className="nw-numeric">v{row.version}</span> },
+            { key: "lifecycle", header: "Lifecycle", render: (row) => <Badge tone={lifecycleTone(row.lifecycle)}>{row.lifecycle}</Badge> },
+            { key: "schedule", header: "Schedule", render: (row) => row.scheduledAt ? new Date(row.scheduledAt).toLocaleString() : "Manual" },
+          ]}
+        />
+      </Panel>
+      <Modal open={open} onClose={() => setOpen(false)} title="Create expedition" description="All fields are validated by the server before a version is stored." size="lg">
+        <form onSubmit={save}>
+          <div className="admin-stack">
+            <ResponsiveGrid min="15rem">
+              <Field label="Stable slug" hint="Lowercase letters, numbers, and hyphens"><Input value={slug} onChange={(event) => setSlug(event.target.value)} required /></Field>
+              <Field label="Display name"><Input value={name} onChange={(event) => setName(event.target.value)} required /></Field>
+            </ResponsiveGrid>
+            <Field label="Mission briefing"><Textarea value={description} onChange={(event) => setDescription(event.target.value)} required /></Field>
+            <ResponsiveGrid min="11rem">
+              <Field label="Risk"><Select value={risk} onChange={(event) => setRisk(event.target.value)}><option value="low">Low</option><option value="moderate">Moderate</option><option value="high">High</option><option value="extreme">Extreme</option></Select></Field>
+              <Field label="Fuel cost"><Input type="number" min={1} max={10} value={fuelCost} onChange={(event) => setFuelCost(Number(event.target.value))} /></Field>
+              <Field label="Minimum crew"><Input type="number" min={1} max={5} value={minCrew} onChange={(event) => setMinCrew(Number(event.target.value))} /></Field>
+              <Field label="Loot rolls"><Input type="number" min={1} max={8} value={lootRolls} onChange={(event) => setLootRolls(Number(event.target.value))} /></Field>
+              <Field label="Minimum minutes"><Input type="number" min={1} max={1440} value={durationMin} onChange={(event) => setDurationMin(Number(event.target.value))} /></Field>
+              <Field label="Maximum minutes"><Input type="number" min={1} max={1440} value={durationMax} onChange={(event) => setDurationMax(Number(event.target.value))} /></Field>
+            </ResponsiveGrid>
+            <Field label={`Loot pool · ${lootPool.length} selected`} hint="Choose up to 16 unique rewards">
+              <ResponsiveGrid min="12rem">
+                {(data?.items ?? []).map((item) => (
+                  <label key={item.slug} className="admin-inline-record">
+                    <span><input type="checkbox" checked={lootPool.includes(item.slug)} disabled={!lootPool.includes(item.slug) && lootPool.length >= 16} onChange={(event) => setLootPool((current) => event.target.checked ? [...current, item.slug] : current.filter((slug) => slug !== item.slug))} /> {item.name}</span>
+                    <small>{item.rarity}</small>
+                  </label>
+                ))}
+              </ResponsiveGrid>
+            </Field>
+            <ResponsiveGrid min="15rem">
+              <Field label="Release state"><Select value={lifecycle} onChange={(event) => setLifecycle(event.target.value)}><option value="draft">Draft</option><option value="scheduled">Scheduled</option><option value="active">Activate now</option></Select></Field>
+              <Field label="Activation time"><Input type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} disabled={lifecycle !== "scheduled"} /></Field>
+              <Field label="Optional expiry"><Input type="datetime-local" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} /></Field>
+            </ResponsiveGrid>
+            <Notification title="Launch preview" tone="info">{name || "Untitled expedition"} · {risk} risk · {fuelCost} fuel · {minCrew}+ crew · {durationMin}–{durationMax} minutes · {lootRolls} weighted rolls from {lootPool.length} items.</Notification>
+            <Button variant="primary" disabled={!lootPool.length}>{lifecycle === "active" ? "Validate and activate" : lifecycle === "scheduled" ? "Validate and schedule" : "Validate and save draft"}</Button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
 }
 
 function ConfigPage({

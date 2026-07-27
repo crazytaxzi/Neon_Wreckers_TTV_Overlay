@@ -1,7 +1,7 @@
 import { PrismaClient, type Prisma } from '@prisma/client';
 import { Queue, Worker } from 'bullmq';
 import { discoverWreck, resolveExpedition } from '@neon-wreckers/game-engine';
-import { craftingRules, events, expeditionDefinitions, itemsBySlug, modulesBySlug, seasons, shipRules, wreckArchetypes } from '@neon-wreckers/content';
+import { craftingRules, events, expeditionDefinitions, itemsBySlug, modulesBySlug, seasons, shipRules, wreckArchetypes, type ExpeditionDefinition } from '@neon-wreckers/content';
 import { parseRedisConnection } from '@neon-wreckers/integrations';
 
 const redisUrl = process.env.REDIS_URL;
@@ -13,6 +13,26 @@ const gameQueue = new Queue('neon-wreckers-game', { connection });
 
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.max(minimum, Math.min(maximum, value));
+}
+
+function expeditionDefinitionFor(snapshot: unknown, slug: string): ExpeditionDefinition | undefined {
+  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return expeditionDefinitions[slug];
+  const value = snapshot as Record<string, unknown>;
+  if (
+    typeof value.slug !== 'string' ||
+    typeof value.name !== 'string' ||
+    typeof value.description !== 'string' ||
+    !['low', 'moderate', 'high', 'extreme'].includes(String(value.risk)) ||
+    !Number.isInteger(value.fuelCost) ||
+    !Number.isInteger(value.minCrew) ||
+    !Number.isInteger(value.lootRolls) ||
+    !Array.isArray(value.lootPool) ||
+    !value.lootPool.every(item => typeof item === 'string' && itemsBySlug[item]) ||
+    !Array.isArray(value.durationMinutes) ||
+    value.durationMinutes.length !== 2 ||
+    !value.durationMinutes.every(Number.isInteger)
+  ) return expeditionDefinitions[slug];
+  return value as unknown as ExpeditionDefinition;
 }
 
 const worker = new Worker(
@@ -42,6 +62,8 @@ const worker = new Worker(
     const installedModules = shipRules.upgrades.filter((upgrade: { slug: string }) => expedition.ship?.upgrades.includes(upgrade.slug));
     const moduleSuccessBonus = installedModules.reduce((sum: number, upgrade: { successBonus?: number }) => sum + Number(upgrade.successBonus ?? 0), 0);
     const moduleLootBonus = installedModules.reduce((sum: number, upgrade: { lootRollBonus?: number }) => sum + Number(upgrade.lootRollBonus ?? 0), 0);
+    const definition = expeditionDefinitionFor(expedition.definitionSnapshot, expedition.definition);
+    if (!definition) throw new Error(`Expedition definition ${expedition.definition} is unavailable.`);
 
     const resolved = resolveExpedition({
       expedition: {
@@ -49,7 +71,7 @@ const worker = new Worker(
         incidentLog: expedition.incidentLog as string[],
         rewards: expedition.rewards as unknown[]
       },
-      expeditionDefinition: expeditionDefinitions[expedition.definition],
+      expeditionDefinition: definition,
       items: itemsBySlug,
       lootRollBonus: Math.max(0, moduleLootBonus + Number(expeditionSkin?.lootRollBonus ?? 0) + Number(shipClass?.lootRollBonus ?? 0) + crewLootBonus + routeLootBonus),
       successBonus: Number(expeditionSkin?.successBonus ?? 0) + Number(shipClass?.successBonus ?? 0) + moduleSuccessBonus + crewSuccessBonus + traitSuccessBonus + routeSuccessBonus,
