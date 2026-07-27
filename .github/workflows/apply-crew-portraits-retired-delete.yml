@@ -84,7 +84,23 @@ jobs:
         run: pnpm --filter @neon-wreckers/api run build
 
       - name: Build player web app
-        run: pnpm --filter @neon-wreckers/web run build
+        id: web-build
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @neon-wreckers/web run build 2>&1 | tee web-build.log
+
+      - name: Upload web build diagnostics
+        if: steps.web-build.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: crew-portrait-web-build-diagnostics
+          path: web-build.log
+
+      - name: Stop after web build failure
+        if: steps.web-build.outcome == 'failure'
+        run: exit 1
 
       - name: Build admin app
         run: pnpm --filter @neon-wreckers/admin run build
