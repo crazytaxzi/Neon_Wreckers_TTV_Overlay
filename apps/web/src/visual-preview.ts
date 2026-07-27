@@ -61,10 +61,10 @@ const previewGame: GameData = {
     { id: 'ship-2', name: 'Void Lantern', classSlug: 'cargo-hauler', condition: 94, fuel: 81, cargoCapacity: 120, upgrades: ['expanded-hold'], masteryXp: 74, masteryRank: 1, ownedSkins: ['cargo-hauler-leviathan'], activeSkin: 'cargo-hauler-leviathan', visualKey: 'ship.cargo-hauler-leviathan', createdAt: at(-3000) }
   ],
   crew: [
-    { id: 'crew-1', name: 'KAL-7', role: 'Engineer', level: 18, jobStars: 4, talentStars: 3, morale: 91, fatigue: 20, specialty: 'engineering', assignment: null, injuredUntil: null, traits: ['Field Mechanic'] },
-    { id: 'crew-2', name: 'NOVA-9', role: 'Production', level: 16, jobStars: 4, talentStars: 2, morale: 86, fatigue: 35, specialty: 'salvage', assignment: null, injuredUntil: null, traits: ['Salvage Instinct'] },
-    { id: 'crew-3', name: 'RIGGS', role: 'Builder', level: 14, jobStars: 3, talentStars: 3, morale: 78, fatigue: 0, specialty: 'engineering', assignment: 'shipyard', injuredUntil: null, traits: ['Field Mechanic'] },
-    { id: 'crew-4', name: 'FLINT', role: 'Logistics', level: 12, jobStars: 3, talentStars: 2, morale: 82, fatigue: 10, specialty: 'logistics', assignment: null, injuredUntil: null, traits: ['Loadmaster'] }
+    { id: 'crew-1', name: 'KAL-7', role: 'Engineer', level: 18, jobStars: 4, talentStars: 3, morale: 91, fatigue: 20, specialty: 'engineering', assignment: null, injuredUntil: null, portraitKey: null, traits: ['Field Mechanic'] },
+    { id: 'crew-2', name: 'NOVA-9', role: 'Production', level: 16, jobStars: 4, talentStars: 2, morale: 86, fatigue: 35, specialty: 'salvage', assignment: null, injuredUntil: null, portraitKey: null, traits: ['Salvage Instinct'] },
+    { id: 'crew-3', name: 'RIGGS', role: 'Builder', level: 14, jobStars: 3, talentStars: 3, morale: 78, fatigue: 0, specialty: 'engineering', assignment: 'shipyard', injuredUntil: null, portraitKey: null, traits: ['Field Mechanic'] },
+    { id: 'crew-4', name: 'FLINT', role: 'Logistics', level: 12, jobStars: 3, talentStars: 2, morale: 82, fatigue: 10, specialty: 'logistics', assignment: null, injuredUntil: null, portraitKey: null, traits: ['Loadmaster'] }
   ],
   crewCandidates: null,
   history: [
