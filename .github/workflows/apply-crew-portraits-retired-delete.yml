@@ -1,0 +1,80 @@
+name: Apply crew portraits and retired deletion
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Apply feature patch when needed
+        shell: bash
+        run: |
+          if grep -q 'crew-portrait-picker' apps/web/src/pages/fleet.tsx; then
+            echo 'Feature patch already applied.'
+          else
+            python tools/apply-crew-portraits-retired-delete.py
+          fi
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.32.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify repository and API contracts
+        run: |
+          pnpm run test:repository
+          pnpm run test:api
+
+      - name: Build affected applications
+        run: |
+          pnpm --filter @neon-wreckers/contracts run build
+          pnpm run db:generate
+          pnpm --filter @neon-wreckers/api run build
+          pnpm --filter @neon-wreckers/web run build
+          pnpm --filter @neon-wreckers/admin run build
+
+      - name: Commit verified implementation
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No implementation changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            apps/admin/src/main.tsx \
+            apps/api/src/routes/admin.ts \
+            apps/api/src/routes/fleet.ts \
+            apps/web/src/assets/crew-portraits/README.md \
+            apps/web/src/crew-portraits.ts \
+            apps/web/src/model.ts \
+            apps/web/src/pages/fleet.tsx \
+            apps/web/src/styles.css \
+            infrastructure/database/prisma/schema.prisma \
+            infrastructure/database/prisma/migrations/20260727041000_add_crew_portraits/migration.sql \
+            packages/contracts/src/index.ts \
+            tools/test/api-routes.test.mjs
+          git commit -m 'Add crew portrait selection and retired cleanup'
+          git push origin "HEAD:${{ github.head_ref }}"
