@@ -1,0 +1,76 @@
+name: Apply expedition lifecycle fix
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Check whether repair is already applied
+        id: repair
+        shell: bash
+        run: |
+          if grep -q "Expedition draft deleted" apps/admin/src/main.tsx; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Apply repair
+        if: steps.repair.outputs.needed == 'true'
+        run: python tools/apply-expedition-lifecycle-fix.py
+
+      - name: Set up Node
+        if: steps.repair.outputs.needed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: pnpm
+
+      - name: Enable pnpm
+        if: steps.repair.outputs.needed == 'true'
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.32.0 --activate
+
+      - name: Install dependencies
+        if: steps.repair.outputs.needed == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify route inventory and API behavior
+        if: steps.repair.outputs.needed == 'true'
+        run: |
+          pnpm run test:repository
+          pnpm run test:api
+
+      - name: Build affected applications
+        if: steps.repair.outputs.needed == 'true'
+        run: |
+          pnpm --filter @neon-wreckers/contracts run build
+          pnpm run db:generate
+          pnpm --filter @neon-wreckers/api run build
+          pnpm --filter @neon-wreckers/worker run build
+          pnpm --filter @neon-wreckers/admin run build
+
+      - name: Commit verified repair
+        if: steps.repair.outputs.needed == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/admin/src/main.tsx apps/api/src/routes/admin.ts apps/api/src/services/expedition-definitions.ts apps/worker/src/index.ts tools/test/api-routes.test.mjs tools/test/expedition-definitions.test.ts
+          git commit -m "Fix expedition lifecycle management"
+          git push origin "HEAD:${{ github.head_ref }}"
