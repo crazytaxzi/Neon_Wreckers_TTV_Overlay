@@ -190,6 +190,51 @@ export async function registerAdminRoutes(app: FastifyInstance, context: ApiCont
     return { data: created, requestId: request.id };
   });
 
+  app.post('/api/v1/admin/expedition-creator/:id/activate', async request => {
+    const user = await requireAdmin(context.prisma, request);
+    const id = z.string().min(1).parse((request.params as { id: string }).id);
+    const activated = await context.prisma.$transaction(async transaction => {
+      const candidate = await transaction.contentVersion.findUnique({ where: { id } });
+      if (!candidate || !candidate.slug.startsWith('expedition.')) throw new GameRuleError('EXPEDITION_VERSION_NOT_FOUND', 'Expedition version not found.');
+      await acquireTransactionLock(transaction, `content-version:${candidate.slug}`);
+      await transaction.contentVersion.updateMany({ where: { slug: candidate.slug, lifecycle: 'active', id: { not: id } }, data: { lifecycle: 'retired' } });
+      const version = await transaction.contentVersion.update({ where: { id }, data: { lifecycle: 'active', publishedAt: new Date(), scheduledAt: null } });
+      await transaction.auditLog.create({ data: { actorId: user.id, action: 'expedition.activate', target: `${candidate.slug}@${candidate.version}`, before: { lifecycle: candidate.lifecycle }, after: { lifecycle: 'active' }, requestId: request.id } });
+      return version;
+    });
+    return { data: activated, requestId: request.id };
+  });
+
+  app.post('/api/v1/admin/expedition-creator/:id/retire', async request => {
+    const user = await requireAdmin(context.prisma, request);
+    const id = z.string().min(1).parse((request.params as { id: string }).id);
+    const retired = await context.prisma.$transaction(async transaction => {
+      const candidate = await transaction.contentVersion.findUnique({ where: { id } });
+      if (!candidate || !candidate.slug.startsWith('expedition.')) throw new GameRuleError('EXPEDITION_VERSION_NOT_FOUND', 'Expedition version not found.');
+      if (candidate.lifecycle !== 'active') throw new GameRuleError('EXPEDITION_VERSION_NOT_ACTIVE', 'Only an active expedition version can be retired.');
+      await acquireTransactionLock(transaction, `content-version:${candidate.slug}`);
+      const version = await transaction.contentVersion.update({ where: { id }, data: { lifecycle: 'retired', scheduledAt: null } });
+      await transaction.auditLog.create({ data: { actorId: user.id, action: 'expedition.retire', target: `${candidate.slug}@${candidate.version}`, before: { lifecycle: candidate.lifecycle }, after: { lifecycle: 'retired' }, requestId: request.id } });
+      return version;
+    });
+    return { data: retired, requestId: request.id };
+  });
+
+  app.delete('/api/v1/admin/expedition-creator/:id', async request => {
+    const user = await requireAdmin(context.prisma, request);
+    const id = z.string().min(1).parse((request.params as { id: string }).id);
+    const deleted = await context.prisma.$transaction(async transaction => {
+      const candidate = await transaction.contentVersion.findUnique({ where: { id } });
+      if (!candidate || !candidate.slug.startsWith('expedition.')) throw new GameRuleError('EXPEDITION_VERSION_NOT_FOUND', 'Expedition version not found.');
+      if (!['draft', 'scheduled'].includes(candidate.lifecycle)) throw new GameRuleError('EXPEDITION_VERSION_PUBLISHED', 'Published expedition versions must be retired instead of deleted.');
+      await acquireTransactionLock(transaction, `content-version:${candidate.slug}`);
+      await transaction.auditLog.create({ data: { actorId: user.id, action: 'expedition.delete', target: `${candidate.slug}@${candidate.version}`, before: { lifecycle: candidate.lifecycle, content: candidate.contentJson }, requestId: request.id } });
+      await transaction.contentVersion.delete({ where: { id } });
+      return { id, slug: candidate.slug, version: candidate.version };
+    });
+    return { data: deleted, requestId: request.id };
+  });
+
   app.get('/api/v1/admin/live-ops', async request => {
     await requireAdmin(context.prisma, request);
     const now = new Date();

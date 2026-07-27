@@ -25,14 +25,22 @@ export type AuthoredExpeditionDefinition = z.infer<typeof authoredExpeditionSche
 
 export async function activeExpeditionDefinitions(prisma: Pick<PrismaClient, 'contentVersion'>) {
   const authored = await prisma.contentVersion.findMany({
-    where: { slug: { startsWith: 'expedition.' }, lifecycle: 'active' },
+    where: {
+      slug: { startsWith: 'expedition.' },
+      lifecycle: 'active',
+      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
+    },
     orderBy: { version: 'desc' }
   });
   const definitions = new Map<string, ExpeditionDefinition>();
+  const authoredSlugs = new Set<string>();
   for (const definition of Object.values(expeditionDefinitions)) definitions.set(definition.slug, definition);
   for (const version of authored) {
     const parsed = authoredExpeditionSchema.safeParse(version.contentJson);
-    if (parsed.success && version.slug === `expedition.${parsed.data.slug}`) definitions.set(parsed.data.slug, parsed.data);
+    if (parsed.success && version.slug === `expedition.${parsed.data.slug}` && !authoredSlugs.has(parsed.data.slug)) {
+      definitions.set(parsed.data.slug, parsed.data);
+      authoredSlugs.add(parsed.data.slug);
+    }
   }
   return Object.fromEntries(definitions) as Record<string, ExpeditionDefinition>;
 }

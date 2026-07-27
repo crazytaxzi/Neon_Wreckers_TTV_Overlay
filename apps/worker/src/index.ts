@@ -177,6 +177,42 @@ process.once('SIGTERM', () => void shutdown('SIGTERM'));
 process.once('SIGINT', () => void shutdown('SIGINT'));
 console.info('Neon Wreckers worker online.');
 
+async function activateScheduledContent(now: Date) {
+  const due = await prisma.contentVersion.findMany({
+    where: {
+      lifecycle: 'scheduled',
+      scheduledAt: { lte: now },
+      OR: [{ expiresAt: null }, { expiresAt: { gt: now } }]
+    },
+    orderBy: [{ slug: 'asc' }, { version: 'asc' }]
+  });
+  const newestBySlug = new Map<string, (typeof due)[number]>();
+  for (const version of due) newestBySlug.set(version.slug, version);
+  for (const candidate of newestBySlug.values()) {
+    await prisma.$transaction(async transaction => {
+      await transaction.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`content-version:${candidate.slug}`}))`;
+      const current = await transaction.contentVersion.findUnique({ where: { id: candidate.id } });
+      if (!current || current.lifecycle !== 'scheduled' || !current.scheduledAt || current.scheduledAt > now) return;
+      if (current.expiresAt && current.expiresAt <= now) {
+        await transaction.contentVersion.update({ where: { id: current.id }, data: { lifecycle: 'archived' } });
+        return;
+      }
+      await transaction.contentVersion.updateMany({
+        where: { slug: current.slug, lifecycle: 'active', id: { not: current.id } },
+        data: { lifecycle: 'retired' }
+      });
+      await transaction.contentVersion.updateMany({
+        where: { slug: current.slug, lifecycle: 'scheduled', id: { not: current.id }, scheduledAt: { lte: now } },
+        data: { lifecycle: 'retired' }
+      });
+      await transaction.contentVersion.update({
+        where: { id: current.id },
+        data: { lifecycle: 'active', publishedAt: now, scheduledAt: null }
+      });
+    });
+  }
+}
+
 async function tickLiveOperations() {
   const now = new Date();
   const overdueExpeditions = await prisma.expedition.findMany({ where: { status: 'active', resolvesAt: { lte: now } }, select: { id: true }, take: 100 });
@@ -187,7 +223,7 @@ async function tickLiveOperations() {
   for (const crafting of overdueCrafting) {
     await gameQueue.add('resolve-crafting', { craftingJobId: crafting.id }, { jobId: `reconcile-craft-${crafting.id}-${Math.floor(now.getTime() / 60_000)}`, attempts: 5, backoff: { type: 'exponential', delay: 5_000 }, removeOnComplete: 100, removeOnFail: 500 });
   }
-  await prisma.contentVersion.updateMany({ where: { lifecycle: 'scheduled', scheduledAt: { lte: now }, OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] }, data: { lifecycle: 'active', publishedAt: now } });
+  await activateScheduledContent(now);
   await prisma.contentVersion.updateMany({ where: { lifecycle: 'active', expiresAt: { lte: now } }, data: { lifecycle: 'archived' } });
   const season = seasons.find(candidate => Date.parse(candidate.startsAt) <= now.getTime() && Date.parse(candidate.endsAt) >= now.getTime());
   await prisma.station.updateMany({ where: { slug: 'station-zero', activeSeason: { not: season?.slug ?? null } }, data: { activeSeason: season?.slug ?? null } });

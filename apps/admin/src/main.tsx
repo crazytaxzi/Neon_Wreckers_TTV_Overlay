@@ -1871,6 +1871,8 @@ function ExpeditionCreatorPage({
   refresh: () => Promise<void>;
   pushToast: PushToast;
 }) {
+  type ExpeditionVersion = NonNullable<ExpeditionCreatorData>["versions"][number];
+
   const [open, setOpen] = useState(false);
   const [slug, setSlug] = useState("outer-rim-recovery");
   const [name, setName] = useState("Outer Rim Recovery");
@@ -1886,6 +1888,23 @@ function ExpeditionCreatorPage({
   const [scheduledAt, setScheduledAt] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
 
+  const openBlank = () => {
+    setSlug("outer-rim-recovery");
+    setName("Outer Rim Recovery");
+    setDescription("Recover valuable components from an unstable debris corridor beyond Station Zero.");
+    setRisk("moderate");
+    setFuelCost(2);
+    setMinCrew(2);
+    setLootRolls(3);
+    setDurationMin(25);
+    setDurationMax(45);
+    setLootPool(["scrap", "alloys", "electronics"]);
+    setLifecycle("draft");
+    setScheduledAt("");
+    setExpiresAt("");
+    setOpen(true);
+  };
+
   const loadTemplate = (template: ExpeditionCreatorData["builtIn"][number]) => {
     setSlug(`${template.slug}-custom`);
     setName(`${template.name} Variant`);
@@ -1897,6 +1916,31 @@ function ExpeditionCreatorPage({
     setDurationMin(template.durationMinutes[0]);
     setDurationMax(template.durationMinutes[1]);
     setLootPool([...template.lootPool]);
+    setLifecycle("draft");
+    setScheduledAt("");
+    setExpiresAt("");
+    setOpen(true);
+  };
+
+  const loadVersion = (version: ExpeditionVersion) => {
+    const content = version.content;
+    const duration = Array.isArray(content.durationMinutes) ? content.durationMinutes : [];
+    const rewards = Array.isArray(content.lootPool)
+      ? content.lootPool.filter((item): item is string => typeof item === "string")
+      : [];
+    setSlug(String(content.slug ?? version.slug.replace(/^expedition\./, "")));
+    setName(String(content.name ?? version.slug.replace(/^expedition\./, "")));
+    setDescription(String(content.description ?? "Describe this expedition."));
+    setRisk(String(content.risk ?? "moderate"));
+    setFuelCost(Number(content.fuelCost ?? 2));
+    setMinCrew(Number(content.minCrew ?? 2));
+    setLootRolls(Number(content.lootRolls ?? 3));
+    setDurationMin(Number(duration[0] ?? 25));
+    setDurationMax(Number(duration[1] ?? 45));
+    setLootPool(rewards.length ? rewards : ["scrap"]);
+    setLifecycle("draft");
+    setScheduledAt("");
+    setExpiresAt("");
     setOpen(true);
   };
 
@@ -1920,14 +1964,42 @@ function ExpeditionCreatorPage({
     }
   };
 
+  const changeLifecycle = async (version: ExpeditionVersion, action: "activate" | "retire") => {
+    const displayName = String(version.content.name ?? version.slug.replace("expedition.", ""));
+    if (action === "retire" && !window.confirm(`Retire ${displayName}? Players will no longer be able to launch it.`)) return;
+    try {
+      await requestApi(`/api/v1/admin/expedition-creator/${encodeURIComponent(version.id)}/${action}`, { method: "POST" });
+      pushToast({
+        title: action === "activate" ? "Expedition activated" : "Expedition retired",
+        message: `${displayName} v${version.version}`,
+        tone: "success",
+      });
+      await refresh();
+    } catch (error) {
+      pushToast({ title: "Lifecycle change failed", message: errorMessage(error), tone: "danger" });
+    }
+  };
+
+  const removeVersion = async (version: ExpeditionVersion) => {
+    const displayName = String(version.content.name ?? version.slug.replace("expedition.", ""));
+    if (!window.confirm(`Delete the unpublished ${displayName} v${version.version}? This cannot be undone.`)) return;
+    try {
+      await requestApi(`/api/v1/admin/expedition-creator/${encodeURIComponent(version.id)}`, { method: "DELETE" });
+      pushToast({ title: "Expedition draft deleted", message: `${displayName} v${version.version}`, tone: "success" });
+      await refresh();
+    } catch (error) {
+      pushToast({ title: "Delete failed", message: errorMessage(error), tone: "danger" });
+    }
+  };
+
   return (
     <div className="admin-stack">
       <SectionTitle
         eyebrow="SERVER-AUTHORITATIVE CONTENT"
         title="Expedition Creator"
-        description="Design, validate, schedule, and activate expedition templates. Every launched flight keeps an immutable copy of its rules."
+        description="Design, revise, activate, schedule, retire, and safely remove unpublished expedition versions."
         icon="expedition"
-        action={<Button onClick={() => setOpen(true)}>Create expedition</Button>}
+        action={<Button onClick={openBlank}>Create expedition</Button>}
       />
       <ResponsiveGrid min="17rem">
         {(data?.builtIn ?? []).map((template) => (
@@ -1944,7 +2016,7 @@ function ExpeditionCreatorPage({
         ))}
       </ResponsiveGrid>
       <Panel>
-        <SectionTitle eyebrow="AUTHORED VERSIONS" title="Release history" description="Draft, scheduled, active, and retired templates remain available for audit and rollback." icon="data" />
+        <SectionTitle eyebrow="AUTHORED VERSIONS" title="Release history" description="Only active versions appear in the player mission catalog. Published versions are retired instead of erased so launched flights keep an audit trail." icon="data" />
         <DataGrid
           rows={data?.versions ?? []}
           getRowKey={(row) => row.id}
@@ -1954,6 +2026,25 @@ function ExpeditionCreatorPage({
             { key: "version", header: "Version", render: (row) => <span className="nw-numeric">v{row.version}</span> },
             { key: "lifecycle", header: "Lifecycle", render: (row) => <Badge tone={lifecycleTone(row.lifecycle)}>{row.lifecycle}</Badge> },
             { key: "schedule", header: "Schedule", render: (row) => row.scheduledAt ? new Date(row.scheduledAt).toLocaleString() : "Manual" },
+            {
+              key: "controls",
+              header: "Controls",
+              align: "right",
+              render: (row) => (
+                <div className="inline-actions">
+                  {row.lifecycle !== "active" && row.lifecycle !== "archived" && (
+                    <Button size="sm" onClick={() => void changeLifecycle(row, "activate")}>Activate</Button>
+                  )}
+                  {row.lifecycle === "active" && (
+                    <Button size="sm" variant="warning" onClick={() => void changeLifecycle(row, "retire")}>Retire</Button>
+                  )}
+                  <Button size="sm" variant="ghost" onClick={() => loadVersion(row)}>Create revision</Button>
+                  {["draft", "scheduled"].includes(row.lifecycle) && (
+                    <Button size="sm" variant="ghost" onClick={() => void removeVersion(row)}>Delete</Button>
+                  )}
+                </div>
+              ),
+            },
           ]}
         />
       </Panel>
@@ -1973,6 +2064,14 @@ function ExpeditionCreatorPage({
               <Field label="Minimum minutes"><Input type="number" min={1} max={1440} value={durationMin} onChange={(event) => setDurationMin(Number(event.target.value))} /></Field>
               <Field label="Maximum minutes"><Input type="number" min={1} max={1440} value={durationMax} onChange={(event) => setDurationMax(Number(event.target.value))} /></Field>
             </ResponsiveGrid>
+            <ResponsiveGrid min="15rem">
+              <Field label="Release state"><Select value={lifecycle} onChange={(event) => setLifecycle(event.target.value)}><option value="draft">Draft</option><option value="scheduled">Scheduled</option><option value="active">Activate now</option></Select></Field>
+              <Field label="Activation time"><Input type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} disabled={lifecycle !== "scheduled"} /></Field>
+              <Field label="Optional expiry"><Input type="datetime-local" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} /></Field>
+            </ResponsiveGrid>
+            <Notification title={lifecycle === "active" ? "Visible to players after save" : lifecycle === "scheduled" ? "Hidden until the activation time" : "Drafts remain hidden from players"} tone={lifecycle === "active" ? "success" : "info"}>
+              {lifecycle === "active" ? "Saving activates this version immediately and retires the previous active version with the same slug." : lifecycle === "scheduled" ? "The worker will activate this version and retire the previous live version at the selected time." : "Use the Activate control in release history when this version is ready for the mission catalog."}
+            </Notification>
             <Field label={`Loot pool · ${lootPool.length} selected`} hint="Choose up to 16 unique rewards">
               <ResponsiveGrid min="12rem">
                 {(data?.items ?? []).map((item) => (
@@ -1983,13 +2082,8 @@ function ExpeditionCreatorPage({
                 ))}
               </ResponsiveGrid>
             </Field>
-            <ResponsiveGrid min="15rem">
-              <Field label="Release state"><Select value={lifecycle} onChange={(event) => setLifecycle(event.target.value)}><option value="draft">Draft</option><option value="scheduled">Scheduled</option><option value="active">Activate now</option></Select></Field>
-              <Field label="Activation time"><Input type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} disabled={lifecycle !== "scheduled"} /></Field>
-              <Field label="Optional expiry"><Input type="datetime-local" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} /></Field>
-            </ResponsiveGrid>
             <Notification title="Launch preview" tone="info">{name || "Untitled expedition"} · {risk} risk · {fuelCost} fuel · {minCrew}+ crew · {durationMin}–{durationMax} minutes · {lootRolls} weighted rolls from {lootPool.length} items.</Notification>
-            <Button variant="primary" disabled={!lootPool.length}>{lifecycle === "active" ? "Validate and activate" : lifecycle === "scheduled" ? "Validate and schedule" : "Validate and save draft"}</Button>
+            <Button variant="primary" disabled={!lootPool.length || (lifecycle === "scheduled" && !scheduledAt)}>{lifecycle === "active" ? "Validate and activate" : lifecycle === "scheduled" ? "Validate and schedule" : "Validate and save draft"}</Button>
           </div>
         </form>
       </Modal>
