@@ -20,6 +20,7 @@ import {
   StatusDisplay,
 } from "@neon-wreckers/ui";
 import { GameArtwork } from "../components/GameArtwork.js";
+import { crewPortraits, crewPortraitUrl } from "../crew-portraits.js";
 import type {
   ExpeditionDefinition,
   GameData,
@@ -1006,7 +1007,13 @@ export function CrewPage({ crew, crewCandidates, action }: Pick<GameData, "crew"
   const [recruitRole, setRecruitRole] = useState("engineer");
   const [recruitOpen, setRecruitOpen] = useState(false);
   const [retiringCrew, setRetiringCrew] = useState<(typeof crew)[number] | null>(null);
+  const [portraitCrew, setPortraitCrew] = useState<(typeof crew)[number] | null>(null);
   const [now, setNow] = useState(Date.now());
+  const choosePortrait = (portraitKey: string | null) => {
+    if (!portraitCrew) return;
+    void action(`/api/v1/crew/${portraitCrew.id}/portrait`, { portraitKey }, portraitKey ? "Crew portrait updated" : "Crew portrait cleared");
+    setPortraitCrew(null);
+  };
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
@@ -1043,6 +1050,7 @@ export function CrewPage({ crew, crewCandidates, action }: Pick<GameData, "crew"
             ? Date.parse(member.injuredUntil) - now
             : 0;
           const cost = member.level * 250;
+          const portraitUrl = crewPortraitUrl(member.portraitKey);
           const jobBenefit =
             member.role === "pilot"
               ? "+1% expedition success per job star"
@@ -1066,8 +1074,12 @@ export function CrewPage({ crew, crewCandidates, action }: Pick<GameData, "crew"
           return (
             <Card key={member.id} className="crew-card">
               <div className="crew-card__identity">
-                <div className="crew-ident">
-                  {member.name.slice(0, 2).toUpperCase()}
+                <div className={`crew-ident ${portraitUrl ? "crew-ident--portrait" : ""}`}>
+                  {portraitUrl ? (
+                    <img src={portraitUrl} alt={`${member.name} crew portrait`} />
+                  ) : (
+                    member.name.slice(0, 2).toUpperCase()
+                  )}
                 </div>
                 <div>
                   <h3>{member.name}</h3>
@@ -1161,6 +1173,9 @@ export function CrewPage({ crew, crewCandidates, action }: Pick<GameData, "crew"
                       ? "Talent maxed"
                       : `Train talent · ${cost.toLocaleString()} cr`}
                 </Button>
+                <Button size="sm" variant="ghost" onClick={() => setPortraitCrew(member)}>
+                  Portrait
+                </Button>
                 <Button size="sm" variant="ghost" onClick={() => setRetiringCrew(member)}>
                   Retire
                 </Button>
@@ -1235,6 +1250,44 @@ export function CrewPage({ crew, crewCandidates, action }: Pick<GameData, "crew"
           </Select>
         </Field>
         </div>
+      </Modal>
+      <Modal
+        open={Boolean(portraitCrew)}
+        onClose={() => setPortraitCrew(null)}
+        title={`Choose portrait for ${portraitCrew?.name ?? "crew member"}`}
+        description="Portraits are PNG assets packaged with the game. Selecting one changes only this crew member."
+        size="lg"
+      >
+        <div className="crew-portrait-picker">
+          <button
+            type="button"
+            className={`crew-portrait-option ${portraitCrew?.portraitKey ? "" : "is-selected"}`}
+            aria-pressed={!portraitCrew?.portraitKey}
+            onClick={() => choosePortrait(null)}
+          >
+            <span className="crew-portrait-option__initials">
+              {portraitCrew?.name.slice(0, 2).toUpperCase() ?? "--"}
+            </span>
+            <strong>Default initials</strong>
+          </button>
+          {crewPortraits.map((portrait) => (
+            <button
+              key={portrait.key}
+              type="button"
+              className={`crew-portrait-option ${portraitCrew?.portraitKey === portrait.key ? "is-selected" : ""}`}
+              aria-pressed={portraitCrew?.portraitKey === portrait.key}
+              onClick={() => choosePortrait(portrait.key)}
+            >
+              <img src={portrait.url} alt={`${portrait.label} portrait option`} />
+              <strong>{portrait.label}</strong>
+            </button>
+          ))}
+        </div>
+        {!crewPortraits.length && (
+          <Notification title="No crew portraits installed" tone="info">
+            Add PNG files to apps/web/src/assets/crew-portraits, then rebuild and deploy the web app.
+          </Notification>
+        )}
       </Modal>
       <ConfirmWindow
         open={Boolean(retiringCrew)}

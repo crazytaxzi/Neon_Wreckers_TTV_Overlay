@@ -211,6 +211,7 @@ export const crewMemberSchema = z.object({
   specialty: z.string(),
   assignment: z.string().nullable(),
   injuredUntil: serializedDateTimeSchema.nullable(),
+  portraitKey: z.string().nullable(),
   traits: z.array(z.string())
 }).passthrough();
 

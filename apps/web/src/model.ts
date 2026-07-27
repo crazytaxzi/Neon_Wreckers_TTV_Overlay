@@ -121,6 +121,7 @@ export type CrewMember = {
   specialty: string;
   assignment: string | null;
   injuredUntil: string | null;
+  portraitKey: string | null;
   traits: string[];
 };
 export type CrewCandidates = {

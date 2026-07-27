@@ -200,6 +200,18 @@ export async function registerFleetRoutes(app: FastifyInstance, context: ApiCont
     return { data: crew, requestId: request.id };
   });
 
+  app.post('/api/v1/crew/:id/portrait', async request => {
+    const user = await requireUser(context.prisma, request);
+    const { id } = idSchema.parse(request.params);
+    const { portraitKey } = z.object({
+      portraitKey: z.string().trim().regex(/^[a-z0-9][a-z0-9-]{0,63}$/, 'Portrait filenames must use lowercase letters, numbers, and hyphens.').nullable()
+    }).parse(request.body);
+    const member = await context.prisma.crewMember.findFirst({ where: { id, playerId: user.player.id } });
+    if (!member) throw new GameRuleError('CREW_NOT_FOUND', 'Crew member not found.');
+    const crew = await context.prisma.crewMember.update({ where: { id }, data: { portraitKey } });
+    return { data: crew, requestId: request.id };
+  });
+
   app.post('/api/v1/crew/:id/shore-leave', async request => {
     const user = await requireUser(context.prisma, request);
     const { id } = idSchema.parse(request.params);

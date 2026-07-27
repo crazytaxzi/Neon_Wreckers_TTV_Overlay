@@ -2065,7 +2065,18 @@ html[data-reduced-motion="true"] *::after {
 .player-shell .crew-roster-grid { grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
 .player-shell .crew-console .crew-card { padding: 0; overflow: hidden; border-color: rgba(var(--nw-color-purple-rgb), 0.35); background: linear-gradient(145deg, rgba(var(--nw-color-purple-rgb), 0.08), transparent 42%), rgba(var(--nw-color-surface-rgb), 0.92); }
 .player-shell .crew-console .crew-card__identity { padding: 0.85rem; border-block-end: 1px solid rgba(var(--nw-color-purple-rgb), 0.22); background: rgba(var(--nw-color-void-rgb), 0.36); }
-.player-shell .crew-console .crew-ident { width: 4.5rem; height: 4.5rem; color: var(--nw-color-green); border: 1px solid rgba(var(--nw-color-green-rgb), 0.42); background: radial-gradient(circle, rgba(var(--nw-color-green-rgb), 0.18), transparent 68%); clip-path: polygon(0.65rem 0, 100% 0, 100% calc(100% - 0.65rem), calc(100% - 0.65rem) 100%, 0 100%, 0 0.65rem); }
+.player-shell .crew-console .crew-ident { width: 4.5rem; height: 4.5rem; overflow: hidden; color: var(--nw-color-green); border: 1px solid rgba(var(--nw-color-green-rgb), 0.42); background: radial-gradient(circle, rgba(var(--nw-color-green-rgb), 0.18), transparent 68%); clip-path: polygon(0.65rem 0, 100% 0, 100% calc(100% - 0.65rem), calc(100% - 0.65rem) 100%, 0 100%, 0 0.65rem); }
+.player-shell .crew-console .crew-ident--portrait { padding: 0; background: rgba(var(--nw-color-void-rgb), 0.8); }
+.player-shell .crew-console .crew-ident img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.player-shell .crew-portrait-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: 0.65rem; margin-block-end: 0.8rem; }
+.player-shell .crew-portrait-option { display: grid; min-width: 0; padding: 0.55rem; gap: 0.45rem; justify-items: center; border: 1px solid var(--nw-color-line-strong); color: var(--nw-color-text-muted); background: rgba(var(--nw-color-void-rgb), 0.55); cursor: pointer; clip-path: polygon(0.5rem 0, 100% 0, 100% calc(100% - 0.5rem), calc(100% - 0.5rem) 100%, 0 100%, 0 0.5rem); }
+.player-shell .crew-portrait-option:hover,
+.player-shell .crew-portrait-option:focus-visible { color: var(--nw-color-text); border-color: rgba(var(--nw-color-purple-rgb), 0.58); background: rgba(var(--nw-color-purple-rgb), 0.08); }
+.player-shell .crew-portrait-option.is-selected { color: var(--nw-color-green); border-color: var(--nw-color-green); box-shadow: inset 0 0 0 1px rgba(var(--nw-color-green-rgb), 0.25); }
+.player-shell .crew-portrait-option img,
+.player-shell .crew-portrait-option__initials { display: grid; width: 100%; aspect-ratio: 1; place-items: center; object-fit: cover; border: 1px solid rgba(var(--nw-color-green-rgb), 0.32); background: radial-gradient(circle, rgba(var(--nw-color-green-rgb), 0.15), rgba(var(--nw-color-void-rgb), 0.82)); }
+.player-shell .crew-portrait-option__initials { color: var(--nw-color-green); font-family: var(--nw-font-display); font-size: 1.4rem; font-weight: 900; }
+.player-shell .crew-portrait-option strong { max-width: 100%; overflow: hidden; font-size: 0.7rem; letter-spacing: 0.04em; text-align: center; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
 .player-shell .crew-console .crew-card > .nw-progress,
 .player-shell .crew-console .crew-rating,
 .player-shell .crew-console .crew-card > .trait-list,
