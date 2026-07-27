@@ -78,7 +78,23 @@ jobs:
         run: pnpm run db:generate
 
       - name: Build API
-        run: pnpm --filter @neon-wreckers/api run build
+        id: api-build
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @neon-wreckers/api run build 2>&1 | tee api-build.log
+
+      - name: Upload API build diagnostics
+        if: steps.api-build.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: crew-portrait-api-build-diagnostics
+          path: api-build.log
+
+      - name: Stop after API build failure
+        if: steps.api-build.outcome == 'failure'
+        run: exit 1
 
       - name: Build player web app
         run: pnpm --filter @neon-wreckers/web run build
