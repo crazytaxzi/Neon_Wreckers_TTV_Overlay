@@ -4,7 +4,7 @@
 **Last updated:** 2026-07-28  
 **Repository:** `crazytaxzi/Neon_Wreckers_TTV_Overlay`  
 **Current phase:** Phase 1 - Structural Cleanup and Stabilization  
-**Implementation state:** `P1-T03` complete and validated; pending final merge closeout
+**Implementation state:** `P1-T03` complete, validated, documented, and merged; no next task authorized
 
 This file records the verified state of the project. Update it at the end of every completed work unit. Do not use it as a wish list.
 
@@ -88,7 +88,7 @@ Final merge commit:
 
 ### `P1-T03` - Timers Administration Extraction
 
-Completed and validated on 2026-07-28. Final merge closeout is pending.
+Completed, validated, documented, and merged on 2026-07-28.
 
 - Completed the mandatory startup sequence from `main` commit `78646d84e8b47b73dd3cf4cf3cce61dfc02e6cbd`.
 - Verified `P1-T02-FIX1`, merge `e206d43eb97bdf5d5d4cc366ef9faa9ed8fa7c79`, and the latest documented main closeout before implementation.
@@ -102,11 +102,11 @@ Completed and validated on 2026-07-28. Final merge closeout is pending.
 - Produced the existing 26 captures, including the desktop Timers proof, without changing screenshots, CSS, graphics, navigation, accessibility, or runtime behavior.
 - Made no Refunds, Players, Commands, Integrations, Expedition Creator, Config, Operations, Server, refresh decomposition, API, database, browser-client, shared UI, gameplay, content, worker, deployment, Docker, nginx, Vite, or workflow change.
 
-Validated source head:
+Commit evidence:
 
-- `ca1a3f9470d0fcfe35024fdae2bfa1de1e9a97f1`
-
-Final merge commit will be recorded during the post-merge closeout.
+- Validated source head: `ca1a3f9470d0fcfe35024fdae2bfa1de1e9a97f1`
+- Final reviewed branch head: `dad7ed15f7ff309df3860a679c947423eff71bba`
+- Final merge commit: `ecdc63024a7d3380988d43b91435f2b614d3efb1` - `refactor(admin): extract timers feature`
 
 The detailed handoff is preserved at `docs/handoffs/2026-07-28-p1-t03-timers.md`.
 
@@ -201,6 +201,17 @@ Commit `ca1a3f9470d0fcfe35024fdae2bfa1de1e9a97f1` passed:
 
 Visual artifact `8693597195`, digest `sha256:b9bdd3dec9c1443c6e0be9bd4c47ee6a6ceae232a33748719168c639465dfcec`, contains the existing 26 captures.
 
+### `P1-T03` final reviewed branch head
+
+Commit `dad7ed15f7ff309df3860a679c947423eff71bba` passed:
+
+- CI run `30373289045`: success
+- Admin and Overlay Visual Proof run `30373289202`: success
+- CodeQL run `30373289713`: success
+- UI Revamp Verify run `30373289886`: success
+- Browser integration tests run `30373289646`: success
+- CI and security gates run `30373290124`: success
+
 The local container could not resolve GitHub or the npm registry, so the executable baseline and final validation ran through the repository's authenticated GitHub Actions environment.
 
 ## Known Risks and Limitations
@@ -236,14 +247,14 @@ The following remain planned work, not completed features:
 
 ## Current Readiness
 
-`P1-T03` is complete, validated, and ready for final merge and post-merge documentation closeout.
+`P1-T03` is complete, validated, documented, and merged at `ecdc63024a7d3380988d43b91435f2b614d3efb1`.
 
-This is a required stopping boundary after closeout. No next implementation task is active.
+This is a required new-chat boundary. No next implementation task is active.
 
 The next chat must:
 
 1. Follow `START_HERE.md` from the latest `main` branch.
-2. Verify the final `P1-T03` merge and documented main closeout recorded in `docs/handoffs/LATEST.md`.
+2. Verify merge `ecdc63024a7d3380988d43b91435f2b614d3efb1` and the final documented main closeout in `docs/handoffs/LATEST.md`.
 3. Choose exactly one next objective within Phase 1.
 4. Replace `docs/CURRENT_TASK.md` before implementation.
 5. Do not begin Refunds, Players, refresh decomposition, or another administration task in this completed Timers chat.
