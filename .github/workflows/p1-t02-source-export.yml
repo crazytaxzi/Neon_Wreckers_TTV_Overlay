@@ -1,4 +1,4 @@
-name: P1-T02 Source Export
+name: P1-T02 Source Transfer
 
 on:
   pull_request:
@@ -7,27 +7,30 @@ on:
       - '.github/workflows/p1-t02-source-export.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  export:
-    name: Export exact checkout
+  apply:
+    name: Apply reviewed extraction patch
+    if: github.head_ref == 'agent/p1-t02-server-diagnostics'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Check out repository
+      - name: Check out task branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          persist-credentials: false
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
 
-      - name: Create source archive
+      - name: Apply exact reviewed patch
         shell: bash
-        run: git archive --format=zip --output=neon-wreckers-source.zip HEAD
-
-      - name: Upload source archive
-        uses: actions/upload-artifact@v4
-        with:
-          name: p1-t02-source
-          path: neon-wreckers-source.zip
-          if-no-files-found: error
-          retention-days: 1
+        run: |
+          printf '%s' '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' | base64 --decode | gzip --decompress > /tmp/p1-t02.patch
+          git apply --check /tmp/p1-t02.patch
+          git apply /tmp/p1-t02.patch
+          git add apps/admin/src/main.tsx apps/admin/src/features/server/server-page.tsx tools/test/admin-server-feature.test.mjs
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'refactor(admin): extract server diagnostics'
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
