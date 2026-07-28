@@ -82,11 +82,9 @@ Completed on 2026-07-28.
 - Produced all 26 existing visual-proof captures without changing screenshot names, viewports, navigation, authentication, overlay modes, styling, accessibility, or runtime behavior.
 - Made no workflow, administration application, Server, Timers, API, database, CSS, shared UI, browser-client, gameplay, content, or deployment change.
 
-Validated source head before project-control closeout:
+Final merge commit:
 
-- `a26e5f0a10dbf848a1dc1a46b459e0bf2d5c0e89`
-
-The final merge commit is recorded in `docs/handoffs/LATEST.md` after merge.
+- `e206d43eb97bdf5d5d4cc366ef9faa9ed8fa7c79` - `fix(visual-proof): cover admin refresh fixtures`
 
 ## Verified Current Architecture
 
@@ -159,12 +157,14 @@ Each future extraction must add focused regression protection before or alongsid
 
 The executable pre-change fixture baseline was established by rerunning Admin and Overlay Visual Proof run `30353056639`, job `90267084937`, before editing. Frozen install, production builds, browser installation, and preview startup passed; authenticated capture failed because three refresh requests reached the inactive Vite proxy.
 
-The repaired validated source head `a26e5f0a10dbf848a1dc1a46b459e0bf2d5c0e89` passed:
+The ending work-state commit `a052b4d8f4023ce772183a6742f4da09005678d4` passed:
 
-- CI run `30357665819`, job `90269540183`: `pnpm install --frozen-lockfile` and complete `pnpm verify`
-- Admin and Overlay Visual Proof run `30357668480`, job `90269548106`: production admin and overlay builds, built previews, exact authenticated capture, and proof artifact upload
+- CI run `30358114522`, job `90271043749`: `pnpm install --frozen-lockfile` and complete `pnpm verify`
+- Admin and Overlay Visual Proof run `30358111486`, job `90270975267`: production admin and overlay builds, built previews, exact authenticated capture, and proof artifact upload
+- CodeQL run `30358111669`
+- CI and security gates run `30358112156`
 
-Visual artifact `8687505083` contains all 26 expected captures.
+Visual artifact `8687679551` contains all 26 expected captures.
 
 The local container could not resolve GitHub or the npm registry, so the complete pnpm gate ran through the repository's authenticated GitHub Actions environment. The focused Node regression was also executed against the reconstructed source checkout and passed 2 tests with 0 failures.
 
@@ -201,17 +201,17 @@ The following remain planned work, not completed features:
 
 ## Current Readiness
 
-`P1-T02-FIX1` is complete, validated, documented, and ready for final merge.
+`P1-T02-FIX1` is complete, validated, documented, and committed.
 
-This is a required new-chat boundary after merge. No next implementation task is active.
+This is a required new-chat boundary. No next implementation task is active.
 
 The next chat must:
 
 1. Follow `START_HERE.md` from the latest `main` branch.
-2. Verify the final fixture-repair commit recorded in `docs/handoffs/LATEST.md`.
+2. Verify fixture-repair merge commit `e206d43eb97bdf5d5d4cc366ef9faa9ed8fa7c79` and the current handoff.
 3. Choose exactly one next objective within Phase 1.
 4. Replace `docs/CURRENT_TASK.md` before implementation.
-5. Do not begin Timers or another administration feature in the fixture-repair chat.
+5. Do not begin Timers or another administration feature in this completed fixture-repair chat.
 
 ## Deferred Work
 
