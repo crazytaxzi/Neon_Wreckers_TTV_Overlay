@@ -1,5 +1,8 @@
 # Neon Wreckers: Station Zero
 
+> [!IMPORTANT]
+> Before planning, editing, refactoring, committing, deploying, or beginning AI-assisted work, read [START_HERE.md](START_HERE.md). It defines the mandatory startup sequence and points to the active phase, task, status, and latest handoff.
+
 > A server-authoritative, mobile-first stream game built around cooperative salvage, persistent station progression, Twitch identity, StreamElements loyalty support, streamer controls, and a live OBS browser overlay.
 
 ![Version](https://img.shields.io/badge/version-2.0.0-7c3aed)
