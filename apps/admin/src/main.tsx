@@ -41,6 +41,7 @@ import {
   type AdminOverview,
   type BalanceTelemetry,
 } from "./features/server/server-page.js";
+import { TimersPage } from "./features/timers/timers-page.js";
 
 type CurrentUser = {
   id: string;
@@ -413,7 +414,11 @@ function AdminApp() {
     ),
     server: <ServerPage overview={overview} balanceTelemetry={balanceTelemetry} />,
     timers: (
-      <TimersPage overview={overview} refresh={refresh} pushToast={pushToast} />
+      <TimersPage
+        timers={overview?.timers ?? []}
+        refresh={refresh}
+        pushToast={pushToast}
+      />
     ),
     players: (
       <PlayersPage players={players} refresh={refresh} pushToast={pushToast} />
@@ -1194,82 +1199,6 @@ function CardCommand({
         </Button>
       </div>
     </Panel>
-  );
-}
-
-function TimersPage({
-  overview,
-  refresh,
-  pushToast,
-}: {
-  overview: AdminOverview | null;
-  refresh: () => Promise<void>;
-  pushToast: PushToast;
-}) {
-  const resolveNow = async (id: string) => {
-    if (!window.confirm("Resolve this expedition immediately?")) return;
-    try {
-      await requestApi(`/api/v1/expeditions/${id}/resolve-now`, {
-        method: "POST",
-      });
-      pushToast({ title: "Expedition timer resolved", tone: "success" });
-      await refresh();
-    } catch (error) {
-      pushToast({
-        title: "Timer command failed",
-        message: errorMessage(error),
-        tone: "danger",
-      });
-    }
-  };
-  return (
-    <div className="admin-stack">
-      <SectionTitle
-        eyebrow="SCHEDULE CONTROL"
-        title="Active Expedition Timers"
-        description="Force an overdue or stuck expedition into its server-calculated resolved state. Players must still claim their rewards."
-        icon="events"
-      />
-      <Panel>
-        <DataGrid
-          rows={overview?.timers ?? []}
-          getRowKey={(row) => row.id}
-          empty="No active expedition timers."
-          columns={[
-            {
-              key: "player",
-              header: "Player",
-              render: (row) => <strong>{row.playerName}</strong>,
-            },
-            { key: "mission", header: "Mission", render: (row) => row.name },
-            {
-              key: "return",
-              header: "Scheduled return",
-              render: (row) => new Date(row.resolvesAt).toLocaleString(),
-            },
-            {
-              key: "control",
-              header: "Control",
-              align: "right",
-              render: (row) => (
-                <Button
-                  size="sm"
-                  variant="warning"
-                  onClick={() => void resolveNow(row.id)}
-                >
-                  Resolve now
-                </Button>
-              ),
-            },
-          ]}
-        />
-      </Panel>
-      <Notification title="Other command timers" tone="info">
-        Player crafting, salvage, scan, station-maintenance, and career timers
-        are listed and reset from the Players workspace. Live-event timers are
-        stopped and reset from Operations.
-      </Notification>
-    </div>
   );
 }
 
