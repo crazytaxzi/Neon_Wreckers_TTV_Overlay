@@ -37,6 +37,10 @@ import {
 } from "@neon-wreckers/ui";
 import "./admin.css";
 import {
+  RefundsPage,
+  type LoyaltyTransaction,
+} from "./features/refunds/refunds-page.js";
+import {
   ServerPage,
   type AdminOverview,
   type BalanceTelemetry,
@@ -145,16 +149,6 @@ type AdminPlayer = {
   reputation: number;
   bannedUntil: string | null;
   cooldowns: Array<{ id: string; actionKey: string; expiresAt: string }>;
-};
-
-type LoyaltyTransaction = {
-  id: string;
-  amount: number;
-  actionSlug: string;
-  status: string;
-  createdAt: string;
-  error: string | null;
-  user: { displayName: string; twitchLogin: string };
 };
 
 type PushToast = ReturnType<typeof useToast>["pushToast"];
@@ -424,7 +418,7 @@ function AdminApp() {
       <PlayersPage players={players} refresh={refresh} pushToast={pushToast} />
     ),
     transactions: (
-      <TransactionsPage
+      <RefundsPage
         transactions={transactions}
         refresh={refresh}
         pushToast={pushToast}
@@ -1387,125 +1381,6 @@ function PlayersPage({
           </Modal>
         )}
       </div>
-    </div>
-  );
-}
-
-function TransactionsPage({
-  transactions,
-  refresh,
-  pushToast,
-}: {
-  transactions: LoyaltyTransaction[];
-  refresh: () => Promise<void>;
-  pushToast: PushToast;
-}) {
-  const [reason, setReason] = useState("Operator-approved point refund");
-  const refund = async (transaction: LoyaltyTransaction) => {
-    if (
-      !window.confirm(
-        `Refund ${transaction.amount} points to ${transaction.user.displayName}?`,
-      )
-    )
-      return;
-    try {
-      await requestApi(`/api/v1/admin/transactions/${transaction.id}/refund`, {
-        method: "POST",
-        body: JSON.stringify({ reason }),
-      });
-      pushToast({
-        title: "Points refunded",
-        message: `${transaction.amount} points returned to ${transaction.user.displayName}.`,
-        tone: "success",
-      });
-      await refresh();
-    } catch (error) {
-      pushToast({
-        title: "Refund failed",
-        message: errorMessage(error),
-        tone: "danger",
-      });
-    }
-  };
-  return (
-    <div className="admin-stack">
-      <SectionTitle
-        eyebrow="FINANCIAL OPERATIONS"
-        title="Point Transactions & Refunds"
-        description="Refunds credit StreamElements first and update the local ledger only after confirmation."
-        icon="credits"
-      />
-      <Field label="Required refund reason">
-        <Input
-          value={reason}
-          onChange={(event) => setReason(event.target.value)}
-        />
-      </Field>
-      <Panel>
-        <DataGrid
-          rows={transactions}
-          getRowKey={(row) => row.id}
-          empty="No point transactions."
-          columns={[
-            {
-              key: "player",
-              header: "Player",
-              render: (row) => <strong>{row.user.displayName}</strong>,
-            },
-            {
-              key: "action",
-              header: "Command",
-              render: (row) => row.actionSlug,
-            },
-            {
-              key: "amount",
-              header: "Points",
-              align: "right",
-              render: (row) => row.amount,
-            },
-            {
-              key: "status",
-              header: "Status",
-              render: (row) => (
-                <Badge
-                  tone={
-                    row.status === "committed"
-                      ? "success"
-                      : row.status === "ambiguous"
-                        ? "warning"
-                        : "neutral"
-                  }
-                >
-                  {row.status}
-                </Badge>
-              ),
-            },
-            {
-              key: "time",
-              header: "Created",
-              render: (row) => new Date(row.createdAt).toLocaleString(),
-            },
-            {
-              key: "refund",
-              header: "Control",
-              align: "right",
-              render: (row) => (
-                <Button
-                  size="sm"
-                  variant="warning"
-                  disabled={
-                    !["committed", "ambiguous"].includes(row.status) ||
-                    reason.length < 3
-                  }
-                  onClick={() => void refund(row)}
-                >
-                  Refund
-                </Button>
-              ),
-            },
-          ]}
-        />
-      </Panel>
     </div>
   );
 }
