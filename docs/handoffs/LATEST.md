@@ -2,16 +2,16 @@
 
 **Handoff date:** 2026-07-28  
 **Repository:** `crazytaxzi/Neon_Wreckers_TTV_Overlay`  
-**Branch:** `agent/p1-t02-server-diagnostics`  
+**Branch:** `main`  
 **Starting commit:** `a1086818c0e2d51f23a0e890fa84236a59137ac8`  
 **Source extraction commit:** `60afb9759ba0dc9480e20871a76b637b8a7eefda`  
 **Validated source head:** `b9d1a7b8fec5ee6b974eb2d972ae626cc4dbd889`  
-**Ending work-state commit:** `fa5b2cc42c14a059a1e97b24704474e5699a97dd`  
-**Final merge commit:** Pending squash merge; replace this field immediately after merge  
+**Ending work-state commit:** `2d71ecf75f3a29fba886da16cfbb87c62c0556cb`  
+**Final merge commit:** `4cb1b8049ce6e546121e90beb81e2b16be9fb28e`  
 **Current phase:** Phase 1 - Structural Cleanup and Stabilization  
 **Completed task:** `P1-T02` - Server diagnostics extraction  
 **Next task:** Not yet authorized  
-**Handoff status:** Complete; merge and post-merge hash record pending
+**Handoff status:** Complete; new development chat required
 
 This is the current handoff. Replace its contents at the end of every completed work unit. Historical handoffs may be copied to a dated file when they retain useful evidence.
 
@@ -45,6 +45,7 @@ Do not rely on the previous conversation as the source of truth.
 - Added `tools/test/admin-server-feature.test.mjs` to lock feature isolation, shell ownership, no direct API access, loading behavior, telemetry sections, optional balance rendering, missing-disk behavior, and formatting.
 - Deleted the temporary checkout-transfer workflow before final validation; it does not appear in the final diff.
 - Extracted no other administration feature.
+- Squash-merged pull request 35 into `main` as `4cb1b8049ce6e546121e90beb81e2b16be9fb28e`.
 
 ## Files Changed
 
@@ -100,13 +101,15 @@ Result: 88 passed, 0 failed after initializing local Git metadata required by th
 
 Validated source head: `b9d1a7b8fec5ee6b974eb2d972ae626cc4dbd889`.
 
-Successful runs:
+Successful source runs:
 
 - CI `30353056396`, job `90254858193`: frozen install and `pnpm verify`
 - Browser integration tests `30353056560`
 - UI Revamp Verify `30353058064`
 - CodeQL `30353056383`
 - CI and security gates `30353056546`
+
+Closeout head `2d71ecf75f3a29fba886da16cfbb87c62c0556cb` also passed CI run `30353607057`, job `90256577114`, including frozen dependency installation and `pnpm verify`.
 
 ## Known Validation Limitation
 
@@ -120,7 +123,7 @@ Those requests fell through to the inactive preview proxy. This is a pre-existin
 
 ## Rollback Method
 
-Revert the final squash merge commit after its SHA is recorded in this file. The task diff restores the previous inline Server page without changing another feature, API, database, style, or deployment path.
+Revert squash merge commit `4cb1b8049ce6e546121e90beb81e2b16be9fb28e`. The task diff restores the previous inline Server page without changing another feature, API, database, style, or deployment path.
 
 ## Deferred Work
 
@@ -130,7 +133,7 @@ Revert the final squash merge commit after its SHA is recorded in this file. The
 
 ## New-Chat Check
 
-This is a good new-chat boundary. `P1-T02` is complete, validated, and documented. Beginning another extraction or fixture repair in this chat would violate the one-objective rule.
+This is a good new-chat boundary. `P1-T02` is complete, validated, documented, and committed. Beginning another extraction or fixture repair in this chat would violate the one-objective rule.
 
 ## Ready-to-Paste New-Chat Prompt
 
