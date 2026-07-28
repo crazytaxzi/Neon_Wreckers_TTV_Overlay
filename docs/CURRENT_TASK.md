@@ -2,14 +2,14 @@
 
 **Task ID:** `P1-T03`  
 **Phase:** Phase 1 - Structural Cleanup and Stabilization  
-**Status:** Complete and validated; pending final merge closeout  
+**Status:** Complete, validated, documented, and merged  
 **Started:** 2026-07-28  
 **Completed:** 2026-07-28  
 **Starting main commit:** `78646d84e8b47b73dd3cf4cf3cce61dfc02e6cbd`  
 **Phase authority:** `docs/phases/PHASE_01.md`  
 **Baseline authority:** `docs/phases/P1_T01_ADMIN_BASELINE.md`
 
-Only one task may be active in this file at a time.
+Only one task may be active in this file at a time. This completed record remains until a new development chat defines exactly one next objective.
 
 ## Objective
 
@@ -79,8 +79,9 @@ Added `tools/test/admin-timers-feature.test.mjs` with six focused tests proving:
 - Timers extraction and shell composition: `6eeb12e81b8a306fa6ba35ef5004116bd2c84b2d`
 - Focused regression test: `ca1a3f9470d0fcfe35024fdae2bfa1de1e9a97f1`
 - Validated source head: `ca1a3f9470d0fcfe35024fdae2bfa1de1e9a97f1`
-- Final merge commit: pending merge closeout
-- Final documented `main` closeout commit: pending post-merge closeout
+- Final reviewed branch head: `dad7ed15f7ff309df3860a679c947423eff71bba`
+- Final merge commit: `ecdc63024a7d3380988d43b91435f2b614d3efb1`
+- Final documented `main` closeout commit: the final `docs/handoffs/LATEST.md` closeout commit created after this record
 
 ## Executable Pre-Change Baseline
 
@@ -138,21 +139,35 @@ Tested commit: `ca1a3f9470d0fcfe35024fdae2bfa1de1e9a97f1`
 - Browser integration tests run `30372551084`: success
 - CI and security gates run `30372551055`: success
 
+## Final Reviewed Branch Validation
+
+Tested commit: `dad7ed15f7ff309df3860a679c947423eff71bba`
+
+- CI run `30373289045`: success
+- Admin and Overlay Visual Proof run `30373289202`: success
+- CodeQL run `30373289713`: success
+- UI Revamp Verify run `30373289886`: success
+- Browser integration tests run `30373289646`: success
+- CI and security gates run `30373290124`: success
+
 ## Final Diff Boundary
 
-The reviewed source diff contains only:
+The reviewed pull request contains exactly:
 
 - `apps/admin/src/main.tsx`
 - `apps/admin/src/features/timers/timers-page.tsx`
 - `tools/test/admin-timers-feature.test.mjs`
-- Required project-control and handoff documents
+- `docs/CURRENT_TASK.md`
+- `docs/PROJECT_STATUS.md`
+- `docs/handoffs/LATEST.md`
+- `docs/handoffs/2026-07-28-p1-t03-timers.md`
 
 No Refunds, Players, Commands, Integrations, Expedition Creator, Config, Operations, Server, refresh decomposition, API, CSS, shared UI, gameplay, content, worker, deployment, Docker, nginx, Vite, or workflow change is included.
 
 ## Rollback Method
 
-Revert the final Timers extraction merge commit. This restores the inline Timers page and removes the focused Timers module and regression test without an API, database, content, gameplay, or deployment rollback.
+Revert merge commit `ecdc63024a7d3380988d43b91435f2b614d3efb1`. This restores the inline Timers page and removes the focused Timers module and regression test without an API, database, content, gameplay, or deployment rollback.
 
-## Expected Stopping Point
+## Stopping Point
 
-Stop after the Timers extraction is merged and the final merge and documented `main` closeout hashes are recorded. Do not begin Refunds, Players, refresh decomposition, or another Phase 1 task in this chat.
+`P1-T03` is complete, validated, documented, and merged. Stop here. Do not begin Refunds, Players, refresh decomposition, or another Phase 1 task in this chat.
