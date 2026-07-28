@@ -1,82 +1,173 @@
 # Neon Wreckers Current Task
 
-**Task ID:** `P1-T01`  
+**Task ID:** `P1-T02`  
 **Phase:** Phase 1 - Structural Cleanup and Stabilization  
-**Status:** Ready to start  
-**Phase authority:** `docs/phases/PHASE_01.md`
+**Status:** Ready after `P1-T01` is merged  
+**Phase authority:** `docs/phases/PHASE_01.md`  
+**Baseline authority:** `docs/phases/P1_T01_ADMIN_BASELINE.md`
 
 Only one task may be active in this file at a time.
 
 ## Objective
 
-Establish a verified Phase 1 baseline and produce the exact extraction map for decomposing the administration frontend without changing runtime behavior.
+Extract the read-only Server administration page, its server-owned response models, and its pure formatting helpers into a feature module without changing runtime behavior.
 
-This is a preparation and boundary-locking task. It must finish before the first administration frontend refactor begins.
+This is the first implementation task. It must establish the extraction pattern with the smallest practical administration feature.
+
+## Required Startup
+
+Before changing source:
+
+1. Pull the latest `main` branch after the `P1-T01` baseline branch is merged.
+2. Read `START_HERE.md` and every file it requires.
+3. Read `docs/phases/P1_T01_ADMIN_BASELINE.md`.
+4. Confirm this task is still the only active task.
+5. Inspect the current diff and recent commits.
+6. Run the available pre-change validation and record the exact result before editing.
+
+Do not rely on the prior chat as the source of truth.
 
 ## Required Work
 
-1. Pull and inspect the latest `main` branch.
-2. Read every file required by `START_HERE.md`.
-3. Inspect the complete `apps/admin` workspace.
-4. Identify the responsibilities currently held by `apps/admin/src/main.tsx`.
-5. Identify its direct imports, API dependencies, shared types, routing responsibilities, state ownership, forms, panels, and side effects.
-6. Identify existing tests and missing regression coverage for the administration frontend.
-7. Record a proposed feature-module extraction order.
-8. Run the available baseline validation without changing application behavior.
-9. Update this file with the first implementation task after the baseline is verified.
+1. Add the smallest authenticated administration browser fixture needed to render the current Server page with deterministic mocked responses.
+2. Add a focused desktop Playwright smoke test that:
+   - Opens the authenticated administration shell.
+   - Selects the existing `Server` navigation destination.
+   - Confirms the current Server heading and representative telemetry are rendered.
+   - Does not change visible application behavior.
+3. Create `apps/admin/src/features/server/ServerPage.tsx`.
+4. Move only:
+   - `ServerPage`
+   - `formatBytes`
+   - `formatDuration`
+5. Create `apps/admin/src/features/server/types.ts`.
+6. Move only:
+   - `MetricWindow`
+   - `AdminOverview`
+   - `BalanceTelemetry`
+7. Update `apps/admin/src/main.tsx` to import those feature exports.
+8. Preserve the existing `AdminApp` state, global `refresh`, page registry, props, navigation, and data flow.
+9. Review the final diff for accidental copy, styling, endpoint, or behavior changes.
+10. Run the required validation.
+11. Update project status, current task, and handoff documentation.
+12. Commit the completed work unit and stop.
 
-## Expected Deliverable
+## Intended Module Boundary
 
-A committed Phase 1 baseline record that identifies:
+```text
+apps/admin/src/main.tsx
+  -> apps/admin/src/features/server/ServerPage.tsx
+      -> apps/admin/src/features/server/types.ts
+      -> @neon-wreckers/ui
+```
 
-- Existing admin features
-- Proposed module boundaries
-- Dependency direction
-- Shared code that must remain unchanged initially
-- Tests required before each extraction
-- First implementation work unit
-- Baseline validation results and environmental limitations
+The Server feature remains presentation-only in this task.
 
-The baseline record may be added under `docs/phases/` or `docs/handoffs/` as appropriate.
+It must not fetch its own data, own refresh behavior, or call the API directly.
 
 ## Allowed Scope
 
-For this task, changes are limited to:
+Application and test changes are limited to:
+
+- `apps/admin/src/main.tsx`
+- `apps/admin/src/features/server/ServerPage.tsx`
+- `apps/admin/src/features/server/types.ts`
+- `tests/browser/fixtures.ts`
+- One new focused authenticated Server-page Playwright spec under `tests/browser/`
+- Existing test configuration only if a minimal path correction is required to run that spec
+
+Completion documentation may update:
 
 - `docs/CURRENT_TASK.md`
 - `docs/PROJECT_STATUS.md`
-- `docs/phases/PHASE_01.md`
+- `docs/phases/P1_T01_ADMIN_BASELINE.md` only for a factual correction discovered during implementation
 - `docs/handoffs/LATEST.md`
-- A new Phase 1 baseline or extraction-map document
-- Tests only when needed to capture existing behavior before refactoring
 
-Source inspection may cover the entire repository, but implementation changes are not yet allowed.
+Do not edit other files without replacing this task scope before implementation.
+
+## Behavior That Must Remain Identical
+
+Preserve:
+
+- `/admin/` base path.
+- Default `operations` tab.
+- `server` navigation ID, label, icon, and order.
+- Session and role gate behavior.
+- All ten global refresh requests.
+- `overview` and `balanceTelemetry` state ownership in `AdminApp`.
+- `ServerPage` prop names and nullable behavior.
+- Loading-screen label.
+- All visible Server-page copy.
+- All telemetry calculations.
+- Byte formatting and duration formatting.
+- Locale-dependent number formatting.
+- USD display and current cost calculations.
+- Shared UI imports and rendered component types.
+- Administration and shared UI CSS imports, order, class names, and responsive behavior.
+- No new network request from the extracted feature.
+- No mutation, redirect, confirmation, toast, or effect added to the extracted feature.
 
 ## Forbidden Changes
 
-Do not perform any of the following during this task:
+Do not:
 
-- Refactor `apps/admin/src/main.tsx`
-- Change API routes
-- Change database models or migrations
-- Change game mechanics
-- Change rewards, balance, loot, cooldowns, or progression
-- Redesign the administration interface
-- Change visual styling
-- Add new ships, crew, items, expeditions, events, or content
-- Begin the desktop Studio application
-- Remove packages or documentation
-- Deploy to production
+- Extract any other administration page.
+- Move `Root`, `AdminApp`, `AccessDenied`, navigation, shell, session lookup, or global refresh.
+- Change an API path, method, request body, or response shape.
+- Add runtime payload schemas.
+- Consolidate or rename shared types outside the Server feature.
+- Create a global administration API client.
+- Create a global administration `types.ts`.
+- Split or change CSS.
+- Change UI components, copy, icons, colors, layout, animation, accessibility behavior, or formatting.
+- Change API, worker, database, content, game rules, deployment, dependencies, or package configuration.
+- Begin desktop Studio work.
+- Clean up unrelated code.
+- Continue into `P1-T03` in the same chat.
+
+## Test Requirements
+
+The new authenticated browser fixture must be narrow and deterministic. It may borrow verified data shapes from `tools/visual-proof/capture-admin-overlay.mjs`, but it must not turn the general browser fixture into a complete fake backend.
+
+The focused Server-page test must protect the existing page, not assert a redesigned structure.
+
+At minimum, assert:
+
+- Authenticated administration shell is visible.
+- `Server` navigation is reachable.
+- `Server Load & Throughput` is visible after navigation.
+- At least one process/throughput value and one database/queue value from the fixture are rendered.
+- The page contains the current Google Cloud safe-zone section.
+
+Keep the anonymous authorization and accessibility coverage intact.
 
 ## Required Validation
 
-Record the exact commands that were actually run and their results.
+Record every command actually run and its result.
 
-Preferred baseline commands:
+Preferred pre-change gate:
 
 ```bash
 pnpm install --frozen-lockfile
+pnpm --filter @neon-wreckers/admin build
 pnpm test:repository
+```
+
+Focused browser gate after starting the required local preview services:
+
+```bash
+pnpm exec playwright test tests/browser/admin-server.spec.ts --project=desktop-chromium
+```
+
+Regression gate:
+
+```bash
+pnpm exec playwright test tests/browser/auth-boundaries.spec.ts tests/browser/accessibility.spec.ts --project=desktop-chromium
+```
+
+Preferred final source gate:
+
+```bash
 pnpm test:dependencies
 pnpm test:content
 pnpm test:api
@@ -86,24 +177,32 @@ pnpm build
 
 Use `pnpm verify` when the environment supports the complete source-level gate.
 
-If a command cannot run because the environment lacks Node.js, pnpm, PostgreSQL, Redis, Docker, credentials, or network access, record the limitation. Do not label an unrun check as passing.
+If environment services, credentials, browsers, dependencies, or network access prevent a command from running, record the exact limitation. Do not label an unrun check as passing.
 
 ## Completion Criteria
 
 This task is complete only when:
 
-- The latest repository state has been inspected.
-- The administration frontend responsibilities have been mapped.
-- Existing test coverage and missing protection have been identified.
-- Baseline validation results are recorded honestly.
-- The first implementation work unit is narrow and explicit.
+- The Server page and only its owned types/helpers are outside `main.tsx`.
+- `main.tsx` still owns all data fetching and application orchestration.
+- The focused authenticated Server-page smoke test exists.
+- Existing anonymous administration protection remains intact.
+- The final diff contains no unrelated edits.
+- Validation results are recorded honestly.
 - `docs/PROJECT_STATUS.md` is updated.
-- `docs/handoffs/LATEST.md` is updated.
-- This file is replaced with the next active task.
+- `docs/CURRENT_TASK.md` is replaced with the next narrow task.
+- `docs/handoffs/LATEST.md` is replaced with a complete handoff.
+- The work is committed.
 - The new-chat check has been performed.
+
+## Rollback Boundary
+
+The rollback unit is the complete `P1-T02` commit.
+
+If extraction introduces behavior changes that cannot be corrected within this narrow scope, revert the work unit rather than widening the task.
 
 ## Expected Stopping Point
 
-Stop after the baseline and extraction map are committed.
+Stop immediately after the Server extraction is validated, documented, and committed.
 
-The first actual frontend extraction should begin in a new chat unless the user explicitly directs otherwise and the handoff protocol still considers continuation safe.
+The next feature extraction must begin in a new chat.
