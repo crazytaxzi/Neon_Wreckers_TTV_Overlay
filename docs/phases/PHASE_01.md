@@ -1,7 +1,7 @@
 # Phase 1: Structural Cleanup and Stabilization
 
 **Phase ID:** `P1`  
-**Status:** Ready for baseline work  
+**Status:** In progress  
 **Parent authority:** `docs/PRIME_DIRECTIVE.md`  
 **Startup authority:** `START_HERE.md`
 
