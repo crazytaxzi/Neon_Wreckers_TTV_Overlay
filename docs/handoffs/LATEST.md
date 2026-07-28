@@ -3,8 +3,11 @@
 **Handoff date:** 2026-07-27  
 **Repository:** `crazytaxzi/Neon_Wreckers_TTV_Overlay`  
 **Branch:** `main`  
+**Starting commit:** `7375ad7a0af70d36c72d621237c8292b17b4359e`  
+**Ending work-state commit:** `1a773b3abdab570907567ba671a26dd66e3f4611`  
 **Current phase:** Phase 1 - Structural Cleanup and Stabilization  
-**Current task:** `P1-T01` - Baseline and administration extraction map  
+**Completed task:** `P1-T01` - Baseline and administration extraction map  
+**Next task:** `P1-T02` - Extract Server diagnostics feature  
 **Handoff status:** Ready for a new development chat
 
 This is the current handoff. Replace its contents at the end of every completed work unit. Historical handoffs may be copied to a dated file before replacement when they retain useful evidence.
@@ -19,94 +22,175 @@ The next chat must begin with:
 4. `docs/PROJECT_STATUS.md`
 5. `docs/CURRENT_TASK.md`
 6. `docs/phases/PHASE_01.md`
-7. This handoff
-8. The latest repository state and recent commits
+7. `docs/phases/P1_T01_ADMIN_BASELINE.md`
+8. This handoff
+9. The latest repository state, recent commits, and the diff relevant to `P1-T02`
 
 Do not rely on the previous conversation as the source of truth.
 
+## Completed Objective
+
+`P1-T01` established a source-verified Phase 1 baseline and the exact administration frontend extraction map without changing runtime behavior.
+
+The complete baseline is recorded in:
+
+- `docs/phases/P1_T01_ADMIN_BASELINE.md`
+
 ## Work Completed
 
-The repository now contains a complete project-control foundation:
+- Completed the mandatory `START_HERE.md` startup sequence.
+- Inspected `main` at starting commit `7375ad7a0af70d36c72d621237c8292b17b4359e`.
+- Compared the current repository with the last application commit and confirmed no intervening administration frontend source change.
+- Inspected the complete `apps/admin` workspace.
+- Inspected direct dependencies in `@neon-wreckers/browser-client` and `@neon-wreckers/ui`.
+- Inspected relevant root scripts, workspace configuration, API route ownership, repository tests, browser tests, visual-proof tooling, and workflow configuration.
+- Mapped the approximately 2,251-line `apps/admin/src/main.tsx` entrypoint.
+- Recorded all administration pages, navigation, response models, remote state, local state, forms, API paths, methods, mutations, redirects, confirmations, utilities, and side effects.
+- Identified existing regression protection and missing authenticated-interaction coverage.
+- Defined feature-module dependency direction and an ordered extraction sequence.
+- Selected the read-only Server diagnostics page as the first implementation slice.
+- Replaced `docs/CURRENT_TASK.md` with the narrow `P1-T02` objective and boundaries.
+- Updated `docs/PROJECT_STATUS.md` to record completion and current limitations.
+- Made no application source, API, database, styling, accessibility, gameplay, content, or deployment change.
 
-- `docs/PRIME_DIRECTIVE.md` defines the permanent project objective and non-negotiable boundaries.
-- `docs/CHAT_HANDOFF_PROTOCOL.md` defines when a chat must stop and how the next chat reconstructs state.
-- `START_HERE.md` is the mandatory root-level startup entry point.
-- `docs/PROJECT_STATUS.md` records the verified project state, completed work, known structural problems, and deferred work.
-- `docs/CURRENT_TASK.md` defines one active task with allowed scope, forbidden changes, validation, and stopping point.
-- `docs/phases/PHASE_01.md` defines the full Phase 1 scope, exclusions, work units, validation gates, completion criteria, and rollback rules.
-- The root `README.md` now prominently directs contributors and AI-assisted work to `START_HERE.md`.
+## Commits Created
 
-## Relevant Commits
+- `537140208c289b6be92b33849f63d0d5cd0b90ca` - `docs: record admin extraction baseline`
+- `3a9651c43766e8ce3143f994018f0f9ad9c3b790` - `docs: define first admin extraction task`
+- `1a773b3abdab570907567ba671a26dd66e3f4611` - `docs: close phase one baseline task`
 
-- `f072f28453969130229bc6d690857360e330a3d8` - Add Prime Directive
-- `c5990fdf320fb20da2c61afce3bb3b57c482b5fc` - Add chat handoff protocol
-- `cf7316cda7a2b052b6a87def8af2d9054dc48bbf` - Add repository startup protocol
-- `d5317c021708da55c9d9a5e6fce39cc0281566ff` - Add project status ledger
-- `8d406fc67b91bce662894afdb79379952f15ac2b` - Define initial Phase 1 task
-- `2ab6579c7d01e0685783d847c343a775d03f811e` - Define Phase 1 scope and gates
-- `6e4c3cbffba701f761b6bfc5e8899ce0c5ab22be` - Direct README users to `START_HERE.md`
+The commit that updates this handoff becomes the repository head after the work-state commit above.
+
+## Behavior Changed
+
+None.
+
+## Behavior Deliberately Preserved
+
+- All game mechanics, rewards, balance, loot, cooldowns, progression, and content
+- Player data and database schema
+- API paths, methods, payloads, response behavior, permissions, and audit logging
+- Administration rendering, navigation, forms, mutations, confirmations, redirects, and toasts
+- The ten-resource `Promise.all` refresh and `AdminApp` remote-data ownership
+- Shared UI, administration styling, responsive behavior, reduced motion, low effects, keyboard behavior, and forced-colors behavior
+- Deployment and infrastructure behavior
 
 ## Validation Performed
 
-No application source, configuration, dependencies, database schema, content, or deployment behavior changed in this documentation-only work unit.
+Repository-backed inspection:
 
-Validation performed:
+- Verified the current branch and starting commit through the GitHub connector.
+- Inspected the current administration source blob and related source, route, test, workflow, and configuration files.
+- Verified the repository route inventory includes the frontend's current endpoint set.
+- Queried GitHub for workflow runs and combined commit statuses on the starting commit.
 
-- Confirmed the two existing governing documents were present on `main`.
-- Confirmed the new files were created on `main`.
-- Confirmed the README update was accepted by GitHub.
-- Verified the README was preserved while adding the startup notice.
+Local checkout attempt:
 
-Application tests and production builds were not run because this work unit changed documentation only. Do not interpret that as a fresh baseline pass for the application.
+```text
+rm -rf /tmp/neon-wreckers-p1t01 && git clone --depth 1 --branch main https://github.com/crazytaxzi/Neon_Wreckers_TTV_Overlay.git /tmp/neon-wreckers-p1t01
+```
 
-## Current Task
+Result:
 
-The next chat must perform `P1-T01` exactly as defined in `docs/CURRENT_TASK.md`.
+```text
+fatal: unable to access 'https://github.com/crazytaxzi/Neon_Wreckers_TTV_Overlay.git/': Could not resolve host: github.com
+```
 
-Primary objective:
+## Validation Not Performed
 
-> Establish a verified Phase 1 baseline and produce the exact extraction map for decomposing the administration frontend without changing runtime behavior.
+The following commands were not run because the execution environment could not obtain a local checkout:
 
-The next chat is an inspection, validation, and planning work unit. It must not begin the actual frontend refactor.
+```text
+pnpm install --frozen-lockfile
+pnpm test:repository
+pnpm test:dependencies
+pnpm test:content
+pnpm test:api
+pnpm test:engine
+pnpm build
+pnpm verify
+```
 
-## Required Next Actions
-
-1. Pull the latest `main` branch.
-2. Complete the `START_HERE.md` startup sequence.
-3. Inspect the complete `apps/admin` workspace and all direct dependencies of `apps/admin/src/main.tsx`.
-4. Map existing responsibilities, feature boundaries, API usage, state ownership, forms, routes, and side effects.
-5. Identify existing tests and missing regression protection.
-6. Run the available baseline checks and record exactly what did or did not run.
-7. Commit the baseline and extraction map.
-8. Update project status, current task, and this handoff.
-9. Stop at the chat boundary before the first extraction task.
-
-## Allowed Scope
-
-Use the exact allowed scope in `docs/CURRENT_TASK.md`.
-
-Source may be inspected repository-wide. Application implementation changes are not permitted during `P1-T01`.
+GitHub reported no workflow runs and no combined commit statuses for the inspected starting commit. Do not interpret this documentation work as a fresh passing application baseline.
 
 ## Known Risks and Limitations
 
-- The prior architecture audit was connector-backed and did not produce a fresh local build result.
-- The application baseline must still be run from an environment with the required toolchain and services.
-- The admin frontend is large enough that extraction boundaries must be mapped before edits begin.
-- Documentation claims must continue to be checked against actual source rather than assumed correct.
-- Direct pushes to `main` were used for these user-requested documentation files. Future code work should use the repository’s chosen branch and review policy unless the user explicitly directs otherwise.
+- `P1-T02` must begin in a clone-capable environment and establish an executable pre-change baseline.
+- Authenticated administration interactions do not have complete request, payload, confirmation, toast, refresh, or local-state regression coverage.
+- The monolithic refresh couples all administration features and must remain unchanged during the first extraction.
+- Handwritten response models overlap server schemas and shared contracts, but contract consolidation is not authorized in `P1-T02`.
+- Shared UI imports load a broad stylesheet stack and must remain unchanged during the first extraction.
+- The administration API remains oversized and is a later Phase 1 workstream.
+
+## Next Objective
+
+Complete `P1-T02` exactly as defined in `docs/CURRENT_TASK.md`:
+
+> Extract the read-only Server diagnostics feature from `apps/admin/src/main.tsx` into a focused feature module, add regression protection for its rendered telemetry and formatting, and preserve all runtime behavior, styling, navigation, data loading, and API ownership.
+
+## Allowed Scope for Next Objective
+
+- `apps/admin/src/main.tsx`
+- New files under `apps/admin/src/features/server/`
+- The smallest relevant test file or a new focused test under `tools/test/` or `tests/browser/`
+- Required project-control and handoff documents at completion
+
+Use the exact scope in `docs/CURRENT_TASK.md` when a shorter summary here omits detail.
+
+## Forbidden Scope for Next Objective
+
+- No change to API calls, route modules, authorization, payloads, or response shapes
+- No change to `AdminApp` remote-data or full-refresh ownership
+- No extraction of another page or shell responsibility
+- No contract consolidation
+- No browser-client, shared-UI, CSS, database, gameplay, content, deployment, or Studio work
+
+## Required Validation for Next Objective
+
+Minimum:
+
+```text
+pnpm install --frozen-lockfile
+pnpm test:repository
+pnpm --filter @neon-wreckers/admin run build
+```
+
+Also run the focused Server extraction regression test directly if it is not already included by `pnpm test:repository`.
+
+Preferred when available:
+
+```text
+pnpm verify
+```
+
+Record every command honestly. An unrun command is not a pass.
+
+## Rollback Method
+
+For `P1-T01`, revert the documentation commits listed above.
+
+For `P1-T02`, the implementation must remain one small, single-purpose extraction commit that can be reverted to restore the inline Server page without affecting another feature.
 
 ## Deferred Ideas
 
-Do not begin these during `P1-T01`:
+Do not begin these during `P1-T02`:
 
+- Another administration feature extraction
+- Administration API decomposition
+- Contract consolidation or endpoint-specific runtime schemas
+- Refresh decomposition
+- Shared styling ownership cleanup
 - Desktop Studio implementation
 - Live content revisions
 - Asset upload registry
 - Shared editable card designer
-- Seasonal and holiday packs
-- New game content or mechanics
-- Visual redesign
+- Seasonal or holiday packs
+- New game content, mechanics, or visual redesign
 
-## New-Chat Prompt
+## New-Chat Check
 
-> Pull the latest `main` branch of `crazytaxzi/Neon_Wreckers_TTV_Overlay`. Read `START_HERE.md` and every file it requires before planning or changing anything. Reconstruct the current state from the repository, confirm task `P1-T01` and its boundaries, then complete only that baseline and administration extraction-map task. Do not begin the actual refactor in the same chat.
+This is a good new-chat boundary. `P1-T01` is complete, documented, and committed. `P1-T02` has a different primary objective and begins the first source refactor, so continuing in this chat would increase the risk of scope drift or stale assumptions.
+
+## Ready-to-Paste New-Chat Prompt
+
+> Pull the latest `main` branch of `crazytaxzi/Neon_Wreckers_TTV_Overlay`. Read `START_HERE.md` and every file it requires, including `docs/phases/P1_T01_ADMIN_BASELINE.md`, before planning or changing anything. Reconstruct the current state from the repository, confirm task `P1-T02` and its boundaries, establish the executable pre-change baseline, then extract only the read-only Server diagnostics feature with focused regression protection. Preserve all runtime behavior, styling, navigation, data loading, and API ownership. Stop after the Server extraction is validated and committed; do not begin another feature extraction in the same chat.
