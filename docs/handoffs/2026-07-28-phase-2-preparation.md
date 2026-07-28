@@ -3,11 +3,12 @@
 **Date:** 2026-07-28  
 **Repository:** `crazytaxzi/Neon_Wreckers_TTV_Overlay`  
 **Branch:** `main`  
-**Starting commit:** `2f7ff674bec41b3f9068aaa98824a9dd5be771a7`  
+**Preparation starting point:** `2f7ff674bec41b3f9068aaa98824a9dd5be771a7`  
+**Main before reconciliation:** `157a0b9ab5631f0f5e82c4e669b947cc75c6db5a`  
 **Current phase:** Phase 1 - Structural Cleanup and Stabilization  
-**Current implementation task:** None authorized after completed `P1-T03-REFUNDS`  
+**Current implementation task:** `P1-T04-PLAYERS`, active according to `docs/CURRENT_TASK.md`  
 **Prepared future phase:** Phase 2 - Runtime Content Foundation  
-**Preparation status:** Documentation complete; implementation not authorized
+**Preparation status:** Documentation prepared; Phase 2 implementation not authorized
 
 ## Purpose
 
@@ -15,26 +16,25 @@ This handoff records advance preparation for Phase 2 without changing the active
 
 Phase 1 remains active until its exit gate is formally completed. The existence of Phase 2 files does not permit an assistant, agent, contributor, or automation to skip remaining Phase 1 work.
 
-## Startup Verification Performed
+## Concurrent Phase 1 State
 
-The preparation work began by reading the current project-control stack and reconstructing the latest repository state.
+A Phase 1 Players extraction advanced on `main` while the Phase 2 documentation was being prepared.
 
-Verified:
+The final repository check found:
 
-- `START_HERE.md` remains the mandatory entry point.
-- `docs/PRIME_DIRECTIVE.md` defines Phase 2 as Runtime Content Foundation.
-- `docs/CHAT_HANDOFF_PROTOCOL.md` requires one objective per chat and a repository-backed handoff.
-- `docs/PROJECT_STATUS.md` still records Phase 1 in progress.
-- `docs/CURRENT_TASK.md` records `P1-T03-REFUNDS` as complete and stopped.
-- `docs/phases/PHASE_01.md` remains active and explicitly excludes Phase 2 implementation.
-- `docs/handoffs/LATEST.md` records no next Phase 1 task as authorized.
-- Latest `main` before this preparation was `2f7ff674bec41b3f9068aaa98824a9dd5be771a7`.
+- `docs/CURRENT_TASK.md` identifies `P1-T04-PLAYERS` as the active Phase 1 task.
+- Players feature source and focused regression work are present on `main`.
+- `docs/PROJECT_STATUS.md` and `docs/handoffs/LATEST.md` still describe the prior Refunds stopping point and may be updated by the active Players work unit.
+- This Phase 2 preparation did not edit `docs/CURRENT_TASK.md`, `docs/PROJECT_STATUS.md`, or `docs/handoffs/LATEST.md`.
+- The active Players work owns its own validation, status reconciliation, closeout, and handoff.
 
-## Source Seams Reverified
+Any future chat must reconstruct the latest state from the repository rather than treating this supplemental handoff as the current Phase 1 task record.
 
-The Phase 2 preparation was grounded in current source rather than only the earlier architecture discussion.
+## Startup and Source Verification Performed
 
-Verified:
+Before writing the Phase 2 documents, the project-control stack and runtime-content seams were inspected from current source.
+
+Verified runtime-content seams:
 
 - `packages/content/src/index.mjs` owns schemas, synchronous `content/base` file reads, validation, deep freezing, cross-reference indexes, and static runtime exports.
 - The worker statically imports crafting, events, expeditions, items, modules, seasons, ships, and wreck definitions.
@@ -43,26 +43,15 @@ Verified:
 - Authored expeditions are merged from active `ContentVersion` rows and expedition records can preserve a definition snapshot.
 - The shared realtime union has no `content.revision.changed` event.
 - The database seed updates station-module names, visual keys, and effects from source content.
-- `content/README.md` already establishes declarative content and forbids arbitrary JavaScript.
+- `content/README.md` establishes declarative content and forbids arbitrary JavaScript.
 
-These findings must be reverified after Phase 1 closes because later Phase 1 work may alter package ownership, API routes, contracts, or tests.
+These findings must be reverified after Phase 1 closes because later Phase 1 work may alter package ownership, API routes, contracts, tests, or operational assumptions.
 
-## Files Created
+## Phase 2 Files Prepared
 
 ### `docs/phases/PHASE_02.md`
 
-Defines:
-
-- Phase state and entry gate
-- Verified current baseline
-- Target ownership boundaries
-- Ordered work units from baseline through closeout
-- Explicit exclusions
-- Content safety
-- Activation and rollback rules
-- Validation requirements
-- Phase exit gate
-- Phase 2 start prompt
+Defines the Phase 2 entry gate, verified baseline, ownership boundaries, ordered tasks, exclusions, activation and rollback rules, validation, exit gate, and start prompt.
 
 Commit:
 
@@ -70,19 +59,7 @@ Commit:
 
 ### `docs/phases/P2_T00_RUNTIME_CONTENT_BASELINE.md`
 
-Defines the first Phase 2 task as a documentation, inspection, validation, and migration-mapping unit.
-
-It explicitly forbids implementation and requires:
-
-- Content domain inventory
-- Static import graph
-- Persistence gap report
-- Durable activity binding matrix
-- Seed and deployment mutation report
-- Realtime and cache invalidation map
-- Migration sequence
-- Test matrix
-- One narrow first implementation task
+Defines the first Phase 2 task as an inspection, validation, migration-map, and test-planning work unit. It explicitly forbids runtime implementation in the same chat.
 
 Commit:
 
@@ -90,23 +67,7 @@ Commit:
 
 ### `docs/phases/PHASE_02_TECHNICAL_BLUEPRINT.md`
 
-Defines the prepared technical target for:
-
-- Canonical whole-content envelope
-- Pure schema package
-- Shared runtime resolver
-- Immutable revision persistence
-- Atomic active pointer
-- Existing `ContentVersion` transition
-- Canonical serialization and digest
-- Redis-assisted invalidation with database recovery
-- Public revision-change event
-- Activation transaction
-- Durable activity binding
-- Seed safety
-- API surface draft
-- Incremental cutover
-- Failure behavior, observability, and tests
+Defines the prepared technical target for the canonical content envelope, pure schemas, shared resolver, immutable revisions, active pointer, transition from `ContentVersion`, digest, cache invalidation, realtime notification, durable activity binding, seed safety, API operations, cutover, failure behavior, observability, and tests.
 
 Commit:
 
@@ -114,18 +75,7 @@ Commit:
 
 ### `docs/decisions/ADR-001_RUNTIME_CONTENT_AUTHORITY.md`
 
-Records the binding Phase 2 architecture decision:
-
-- One immutable whole-revision system
-- One atomic active pointer
-- Database authority after cutover
-- Source content retained for bootstrap and recovery
-- Shared API and worker resolver
-- Publication separated from activation
-- Rollback as prior-revision activation
-- Durable activity revision binding or snapshots
-- No executable uploaded content
-- Safe transition from existing `ContentVersion`
+Records the accepted Phase 2 authority model: immutable whole revisions, one atomic pointer, shared API and worker resolver, database authority after cutover, source bootstrap and recovery, publication separate from activation, rollback by prior-revision activation, durable content binding, and no executable uploaded content.
 
 Commit:
 
@@ -133,34 +83,35 @@ Commit:
 
 ### `docs/sprints/P2_S01_CONTENT_FOUNDATION.md`
 
-Defines the first Phase 2 implementation sprint:
-
-- Pure schema extraction
-- Canonical revision envelope
-- Deterministic source compilation and digest
-- Immutable revision persistence
-- Atomic pointer persistence
-- Explicit source revision bootstrap
-
-It forbids runtime cutover, activation, rollback, invalidation, seed redesign, and Studio work during Sprint 1.
+Defines the first Phase 2 implementation sprint: pure schema extraction, canonical envelope, deterministic source compilation and digest, immutable revision persistence, active pointer persistence, and explicit source revision bootstrap.
 
 Commit:
 
 - `bce02546f591bf6efce3639db1dd93789574b542` - `docs: prepare first Phase 2 sprint`
 
+### This supplemental handoff
+
+Records preparation scope and keeps the active Phase 1 task authoritative.
+
+Initial commit:
+
+- `157a0b9ab5631f0f5e82c4e669b947cc75c6db5a` - `docs: record Phase 2 preparation handoff`
+
 ## Behavior Changed
 
-No application, API, worker, database, seed, content, contracts, gameplay, UI, deployment, or runtime behavior changed.
+No Phase 2 application, API, worker, database, seed, content, contract, gameplay, UI, deployment, or runtime behavior changed.
 
-Only future-phase documentation was added.
+The preparation work added future-phase documentation only.
+
+The Players files present in the overall repository diff belong to the separate active `P1-T04-PLAYERS` work unit, not to Phase 2 preparation.
 
 ## Behavior Deliberately Preserved
 
 - Phase 1 remains active.
-- `docs/CURRENT_TASK.md` remains stopped at completed `P1-T03-REFUNDS`.
-- `docs/handoffs/LATEST.md` remains the current Phase 1 handoff.
-- No next implementation task was authorized.
-- No source import moved.
+- `P1-T04-PLAYERS` remains governed by its current task file.
+- This work did not change the Players source, test, scope, or validation requirements.
+- `docs/handoffs/LATEST.md` remains the active Phase 1 handoff until the Players work updates it.
+- No content source import moved.
 - No schema moved.
 - No Prisma migration was created.
 - No content revision was created or activated.
@@ -171,40 +122,37 @@ Only future-phase documentation was added.
 
 Documentation and repository-state validation only:
 
-- Confirmed Phase 2 files did not previously exist at the selected paths.
-- Confirmed current content loader, worker imports, Prisma models, expedition override path, realtime contract, and seed behavior from `main` source.
-- Confirmed each new file was accepted on `main` by GitHub.
+- Confirmed the selected Phase 2 file paths did not already exist.
+- Confirmed the current content loader, worker imports, Prisma models, expedition override path, realtime contract, and seed behavior from repository source.
+- Confirmed every new Phase 2 document was accepted on `main`.
+- Compared the starting repository state with final `main` and identified the concurrent Players work rather than incorrectly claiming it belonged to Phase 2.
+- Re-read `docs/CURRENT_TASK.md` and corrected this handoff to identify `P1-T04-PLAYERS` as active.
 
-Application tests and builds were not run because no application or configuration behavior changed.
+Application tests and builds were not run for the Phase 2 preparation because the Phase 2 commits changed documentation only.
 
-This is not a fresh executable application baseline. `P2-T00` must run and record the actual post-Phase-1 baseline.
+This is not a fresh executable baseline. The active Players task owns its own tests, and `P2-T00` must run the actual post-Phase-1 baseline later.
 
 ## Known Risks
 
-- Phase 1 may change the admin API, shared contracts, package boundaries, tests, or documentation before Phase 2 starts.
-- Deployed `ContentVersion` rows and authored expeditions must be inventoried before any migration.
-- The prepared data-model names are conceptual and must be checked against the post-Phase-1 Prisma schema.
-- A new assistant may mistake prepared documents for an active phase unless it follows `START_HERE.md` and the activation gates.
-- Direct documentation commits to `main` create several small commits; future application work should follow the repository branch and review policy.
+- Phase 1 can change admin API boundaries, shared contracts, packages, tests, and docs before Phase 2 starts.
+- Deployed `ContentVersion` rows and authored expeditions must be inventoried before migration.
+- Prepared model and package names remain conceptual until `P2-T00` verifies the final Phase 1 repository.
+- Concurrent work can make supplemental handoffs stale quickly; `START_HERE.md`, `docs/CURRENT_TASK.md`, actual source, and recent commits remain authoritative.
+- Direct documentation commits to `main` created several small commits. Application work should follow the repository's branch and review policy.
 
 ## Rollback Method
 
-These preparation files can be removed by reverting their individual documentation commits in reverse order.
+Revert the Phase 2 documentation commits in reverse order when the preparation must be removed.
 
-No database, content, application, worker, or deployment rollback is required.
+No database, content, API, worker, gameplay, or deployment rollback is required.
+
+Do not revert or modify the Players work as part of Phase 2 documentation rollback.
 
 ## Current Next Objective
 
-This handoff does not choose the next Phase 1 implementation objective.
+Continue or safely close only the active `P1-T04-PLAYERS` work according to `docs/CURRENT_TASK.md` and the actual latest repository state.
 
-A future Phase 1 chat must:
-
-1. Pull latest `main`.
-2. Follow `START_HERE.md`.
-3. Verify the completed Refunds handoff and the new documentation-only commits.
-4. Choose exactly one remaining Phase 1 objective.
-5. Replace `docs/CURRENT_TASK.md` before implementation.
-6. Ignore the dormant Phase 2 implementation plan until Phase 1 closes.
+Do not activate `P2-T00` while Phase 1 remains incomplete.
 
 ## Future Phase 2 Start Prompt
 
