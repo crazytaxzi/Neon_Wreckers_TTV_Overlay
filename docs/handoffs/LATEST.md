@@ -134,12 +134,15 @@ Visual artifact `8693597195`, digest `sha256:b9bdd3dec9c1443c6e0be9bd4c47ee6a6ce
 
 Tested commit: `dad7ed15f7ff309df3860a679c947423eff71bba`
 
-- CI run `30373289045`: success
-- Admin and Overlay Visual Proof run `30373289202`: success
-- CodeQL run `30373289713`: success
-- UI Revamp Verify run `30373289886`: success
-- Browser integration tests run `30373289646`: success
+- CI run `30373289045`, Verify job `90322413899`: success
+- Admin and Overlay Visual Proof run `30373289202`, screenshots job `90322413197`: success
+- CodeQL run `30373289713`, JavaScript/TypeScript job `90322414693`: success
+- UI Revamp Verify run `30373289886`, verify job `90322415438`: success
+- Browser integration tests run `30373289646`, Playwright job `90322414383`: success
 - CI and security gates run `30373290124`: success
+  - Dependency review job `90322486689`
+  - Repository verification and production-image job `90322486731`
+  - Secret scan job `90322486776`
 
 The local container could not resolve GitHub or the npm registry, so the executable baseline and final validation ran through the repository's authenticated GitHub Actions environment.
 
@@ -168,6 +171,7 @@ Supporting post-merge records were committed before this final handoff closeout:
 - `e21dbb09e85e9ccb3426d57ba2b64be00fc4fdd3` - current-task merge record
 - `1abd6fbfa56c470cbabd93ca32eb280cda335f21` - project-status closeout
 - `60b664ad4de72dd51e0b88fe4c156c61bfb65443` - dated handoff closeout
+- `a084c08c9b18a096098d6f46df5b118fad9a7965` - preliminary latest-handoff closeout
 
 This `docs/handoffs/LATEST.md` update is the final documented `main` closeout commit. Its exact commit hash is the repository head and is reported in the completed work response.
 
