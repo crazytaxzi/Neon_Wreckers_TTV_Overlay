@@ -80,6 +80,59 @@ const adminData = {
     ],
     cloudSafeZone: { machine: 'e2-standard-4', eligibleRegions: ['us-west1', 'us-central1'], vmHoursPerMonth: '730', standardDiskGbMonth: 80, outboundGbMonth: 20, estimatedOverage: { vmUsdPerHour: 0.134, standardDiskUsdPerGbMonth: 0.04, premiumEgressUsdPerGbFrom: 0.12 }, disclaimer: 'Estimate only. Billing remains provider authoritative.' }
   },
+  '/api/v1/admin/balance-telemetry': {
+    windowDays: 30,
+    expeditions: 148,
+    averageCompletionMinutes: 54,
+    creditsGenerated: 384250,
+    fleetUtilization: 0.63,
+    failureRate: 0.18,
+    routes: { safe: 48, balanced: 67, bold: 33 },
+    shipsByClass: [
+      { classSlug: 'interceptor', ships: 42, averageMasteryXp: 1840 },
+      { classSlug: 'salvager', ships: 37, averageMasteryXp: 2310 },
+      { classSlug: 'hauler', ships: 29, averageMasteryXp: 1650 }
+    ]
+  },
+  '/api/v1/admin/live-ops': {
+    generatedAt: '2026-07-21T22:30:00Z',
+    economy: {
+      players: 2847,
+      totalCredits: 18482500,
+      averageCredits: 6492,
+      averageLevel: 28.4,
+      seasonalTokens: 91340,
+      marketTransactions30d: 4821,
+      marketCredits30d: 7264000,
+      marketUnits30d: 11870
+    },
+    warnings: [
+      { severity: 'info', code: 'LOW_MARKET_VELOCITY', message: 'Market velocity is below the thirty-day station target.' }
+    ],
+    schedule: [
+      { id: 'cfg-5', slug: 'station-zero-weekend', version: 3, lifecycle: 'scheduled', scheduledAt: '2026-07-25T18:00:00Z', expiresAt: '2026-07-28T06:00:00Z' },
+      { id: 'cfg-4', slug: 'station-zero-live', version: 14, lifecycle: 'active', scheduledAt: null, expiresAt: null }
+    ],
+    events: [
+      { id: 'event-1', slug: 'reactor-instability', status: 'active', startsAt: '2026-07-21T22:20:00Z', endsAt: null }
+    ],
+    releaseEvidence: [
+      { id: 'audit-1', action: 'config.activate', target: 'station-zero-live@14', requestId: 'preview-request-14', createdAt: '2026-07-21T21:10:00Z' }
+    ]
+  },
+  '/api/v1/admin/expedition-creator': {
+    items: [
+      { slug: 'credits', name: 'Credits', rarity: 'common' },
+      { slug: 'alloy-plating', name: 'Alloy Plating', rarity: 'uncommon' },
+      { slug: 'quantum-relay', name: 'Quantum Relay', rarity: 'rare' }
+    ],
+    builtIn: [
+      { slug: 'grid-relay-recovery', name: 'Grid Relay Recovery', description: 'Recover an intact relay from a volatile relic field.', risk: 'high', fuelCost: 24, minCrew: 3, lootPool: ['credits', 'alloy-plating', 'quantum-relay'], lootRolls: 3, durationMinutes: [45, 75] }
+    ],
+    versions: [
+      { id: 'expedition-version-1', slug: 'expedition.grid-relay-recovery', version: 2, lifecycle: 'active', content: { slug: 'grid-relay-recovery', name: 'Grid Relay Recovery', description: 'Recover an intact relay from a volatile relic field.', risk: 'high', fuelCost: 24, minCrew: 3, lootPool: ['credits', 'alloy-plating', 'quantum-relay'], lootRolls: 3, durationMinutes: [45, 75] }, scheduledAt: null, expiresAt: null, createdAt: '2026-07-20T18:00:00Z' }
+    ]
+  },
   '/api/v1/admin/players': [
     { id: 'p1', displayName: 'WRECKER_77', twitchLogin: 'wrecker77', credits: 8450, xp: 12840, level: 47, reputation: 2890, bannedUntil: null, cooldowns: [{ id: 'cd1', actionKey: 'salvage.scan', expiresAt: '2026-07-21T22:38:44Z' }] },
     { id: 'p2', displayName: 'NOVA_9', twitchLogin: 'nova9', credits: 5220, xp: 9400, level: 31, reputation: 1880, bannedUntil: null, cooldowns: [] },
