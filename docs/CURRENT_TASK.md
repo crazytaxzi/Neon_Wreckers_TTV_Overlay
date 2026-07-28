@@ -1,173 +1,335 @@
 # Neon Wreckers Current Task
 
-**Task ID:** `P1-T03`  
+**Task ID:** `P1-T03-REFUNDS`  
 **Phase:** Phase 1 - Structural Cleanup and Stabilization  
-**Status:** Complete, validated, documented, and merged  
+**Status:** Active; executable pre-change baseline pending  
 **Started:** 2026-07-28  
-**Completed:** 2026-07-28  
-**Starting main commit:** `78646d84e8b47b73dd3cf4cf3cce61dfc02e6cbd`  
+**Starting main commit:** `de35951935551a6b1244734ff39003bcf08e2a1c`  
 **Phase authority:** `docs/phases/PHASE_01.md`  
 **Baseline authority:** `docs/phases/P1_T01_ADMIN_BASELINE.md`
 
-Only one task may be active in this file at a time. This completed record remains until a new development chat defines exactly one next objective.
+Only one task may be active in this file at a time.
 
 ## Objective
 
-Extract only the existing Timers administration page, Timers-specific presentation, browser confirmation, and force-resolve command from `apps/admin/src/main.tsx` into a focused module under `apps/admin/src/features/timers/` without changing behavior.
+Extract only the existing Refunds administration page, Refunds-specific presentation, refund-reason state, browser confirmation, and refund command from `apps/admin/src/main.tsx` into a focused module under `apps/admin/src/features/refunds/` without changing behavior.
 
-## Completed Architecture
+## Reason
 
-- Added `apps/admin/src/features/timers/timers-page.tsx`.
-- Moved only the Timers page, timer presentation, confirmation, and force-resolve command into that module.
-- Kept authentication, navigation, page composition, remote loading, and cross-feature orchestration in `AdminApp`.
-- Kept the ten-resource `Promise.all` refresh byte-for-byte intact.
-- Continued receiving the existing timer records through props from shell-owned `AdminOverview` state.
-- Continued receiving the full-refresh callback and toast function through props.
-- Continued using the production `requestApi` browser client directly.
-- Made no Server feature, API, database, browser-client, CSS, shared UI, gameplay, content, worker, deployment, or second-feature change.
+Refunds is the next narrow administration frontend slice in the verified Phase 1 extraction order. It owns one feature-specific resource, one local reason value, one confirmation, and one audited mutation while still depending on shell-owned transaction loading, full refresh, toast delivery, navigation, authentication, and page composition.
 
-## Preserved Behavior
+## Authorized Files or Directories
 
-### Data and rendering
+- `apps/admin/src/main.tsx`
+- New focused files under `apps/admin/src/features/refunds/`
+- One focused regression test under `tools/test/` or the smallest directly relevant browser-test location
+- `docs/CURRENT_TASK.md`
+- `docs/PROJECT_STATUS.md`
+- `docs/handoffs/LATEST.md`
+- A dated Refunds handoff record under `docs/handoffs/` when useful
 
-- Source data remains `overview?.timers ?? []` from the existing `/api/v1/admin/overview` response.
-- Timer records retain `id`, `name`, `playerName`, and `resolvesAt`.
-- The exact heading, description, icon, table columns, bold player label, mission label, locale date rendering, right-aligned warning control, `Resolve now` button, empty state, and informational notice remain unchanged.
+## Explicitly Forbidden Changes
 
-### Confirmation and command
+- Do not extract Players, Commands, Integrations, Expedition Creator, Config, Operations, Server, Timers, or another administration feature.
+- Do not change the Server or Timers features.
+- Do not change, decompose, reorder, or partially recover the ten-resource administration refresh.
+- Do not move authentication, navigation, page composition, transaction loading, general shell state, remote resource loading, or cross-feature orchestration out of `AdminApp`.
+- Do not change production API routes, methods, payloads, response shapes, authorization, transaction eligibility, validation, audit behavior, StreamElements behavior, database behavior, or browser-client behavior.
+- Do not change point balances, refund rules, transaction states, gameplay, balance, rewards, content, timing calculations, or worker behavior.
+- Do not change CSS, shared UI, graphics, visual design, navigation, accessibility behavior, or screenshot expectations.
+- Do not change deployment architecture, Docker, nginx, Vite configuration, or unrelated workflows.
+- Do not add an endpoint-specific runtime schema, duplicate request layer, compatibility wrapper, or contract-consolidation change.
+- Do not hide unrelated cleanup inside this task.
+- Do not begin Players extraction, refresh decomposition, administration API decomposition, contract consolidation, or later Phase 1 work in this chat.
 
-- Confirmation copy remains `Resolve this expedition immediately?`.
-- Cancelling returns without a request, toast, or refresh.
-- Confirming sends the exact bodyless request:
+## Expected Behavior Change
+
+None. This is an ownership extraction only.
+
+## Required Architecture
+
+- Add a focused Refunds feature module under `apps/admin/src/features/refunds/`.
+- Move only the Refunds page, Refunds-specific presentation, refund-reason state, confirmation flow, and refund command into that module.
+- Keep authentication, navigation, page composition, remote resource loading, and cross-feature orchestration in `AdminApp`.
+- Continue receiving the existing shell-owned loyalty transactions through props.
+- Continue receiving the existing full-refresh callback and toast function through props.
+- Continue using `requestApi` from `@neon-wreckers/browser-client` directly.
+- Preserve the single ten-resource `Promise.all` refresh exactly.
+- Preserve the full refresh after a successful refund.
+
+## Pre-Change Refunds Contract
+
+### Shell ownership and transaction loading
+
+`AdminApp` owns `transactions` as `LoyaltyTransaction[]` state and loads it through the existing seventh request in the ten-resource refresh:
 
 ```text
-POST /api/v1/expeditions/:id/resolve-now
+GET /api/v1/admin/transactions
 ```
 
-- Request options remain exactly `{ method: "POST" }`.
-- Success toast remains `{ title: "Expedition timer resolved", tone: "success" }`.
-- Success invokes the existing full refresh exactly once.
-- Failure toast remains `{ title: "Timer command failed", message: errorMessage(error), tone: "danger" }`.
-- Failure emits no false success and performs no refresh.
+The request remains inside the shell-owned `Promise.all`. The returned records are stored with `setTransactions(transactionsData)` and passed into the Refunds page with `refresh` and `pushToast`.
 
-### Shell and server boundaries
-
-- Navigation remains `{ id: "timers", label: "Timers", icon: "events" }`, sixth after Server and before Players.
-- The default administration tab remains `operations`.
-- The existing ten-resource refresh remains one shell-owned `Promise.all`.
-- The authenticated visual-proof fixture still explicitly covers all ten refresh endpoints and populated Timers data.
-- The exact API route remains owned by `apps/api/src/routes/expeditions.ts` and still invokes `requireAdmin(context.prisma, request)` before server-side resolution.
-- The API route remains body-independent.
-
-## Regression Protection
-
-Added `tools/test/admin-timers-feature.test.mjs` with six focused tests proving:
-
-- `AdminApp` imports and composes the focused Timers feature.
-- The extracted feature does not own authentication, navigation, overview loading, or unrelated API requests.
-- Active records, labels, columns, locale date rendering, button text, empty state, notice copy, and visual classes remain present.
-- Confirmed force resolution sends the exact bodyless POST, emits the exact success toast, and refreshes exactly once.
-- Cancelled confirmation sends no request, toast, or refresh.
-- Failed force resolution emits only the exact danger toast and does not refresh.
-- Navigation order, default tab, ten-resource refresh, visual-proof endpoint coverage, Timers screenshot capture, and API authorization remain intact.
-
-## Commit Record
-
-- Starting `main`: `78646d84e8b47b73dd3cf4cf3cce61dfc02e6cbd`
-- Task definition: `cca0abea2c75b9f30352bd1a62536a9e02126641`
-- Timers feature module: `fcbc53e3af06ea0de123ab6e66816c570a0d4f3c`
-- Timers extraction and shell composition: `6eeb12e81b8a306fa6ba35ef5004116bd2c84b2d`
-- Focused regression test: `ca1a3f9470d0fcfe35024fdae2bfa1de1e9a97f1`
-- Validated source head: `ca1a3f9470d0fcfe35024fdae2bfa1de1e9a97f1`
-- Final reviewed branch head: `dad7ed15f7ff309df3860a679c947423eff71bba`
-- Final merge commit: `ecdc63024a7d3380988d43b91435f2b614d3efb1`
-- Final documented `main` closeout commit: the final `docs/handoffs/LATEST.md` closeout commit created after this record
-
-## Executable Pre-Change Baseline
-
-The task-definition commit changed project-control documentation only, leaving application source identical to starting `main`.
-
-Tested commit: `cca0abea2c75b9f30352bd1a62536a9e02126641`
-
-- CI run `30371064822`
-- Verify job `90314741971`
-- Result: success
-- Frozen dependency installation: success
-- Complete `pnpm verify`: success
-
-The complete gate included:
+The handwritten browser record shape is:
 
 ```text
+id: string
+amount: number
+actionSlug: string
+status: string
+createdAt: string
+error: string | null
+user.displayName: string
+user.twitchLogin: string
+```
+
+The production GET route requires administration authorization, includes the related user display name and Twitch login, orders transactions by `createdAt` descending, and returns at most 100 records.
+
+### Refund reason state
+
+The Refunds page owns one local string state value.
+
+Exact default:
+
+```text
+Operator-approved point refund
+```
+
+The field label remains:
+
+```text
+Required refund reason
+```
+
+The input remains controlled by that state without trimming or normalization in the browser before submission.
+
+### Eligibility and disabled-state behavior
+
+The Refund button is enabled only when both conditions are true:
+
+1. `row.status` is exactly `committed` or `ambiguous`.
+2. `reason.length` is at least `3` in the browser.
+
+The exact disabled expression remains behaviorally equivalent to:
+
+```text
+!["committed", "ambiguous"].includes(row.status) || reason.length < 3
+```
+
+All other transaction states remain ineligible in the administration presentation.
+
+### Confirmation and cancellation
+
+Exact confirmation copy:
+
+```text
+Refund ${transaction.amount} points to ${transaction.user.displayName}?
+```
+
+Rejecting confirmation returns immediately. Cancellation sends no request, emits no toast, and invokes no refresh.
+
+### Refund request and serialization
+
+Exact route and method:
+
+```text
+POST /api/v1/admin/transactions/:id/refund
+```
+
+Exact request options remain behaviorally identical to:
+
+```text
+{
+  method: "POST",
+  body: JSON.stringify({ reason })
+}
+```
+
+`requestApi` continues to pass the serialized JSON string through unchanged, add `content-type: application/json` when a body is present, include browser credentials, validate only the shared API envelope, and use no endpoint-specific runtime schema.
+
+### Success behavior
+
+After a successful refund request, the page emits exactly:
+
+```text
+title: Points refunded
+message: ${transaction.amount} points returned to ${transaction.user.displayName}.
+tone: success
+```
+
+It then awaits the supplied full refresh exactly once.
+
+### Failure behavior
+
+A failed refund emits exactly:
+
+```text
+title: Refund failed
+message: errorMessage(error)
+tone: danger
+```
+
+Failure emits no false success and performs no refresh.
+
+### Populated and empty rendering
+
+The Refunds page currently renders:
+
+- Root class: `admin-stack`
+- Eyebrow: `FINANCIAL OPERATIONS`
+- Title: `Point Transactions & Refunds`
+- Description: `Refunds credit StreamElements first and update the local ledger only after confirmation.`
+- Icon: `credits`
+- Required reason field before the transaction panel
+- A `DataGrid` using transaction `id` as the row key
+- Empty state: `No point transactions.`
+
+Exact columns and presentation:
+
+1. `Player` renders `row.user.displayName` in `<strong>`.
+2. `Command` renders `row.actionSlug`.
+3. `Points` renders `row.amount`, right aligned.
+4. `Status` renders the raw status inside a `Badge`.
+5. `Created` renders `new Date(row.createdAt).toLocaleString()`.
+6. `Control` is right aligned and renders a small warning `Refund` button.
+
+Status tones remain:
+
+- `committed` -> `success`
+- `ambiguous` -> `warning`
+- every other state -> `neutral`
+
+### Navigation and visual proof
+
+Navigation remains exactly:
+
+```text
+{ id: "transactions", label: "Refunds", icon: "credits" }
+```
+
+It remains after Players and before Config. The default administration tab remains `operations`.
+
+The authenticated visual-proof fixture continues to provide `/api/v1/admin/transactions` explicitly as part of all ten refresh endpoints. It currently supplies populated settled, pending, and failed records. The existing desktop Refunds capture remains:
+
+```text
+proof/admin/desktop/transactions.png
+```
+
+No screenshot name, viewport, navigation label, fixture interception behavior, CSS, or visual expectation may change.
+
+## Production Refund API Contract
+
+The existing route remains in `apps/api/src/routes/admin.ts` and must not be edited.
+
+### Authorization and input validation
+
+- Calls `requireAdmin(context.prisma, request)` before performing the refund.
+- Reads the path transaction identifier as a string.
+- Parses the request body with a Zod object containing only `reason`.
+- Server validation trims the reason and requires a minimum length of `3` and maximum length of `300`.
+- Loads the loyalty transaction with its full related user through `findUniqueOrThrow`.
+- Rejects every status except `committed` and `ambiguous` with `NOT_REFUNDABLE`.
+
+### StreamElements selection and validation
+
+- Reads the original `requestJson` as a record.
+- Resolves the username from `requestJson.username`, then the user Twitch login, then the display name.
+- Requires an active StreamElements connection.
+- Resolves the original channel from `requestJson.channelId`, then `transaction.broadcasterId`.
+- Rejects a channel mismatch before issuing the credit.
+
+### StreamElements-first ordering
+
+The route calls `context.loyaltyProvider.credit` before any local ledger update or refund audit write.
+
+Exact credit inputs remain:
+
+```text
+channelId: selected connection channel
+username: resolved original username
+amount: transaction.amount
+reason: server-trimmed reason
+idempotencyKey: admin-refund:${transaction.id}
+priorReference: transaction.externalReference when present
+```
+
+The StreamElements provider sends a positive absolute point amount through its existing PUT request and includes `reason`, `idempotencyKey`, and `priorReference` in its JSON body.
+
+### Local persistence and audit
+
+Only after the external credit succeeds, one Prisma transaction:
+
+1. Updates the loyalty transaction status to `refunded`.
+2. Replaces `responseJson` with `adminRefundReference`, `reason`, and `channelId`.
+3. Creates an audit record with action `loyalty.refund`, the transaction identifier as target, and the refunded amount, reason, external reference, and channel ID.
+
+The route then returns the updated transaction in the normal API success envelope.
+
+### Existing failure semantics
+
+- Authorization, body validation, missing transaction, ineligible status, missing StreamElements connection, channel mismatch, or provider-credit failure occur before local refund persistence and audit creation.
+- The external StreamElements credit deliberately occurs before the local Prisma transaction. If the external credit succeeds but the later local transaction fails, that failure propagates after the external credit. This extraction must not reorder, wrap, compensate, or otherwise alter that existing behavior.
+
+## Regression Protection Required
+
+The focused regression must prove at minimum:
+
+- `AdminApp` imports and composes the focused Refunds feature.
+- The extracted feature does not own authentication, navigation, transaction loading, or unrelated API requests.
+- Transactions render using the existing data shape.
+- The existing empty state remains present.
+- The default refund reason remains `Operator-approved point refund`.
+- Eligible `committed` and `ambiguous` records and ineligible records retain the same button behavior.
+- The browser minimum reason-length requirement remains `3`.
+- Confirming sends the exact POST route and exact `JSON.stringify({ reason })` payload.
+- Cancelling sends no request, toast, or refresh.
+- Success emits the exact existing toast and invokes the full refresh exactly once.
+- Failure emits the exact existing danger toast and no false success or refresh.
+- Existing labels, columns, date rendering, status tones, button text, confirmation copy, root class, and UI component variants remain unchanged.
+- The single ten-resource administration refresh and endpoint order remain intact.
+- The authenticated visual-proof fixture still explicitly covers all ten refresh endpoints and the desktop Refunds capture.
+- The production route still preserves administration authorization, reason validation, eligibility validation, StreamElements account checks, StreamElements-first ordering, idempotency key, prior reference, local ledger update, audit behavior, and failure ordering.
+
+## Validation Commands
+
+Establish the executable pre-change baseline before application source edits and record the tested commit, workflow run IDs, job IDs, and exact results.
+
+Minimum baseline and final checks:
+
+```text
+pnpm install --frozen-lockfile
 pnpm test:repository
 pnpm --filter @neon-wreckers/admin run build
 pnpm --filter @neon-wreckers/overlay run build
 ```
 
-## Final Source Validation
+Also run:
 
-Tested commit: `ca1a3f9470d0fcfe35024fdae2bfa1de1e9a97f1`
+- The focused Refunds regression test
+- The authenticated Admin and Overlay Visual Proof workflow or its exact local capture equivalent
+- `pnpm verify` when the environment supports it
 
-### Complete repository verification
-
-- CI run `30372552445`
-- Verify job `90319894219`
-- Result: success
-- Frozen dependency installation: success
-- Complete `pnpm verify`: success
-- Focused Timers regression: success as part of `pnpm test:repository`
-- Administration production build: success
-- Overlay production build: success
-
-### Authenticated Admin and Overlay Visual Proof
-
-- Workflow run `30372551080`
-- Screenshots job `90319889665`
-- Result: success
-- Frozen dependency installation: success
-- Production surface builds: success
-- Chromium installation: success
-- Built preview startup: success
-- Exact capture command `node tools/visual-proof/capture-admin-overlay.mjs`: success
-- Artifact upload: success
-- Artifact `8693597195`, digest `sha256:b9bdd3dec9c1443c6e0be9bd4c47ee6a6ceae232a33748719168c639465dfcec`
-- The artifact contains the existing 26 captures, including `proof/admin/desktop/timers.png`.
-
-### Additional final-source gates
-
-- CodeQL run `30372552587`, job `90319894144`: success
-- UI Revamp Verify run `30372551099`, job `90319888544`: success
-- Browser integration tests run `30372551084`: success
-- CI and security gates run `30372551055`: success
-
-## Final Reviewed Branch Validation
-
-Tested commit: `dad7ed15f7ff309df3860a679c947423eff71bba`
-
-- CI run `30373289045`: success
-- Admin and Overlay Visual Proof run `30373289202`: success
-- CodeQL run `30373289713`: success
-- UI Revamp Verify run `30373289886`: success
-- Browser integration tests run `30373289646`: success
-- CI and security gates run `30373290124`: success
-
-## Final Diff Boundary
-
-The reviewed pull request contains exactly:
-
-- `apps/admin/src/main.tsx`
-- `apps/admin/src/features/timers/timers-page.tsx`
-- `tools/test/admin-timers-feature.test.mjs`
-- `docs/CURRENT_TASK.md`
-- `docs/PROJECT_STATUS.md`
-- `docs/handoffs/LATEST.md`
-- `docs/handoffs/2026-07-28-p1-t03-timers.md`
-
-No Refunds, Players, Commands, Integrations, Expedition Creator, Config, Operations, Server, refresh decomposition, API, CSS, shared UI, gameplay, content, worker, deployment, Docker, nginx, Vite, or workflow change is included.
+When validation is remote, record the workflow run IDs, job IDs, tested commit, and exact result.
 
 ## Rollback Method
 
-Revert merge commit `ecdc63024a7d3380988d43b91435f2b614d3efb1`. This restores the inline Timers page and removes the focused Timers module and regression test without an API, database, content, gameplay, or deployment rollback.
+Before merge, reset or delete the task branch. After merge, revert the final Refunds extraction merge commit. No API, database, content, gameplay, or deployment migration is authorized or required.
 
-## Stopping Point
+## Completion Evidence Required
 
-`P1-T03` is complete, validated, documented, and merged. Stop here. Do not begin Refunds, Players, refresh decomposition, or another Phase 1 task in this chat.
+Record:
+
+- Starting `main` commit
+- Task-definition commit
+- Refunds feature-module commit
+- Refunds extraction and shell-composition commit
+- Focused regression-test commit
+- Executable pre-change baseline runs and jobs
+- Validated source head and validation runs and jobs
+- Final reviewed branch head and validation runs and jobs
+- Final diff boundary
+- Final merge commit
+- Final documented `main` closeout commit
+
+## Expected Stopping Point
+
+Stop after the Refunds extraction is validated, documented, merged, and all final commit hashes are recorded. Do not begin Players, refresh decomposition, contract consolidation, administration API decomposition, or any other Phase 1 task in this chat.
