@@ -2,18 +2,17 @@
 
 **Handoff date:** 2026-07-28  
 **Repository:** `crazytaxzi/Neon_Wreckers_TTV_Overlay`  
-**Branch:** `agent/p1-visual-proof-fixture`  
+**Branch:** `main`  
 **Starting main commit:** `df85edfdf5fed309c8571d7d63ba9610673ce109`  
 **Task-definition commit:** `3bf02eb3735f82da846381bd8ff3de168537bcae`  
 **Fixture repair commit:** `c8740666b77cb1dc0860d1f29f17a6d3cc915853`  
 **Focused test commit:** `a26e5f0a10dbf848a1dc1a46b459e0bf2d5c0e89`  
-**Validated source head:** `a26e5f0a10dbf848a1dc1a46b459e0bf2d5c0e89`  
-**Ending work-state commit:** Pending final project-control commit  
-**Final merge commit:** Pending squash merge; record immediately after merge  
+**Ending work-state commit:** `a052b4d8f4023ce772183a6742f4da09005678d4`  
+**Final merge commit:** `e206d43eb97bdf5d5d4cc366ef9faa9ed8fa7c79`  
 **Current phase:** Phase 1 - Structural Cleanup and Stabilization  
 **Completed task:** `P1-T02-FIX1` - Authenticated visual-proof fixture repair  
 **Next task:** Not yet authorized  
-**Handoff status:** Complete and validated; merge and post-merge hash record pending
+**Handoff status:** Complete, validated, documented, and committed; new development chat required
 
 This is the current handoff. The previous Server extraction handoff is preserved at `docs/handoffs/2026-07-28-p1-t02-server-diagnostics.md`.
 
@@ -50,6 +49,7 @@ Do not rely on the previous conversation as the source of truth.
 - Preserved the real production-built admin and overlay capture surfaces.
 - Changed no workflow because the existing workflow was already correct once the fixture was complete.
 - Extracted no Timers or other administration feature.
+- Squash-merged pull request 36 into `main` as `e206d43eb97bdf5d5d4cc366ef9faa9ed8fa7c79`.
 
 ## Files Changed
 
@@ -82,15 +82,7 @@ Only the authenticated visual-proof environment now fulfills three administratio
 
 Admin and Overlay Visual Proof run `30353056639` was rerun unchanged before fixture editing.
 
-Rerun job `90267084937` passed:
-
-- Frozen dependency installation
-- Production contracts, UI, admin, and overlay builds
-- Existing UI graphics regression
-- Workspace-owned browser installation
-- Built preview startup
-
-It then failed during authenticated capture. Preview diagnostics showed all three missing requests reaching the inactive `127.0.0.1:8787` proxy.
+Rerun job `90267084937` passed frozen dependency installation, all production surface builds, the existing UI graphics regression, browser installation, and built preview startup. It then failed during authenticated capture. Preview diagnostics showed all three missing requests reaching the inactive `127.0.0.1:8787` proxy.
 
 ### Focused regression
 
@@ -100,9 +92,9 @@ node --test tools/test/admin-visual-proof-fixture.test.mjs
 
 Result: 2 passed, 0 failed against the reconstructed source checkout.
 
-### Complete repository verification
+### Final complete repository verification
 
-CI run `30357665819`, job `90269540183`, passed against validated source head `a26e5f0a10dbf848a1dc1a46b459e0bf2d5c0e89`.
+CI run `30358114522`, job `90271043749`, passed against ending work-state commit `a052b4d8f4023ce772183a6742f4da09005678d4`.
 
 Executed:
 
@@ -111,11 +103,16 @@ pnpm install --frozen-lockfile
 pnpm verify
 ```
 
-The complete gate includes `pnpm test:repository`, the focused fixture regression, and the full production build pipeline including the administration and overlay builds.
+The complete gate includes `pnpm test:repository`, the focused fixture regression, and the full production build pipeline including:
 
-### Exact Admin and Overlay Visual Proof
+```text
+pnpm --filter @neon-wreckers/admin run build
+pnpm --filter @neon-wreckers/overlay run build
+```
 
-Run `30357668480`, job `90269548106`, passed against the same source head.
+### Final exact Admin and Overlay Visual Proof
+
+Run `30358111486`, job `90270975267`, passed against the same ending work-state commit.
 
 Successful steps included:
 
@@ -129,7 +126,7 @@ Successful steps included:
 - Exact local capture equivalent: `node tools/visual-proof/capture-admin-overlay.mjs`
 - Visual artifact upload
 
-Artifact `8687505083` contains all 26 expected captures:
+Artifact `8687679551` contains all 26 expected captures:
 
 - Ten desktop administration captures
 - Six tablet administration captures
@@ -138,9 +135,14 @@ Artifact `8687505083` contains all 26 expected captures:
 
 No diagnostics artifact was required.
 
+### Additional final-head gates
+
+- CodeQL run `30358111669`: passed
+- CI and security gates run `30358112156`: passed
+
 ## Final Diff Review
 
-The reviewed source diff contains only the three fixture entries, one focused regression test, and required project-control records.
+The reviewed merge diff contains only the three fixture entries, one focused regression test, and required project-control records.
 
 There is no workflow, administration application, Server, Timers, API, database, CSS, shared UI, browser-client, gameplay, content, overlay runtime, deployment, or screenshot-layout change.
 
@@ -152,7 +154,7 @@ There is no workflow, administration application, Server, Timers, API, database,
 
 ## Rollback Method
 
-Revert the final squash merge commit after it is recorded in this file. The task has no production application or runtime migration.
+Revert squash merge commit `e206d43eb97bdf5d5d4cc366ef9faa9ed8fa7c79`. The task has no production application or runtime migration.
 
 ## Deferred Work
 
@@ -162,8 +164,8 @@ Revert the final squash merge commit after it is recorded in this file. The task
 
 ## New-Chat Check
 
-This is a good new-chat boundary after merge. The fixture repair is complete, validated, documented, and isolated. Beginning the Timers extraction or any other feature in this chat would violate the one-objective rule.
+This is a good new-chat boundary. The fixture repair is complete, validated, documented, and committed. Beginning the Timers extraction or any other feature in this chat would violate the one-objective rule.
 
 ## Ready-to-Paste New-Chat Prompt
 
-> Pull the latest `main` branch of `crazytaxzi/Neon_Wreckers_TTV_Overlay`. Read `START_HERE.md` and every file it requires before planning or changing anything. Verify the completed `P1-T02-FIX1` authenticated visual-proof fixture repair and the final commit recorded in `docs/handoffs/LATEST.md`. Reconstruct the latest Phase 1 state from repository source and recent commits, then define exactly one new task in `docs/CURRENT_TASK.md` before implementation. Do not combine the Timers extraction with another administration feature, refresh decomposition, or unrelated cleanup.
+> Pull the latest `main` branch of `crazytaxzi/Neon_Wreckers_TTV_Overlay`. Read `START_HERE.md` and every file it requires before planning or changing anything. Verify the completed `P1-T02-FIX1` authenticated visual-proof fixture repair at merge commit `e206d43eb97bdf5d5d4cc366ef9faa9ed8fa7c79`. Reconstruct the latest Phase 1 state from repository source and recent commits, then define exactly one new task in `docs/CURRENT_TASK.md` before implementation. Do not combine the Timers extraction with another administration feature, refresh decomposition, or unrelated cleanup.
