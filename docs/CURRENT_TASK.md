@@ -2,50 +2,38 @@
 
 **Task ID:** `P1-T02`  
 **Phase:** Phase 1 - Structural Cleanup and Stabilization  
-**Status:** In progress  
+**Status:** Complete  
 **Phase authority:** `docs/phases/PHASE_01.md`  
 **Baseline authority:** `docs/phases/P1_T01_ADMIN_BASELINE.md`
 
-Only one task may be active in this file at a time.
+Only one task may be active in this file at a time. This completed record remains in place until the next chat defines a new task.
 
 ## Objective
 
 Extract the read-only Server diagnostics feature from `apps/admin/src/main.tsx` into a focused feature module, add regression protection for its rendered telemetry and formatting, and preserve all runtime behavior, styling, navigation, data loading, and API ownership.
 
-This is the first administration frontend extraction. It must remain a small, behavior-preserving work unit.
+## Completion Result
 
-## Required Work
+Completed on 2026-07-28.
 
-1. Pull and inspect the latest `main` branch.
-2. Complete the `START_HERE.md` startup sequence.
-3. Read `docs/phases/P1_T01_ADMIN_BASELINE.md` completely.
-4. Run the available pre-change baseline validation.
-5. Add focused regression protection for the current Server page before or alongside extraction.
-6. Create a focused Server feature module under `apps/admin/src/features/server/`.
-7. Move only:
-   - `ServerPage`
-   - `AdminOverview`
-   - `BalanceTelemetry`
-   - `MetricWindow`
-   - `formatBytes`
-   - `formatDuration`
-8. Import the extracted page and required types into `apps/admin/src/main.tsx`.
-9. Preserve the existing `AdminApp` state, full-refresh callback, endpoint ownership, props, page key, navigation, labels, CSS classes, and rendered behavior.
-10. Run the required validation and review the final diff for unrelated changes.
-11. Update project status, current task, and the latest handoff.
-12. Stop before beginning another feature extraction.
+- `ServerPage`, `AdminOverview`, `BalanceTelemetry`, `MetricWindow`, `formatBytes`, and `formatDuration` now live in `apps/admin/src/features/server/server-page.tsx`.
+- `apps/admin/src/main.tsx` imports the extracted page and response types.
+- `AdminApp` still owns both Server endpoint requests, the ten-resource refresh, state, navigation, and page composition.
+- The extracted feature imports no browser API client and performs no request or mutation.
+- Focused regression protection lives in `tools/test/admin-server-feature.test.mjs`.
+- No API, database, CSS, shared UI, shared contract, gameplay, content, deployment, or other administration feature changed.
 
-## Expected Behavior Change
+## Behavior Change
 
 None.
 
-The Server diagnostics tab must render and behave exactly as it did before extraction.
+The Server diagnostics tab renders and behaves as it did before extraction.
 
-## Expected Behavior That Must Remain Unchanged
+## Behavior Preserved
 
 - Default administration tab and all navigation identifiers, order, labels, and icons
 - Session verification and browser-side role gate
-- `AdminApp` ownership of `/api/v1/admin/overview` and `/api/v1/admin/balance-telemetry` loading
+- `AdminApp` ownership of `/api/v1/admin/overview` and `/api/v1/admin/balance-telemetry`
 - The ten-resource `Promise.all` refresh
 - Loading state when overview data is unavailable
 - Request, latency, error, socket, player, queue, database, and process telemetry
@@ -57,101 +45,101 @@ The Server diagnostics tab must render and behave exactly as it did before extra
 - Responsive, reduced-motion, low-effects, keyboard, and forced-colors behavior
 - API authorization and response behavior
 
-## Allowed Scope
+## Files Changed
 
-Implementation changes are limited to:
+Application and regression scope:
 
 - `apps/admin/src/main.tsx`
-- New files under `apps/admin/src/features/server/`
-- The smallest relevant existing test file or a new focused test under `tools/test/` or `tests/browser/`
+- `apps/admin/src/features/server/server-page.tsx`
+- `tools/test/admin-server-feature.test.mjs`
+
+Project-control scope:
+
 - `docs/CURRENT_TASK.md`
 - `docs/PROJECT_STATUS.md`
-- `docs/phases/PHASE_01.md` for the stale phase-status correction only
+- `docs/phases/PHASE_01.md`
 - `docs/handoffs/LATEST.md`
-- A dated handoff record when useful
-- `.github/workflows/p1-t02-source-export.yml` as a temporary, branch-only checkout-export aid required by the connector-only environment; it must be deleted before final validation and must not appear in the merged diff
 
-A newly required file outside this scope must be documented in this file before modification.
+A temporary branch-only checkout-transfer workflow was created because the local container could not resolve GitHub or the npm registry. It was deleted before final validation and is absent from the final diff.
 
-## Forbidden Changes
+## Validation Evidence
 
-Do not perform any of the following during this task:
+### Executable pre-change baseline
 
-- Change API paths, methods, payloads, response shapes, or authorization
-- Move remote-data loading or refresh ownership out of `AdminApp`
-- Change the full-refresh behavior
-- Extract another administration page or shell responsibility
-- Consolidate shared contracts or rewrite response models beyond the minimum move required for this feature
-- Change `@neon-wreckers/browser-client`
-- Change `@neon-wreckers/ui`
-- Change `apps/admin/src/admin.css` or `apps/admin/src/admin-graphics.css`
-- Change database models, migrations, seed behavior, game mechanics, balance, rewards, loot, cooldowns, progression, or content
-- Redesign the administration interface
-- Begin the desktop Studio
-- Remove packages or documentation
-- Deploy to production
+The task branch initially contained project-control corrections only, with the application source unchanged from `main` at `a1086818c0e2d51f23a0e890fa84236a59137ac8`.
 
-## Required Regression Protection
+GitHub Actions CI run `30352627626`, job `90253431826`, completed successfully and ran:
 
-The focused protection must cover or statically lock, at minimum:
+- Frozen dependency installation with pnpm 10.32.0 and Node.js 22.16.0
+- `pnpm verify`
 
-- The Server page remains outside the composition entrypoint after extraction.
-- The page receives `overview` and `balanceTelemetry` through props.
-- The page performs no direct `requestApi` call.
-- Overview absence still renders the loading screen.
-- Memory, disk, load, uptime, database, queue, and gameplay telemetry sections remain present.
-- Missing disk continues to render `Unavailable`.
-- Balance telemetry remains optional.
-- Byte and duration formatting remain unchanged.
-- The Server tab still resolves to the extracted page.
+This establishes the executable pre-change baseline that `P1-T01` could not obtain.
 
-Prefer interaction or render-level coverage when the existing toolchain supports it. Do not add a new testing framework or dependency merely to complete this task without first documenting the need.
+### Focused and repository regression checks
 
-## Required Validation
+Executed against the exact exported task checkout:
 
-Record the exact commands actually run and their results.
-
-Minimum gate:
-
-```bash
-pnpm install --frozen-lockfile
-pnpm test:repository
-pnpm --filter @neon-wreckers/admin run build
+```text
+node --test tools/test/admin-server-feature.test.mjs
 ```
 
-Run the focused test directly when it is not already included by `pnpm test:repository`.
+Result: 3 passed, 0 failed.
 
-Preferred complete gate when the environment supports it:
-
-```bash
-pnpm verify
+```text
+node --test tools/test/*.test.mjs
 ```
 
-The visual-proof workflow or equivalent local capture should be run when available, but it does not replace the production build and focused regression test.
+Result: 88 passed, 0 failed after local Git metadata was initialized for the repository test that calls `git ls-files`.
 
-The current local execution container cannot resolve `github.com` or `registry.npmjs.org`, so it cannot obtain the repository or dependencies directly. The existing pull-request CI workflow is the executable validation host for this task. A project-control-only branch state must pass `pnpm install --frozen-lockfile` and `pnpm verify` before application source changes, proving the current application baseline. The final extracted state must pass the same workflow. A temporary branch-only workflow may export the exact checkout as an artifact for editing in this environment; it must be removed before final validation and merge. This limitation does not convert an unrun local command into a pass.
+### Final extracted source validation
+
+Source extraction commit:
+
+- `60afb9759ba0dc9480e20871a76b637b8a7eefda` - `refactor(admin): extract server diagnostics`
+
+Validated source head before project-control closeout:
+
+- `b9d1a7b8fec5ee6b974eb2d972ae626cc4dbd889`
+
+Successful workflows:
+
+- CI run `30353056396`, job `90254858193`: frozen install and `pnpm verify`
+- Browser integration tests run `30353056560`
+- UI Revamp Verify run `30353058064`
+- CodeQL run `30353056383`
+- CI and security gates run `30353056546`
+
+### Visual-proof limitation
+
+Admin and Overlay Visual Proof run `30353056639` built the production surfaces successfully, then failed during screenshot capture. The diagnostic logs show requests for these existing shell-owned resources fell through to the inactive Vite proxy:
+
+- `/api/v1/admin/balance-telemetry`
+- `/api/v1/admin/live-ops`
+- `/api/v1/admin/expedition-creator`
+
+`tools/visual-proof/capture-admin-overlay.mjs` does not provide fixture entries for those endpoints, while the unchanged `AdminApp` refresh already requested all three before this extraction. This is a pre-existing visual-proof fixture defect, not an extracted Server-page regression. Repairing that fixture is outside `P1-T02` and is deferred.
+
+## Final Diff Review
+
+The reviewed diff against starting `main` contains only:
+
+- The focused Server feature module
+- Removal of the corresponding inline definitions from `main.tsx`
+- The focused regression test
+- Required project-control status and handoff updates
+
+No temporary workflow, unrelated source change, API change, styling change, or second feature extraction remains.
 
 ## Rollback Method
 
-Revert the single-purpose Server extraction commit. Because no API, database, styling, or data-loading behavior may change, rollback must restore the previous inline `ServerPage` and helper definitions without affecting other features.
+Revert the final `P1-T02` merge commit recorded in `docs/handoffs/LATEST.md`. That restores the inline Server page and helpers without affecting another feature.
 
-## Completion Evidence
+## Deferred Discovery
 
-This task is complete only when:
-
-- The Server feature is in a focused module.
-- `apps/admin/src/main.tsx` no longer defines the Server page or its private formatting helpers.
-- The extracted feature has no direct API ownership.
-- Focused regression protection is present and passing.
-- The administration build passes.
-- The final diff contains no unrelated changes.
-- The temporary checkout-export workflow is absent from the final diff.
-- Project-control files and the latest handoff are updated.
-- The resulting commit hash is recorded.
-- The new-chat check has been performed.
+Repair the authenticated visual-proof fixture so it mocks every resource in the current ten-resource administration refresh. Do not combine that repair with another feature extraction unless the next task explicitly authorizes it.
 
 ## Expected Stopping Point
 
-Stop after the Server diagnostics extraction is validated, documented, and committed.
+Reached.
 
-The Timers extraction or any other administration feature must begin in a new chat unless the repository owner explicitly changes the objective and the handoff protocol still permits continuation.
+Stop here. The Timers extraction, visual-proof fixture repair, or any other administration work must begin in a new chat after `docs/CURRENT_TASK.md` is replaced with one newly authorized objective.
