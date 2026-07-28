@@ -2,8 +2,9 @@
 
 **Task ID:** `P1-T03-REFUNDS`  
 **Phase:** Phase 1 - Structural Cleanup and Stabilization  
-**Status:** Implementation complete and source-validated; final reviewed-branch validation and merge pending  
+**Status:** Complete, validated, documented, and merged  
 **Started:** 2026-07-28  
+**Completed:** 2026-07-28  
 **Starting main commit:** `de35951935551a6b1244734ff39003bcf08e2a1c`  
 **Phase authority:** `docs/phases/PHASE_01.md`  
 **Baseline authority:** `docs/phases/P1_T01_ADMIN_BASELINE.md`
@@ -96,19 +97,16 @@ Added `tools/test/admin-refunds-feature.test.mjs` with focused protection provin
 - Refunds extraction and shell composition: `7be6ba27295cc89fa23f34dad8beb468eb5184c0`
 - Focused regression test: `401e26f261de01d76f1447f278250a8f4652f341`
 - Validated source head: `401e26f261de01d76f1447f278250a8f4652f341`
-- Final reviewed branch head: pending final documentation commit
-- Final merge commit: pending
-- Final documented `main` closeout commit: pending
+- Final reviewed branch head: `9cee80425b9848efd219f5f2cfeeb6364f684f0e`
+- Final merge commit: `d4443d94f6bbfa1594a44956dadca1a52aa8beb2`
+- Final documented `main` closeout commit: the final `docs/handoffs/LATEST.md` closeout commit created after this record
 
 ## Executable Pre-Change Baseline
 
-The task-definition commit changed project-control documentation only. Application source remained identical to starting `main`.
-
-Tested source commit: `0008a09ecb667866a01894b6b37e668ecdc93609`
+Application source remained identical to starting `main` at the tested task-definition commit `0008a09ecb667866a01894b6b37e668ecdc93609`.
 
 - CI run `30380261092`
 - Verify job `90346080291`
-- Result: success
 - Frozen dependency installation: success
 - Complete `pnpm verify`: success
 - `pnpm test:repository`: success
@@ -117,65 +115,52 @@ Tested source commit: `0008a09ecb667866a01894b6b37e668ecdc93609`
 
 ## Validated Source Head
 
-Source head: `401e26f261de01d76f1447f278250a8f4652f341`  
-Pull-request merge test ref: `66ade79e4da0798ae098384656459581c2abb9e3`
+Source head: `401e26f261de01d76f1447f278250a8f4652f341`
 
-### Complete repository verification
-
-- CI run `30382941611`
-- Verify job `90355022440`
-- Result: success
-- Frozen dependency installation: success
-- Complete `pnpm verify`: success
-- Focused Refunds regression: success as part of `pnpm test:repository`
-- Administration production build: success
-- Overlay production build: success
-
-### Authenticated Admin and Overlay Visual Proof
-
-- Workflow run `30382941552`
-- Screenshots job `90355021602`
-- Result: success
-- Frozen dependency installation: success
-- Production surface builds: success
-- Chromium installation: success
-- Built preview startup: success
-- Exact authenticated capture: success
-- Artifact upload: success
-- Artifact `8697799828`
-- Digest `sha256:9bb39a2df4011a43f93d302e379b7265a8721596dbdd1407211ad477b657d283`
-- The artifact contains the existing administration and overlay captures, including `proof/admin/desktop/transactions.png`.
-
-### Additional source-head gates
-
+- CI run `30382941611`, Verify job `90355022440`: success
+- Admin and Overlay Visual Proof run `30382941552`, screenshots job `90355021602`: success
 - Browser integration tests run `30382941553`, Playwright job `90355022020`: success
 - CI and security gates run `30382941614`: success
-  - Secret scan job `90355022254`
-  - Repository verification and production-image job `90355022340`
-  - Dependency review job `90355022383`
 - CodeQL run `30382941722`: success
 - UI Revamp Verify run `30382941799`: success
+- Visual artifact `8697799828`
+- Digest `sha256:9bb39a2df4011a43f93d302e379b7265a8721596dbdd1407211ad477b657d283`
+
+## Final Reviewed Branch Validation
+
+Tested source head: `9cee80425b9848efd219f5f2cfeeb6364f684f0e`
+
+- CI run `30383641923`, Verify job `90357369617`: frozen install and complete `pnpm verify`, success
+- Admin and Overlay Visual Proof run `30383641616`, screenshots job `90357369045`: production builds, browser installation, built previews, authenticated capture, and artifact upload, success
+- Visual artifact `8698083588`, digest `sha256:58037a390768861378d63b080062ff48ffda97bf6ffb5633c7545f4da0c8123c`, includes `proof/admin/desktop/transactions.png`
+- Browser integration tests run `30383642017`, Playwright job `90357369983`: success
+- CodeQL run `30383641829`, JavaScript/TypeScript job `90357369367`: success
+- UI Revamp Verify run `30383641724`, verify job `90357369170`: success
+- CI and security gates run `30383642758`: success
+  - Repository verification and production-image job `90357373135`
+  - Dependency review job `90357373183`
+  - Secret scan job `90357373212`
 
 The local execution container could not resolve GitHub or the npm registry, so executable validation ran in the repository's authenticated GitHub Actions environment.
 
-## Current Diff Boundary
+## Final Diff Boundary
 
-Pull request `#38` currently contains only:
+Pull request `#38` contained exactly:
 
 - `apps/admin/src/main.tsx`
 - `apps/admin/src/features/refunds/refunds-page.tsx`
 - `tools/test/admin-refunds-feature.test.mjs`
 - `docs/CURRENT_TASK.md`
+- `docs/PROJECT_STATUS.md`
+- `docs/handoffs/LATEST.md`
 - `docs/handoffs/2026-07-28-p1-t03-refunds.md`
 
-Project-status and latest-handoff documentation will be added before final reviewed-branch validation.
-
-No Players, Commands, Integrations, Expedition Creator, Config, Operations, Server, Timers, refresh decomposition, API, database, browser-client, CSS, shared UI, gameplay, content, worker, deployment, Docker, nginx, Vite, or workflow file is included.
+No Players, Commands, Integrations, Expedition Creator, Config, Operations, Server, Timers, refresh decomposition, API, database, browser-client, CSS, shared UI, gameplay, content, worker, deployment, Docker, nginx, Vite, or workflow file was included.
 
 ## Rollback Method
 
-Before merge, reset or delete the task branch. After merge, revert the final Refunds extraction merge commit. No API, database, content, gameplay, or deployment migration is required.
+Revert Refunds extraction merge commit `d4443d94f6bbfa1594a44956dadca1a52aa8beb2`. No API, database, content, gameplay, or deployment migration is required.
 
 ## Stopping Point
 
-Complete the final documentation, validate the reviewed branch head, review the final diff, merge pull request `#38`, record the final merge and `main` closeout commits, then stop. Do not begin Players, refresh decomposition, contract consolidation, administration API decomposition, or another Phase 1 task in this chat.
+`P1-T03-REFUNDS` is complete, validated, documented, and merged as `d4443d94f6bbfa1594a44956dadca1a52aa8beb2`. Stop here. Do not begin Players, refresh decomposition, contract consolidation, administration API decomposition, or another Phase 1 task in this chat.
