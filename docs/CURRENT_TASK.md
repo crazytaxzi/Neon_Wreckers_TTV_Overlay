@@ -2,7 +2,7 @@
 
 **Task ID:** `P1-T02`  
 **Phase:** Phase 1 - Structural Cleanup and Stabilization  
-**Status:** Ready to start  
+**Status:** In progress  
 **Phase authority:** `docs/phases/PHASE_01.md`  
 **Baseline authority:** `docs/phases/P1_T01_ADMIN_BASELINE.md`
 
@@ -66,6 +66,7 @@ Implementation changes are limited to:
 - The smallest relevant existing test file or a new focused test under `tools/test/` or `tests/browser/`
 - `docs/CURRENT_TASK.md`
 - `docs/PROJECT_STATUS.md`
+- `docs/phases/PHASE_01.md` for the stale phase-status correction only
 - `docs/handoffs/LATEST.md`
 - A dated handoff record when useful
 
@@ -127,7 +128,7 @@ pnpm verify
 
 The visual-proof workflow or equivalent local capture should be run when available, but it does not replace the production build and focused regression test.
 
-If a command cannot run because the environment lacks Node.js, pnpm, browser binaries, network access, or another required dependency, record the limitation. Do not label an unrun check as passing.
+The current local execution container cannot resolve `github.com` or `registry.npmjs.org`, so it cannot obtain the repository or dependencies directly. The existing pull-request CI workflow is the executable validation host for this task. A project-control-only branch state must pass `pnpm install --frozen-lockfile` and `pnpm verify` before application source changes, proving the current application baseline. The final extracted state must pass the same workflow. This limitation does not convert an unrun local command into a pass.
 
 ## Rollback Method
 
