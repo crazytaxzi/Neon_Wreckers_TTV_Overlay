@@ -4,7 +4,7 @@
 **Last updated:** 2026-07-28  
 **Repository:** `crazytaxzi/Neon_Wreckers_TTV_Overlay`  
 **Current phase:** Phase 1 - Structural Cleanup and Stabilization  
-**Implementation state:** `P1-T03` complete, validated, documented, and merged; no next task authorized
+**Implementation state:** `P1-T03-REFUNDS` implementation complete and source-validated; final reviewed-branch validation and merge pending
 
 This file records the verified state of the project. Update it at the end of every completed work unit. Do not use it as a wish list.
 
@@ -110,6 +110,31 @@ Commit evidence:
 
 The detailed handoff is preserved at `docs/handoffs/2026-07-28-p1-t03-timers.md`.
 
+### `P1-T03-REFUNDS` - Refunds Administration Extraction
+
+Implementation completed and source-validated on 2026-07-28. Final reviewed-branch validation and merge remain pending.
+
+- Completed the mandatory startup sequence from `main` commit `de35951935551a6b1244734ff39003bcf08e2a1c`.
+- Verified completed Timers extraction merge `ecdc63024a7d3380988d43b91435f2b614d3efb1` and the latest documented main closeout.
+- Recorded the existing Refunds presentation, shell transaction loading, reason state, eligibility, confirmation, exact request serialization, toasts, refresh, visual proof, production authorization, validation, StreamElements ordering, persistence, audit, and failure semantics before editing.
+- Extracted only the Refunds page, Refunds-specific presentation, refund-reason state, eligibility helper, confirmation flow, and refund command into `apps/admin/src/features/refunds/refunds-page.tsx`.
+- Preserved `AdminApp` ownership of authentication, navigation, page composition, transaction loading, the complete ten-resource refresh, and cross-feature orchestration.
+- Continued passing shell-owned transactions, `refresh`, and `pushToast` through props.
+- Preserved the exact reason default, eligibility rules, confirmation copy, POST route, JSON payload, success and failure toasts, full refresh after success, and no side effects after cancellation or failure.
+- Added focused regression protection in `tools/test/admin-refunds-feature.test.mjs`.
+- Passed full `pnpm verify`, administration and overlay builds, browser integration, UI verification, CodeQL, security gates, and the authenticated Admin and Overlay Visual Proof workflow.
+- Produced the existing visual proof, including the desktop Refunds capture, without changing screenshots, CSS, graphics, navigation, accessibility, or runtime behavior.
+- Made no Players, Commands, Integrations, Expedition Creator, Config, Operations, Server, Timers, refresh decomposition, API, database, browser-client, shared UI, gameplay, content, worker, deployment, Docker, nginx, Vite, or repository workflow change.
+
+Commit evidence:
+
+- Task definition: `0008a09ecb667866a01894b6b37e668ecdc93609`
+- Refunds feature module: `6f3b49456bc10a01b9ac8e8790c1373f4e1be8d2`
+- Refunds extraction and shell composition: `7be6ba27295cc89fa23f34dad8beb468eb5184c0`
+- Focused regression and validated source head: `401e26f261de01d76f1447f278250a8f4652f341`
+
+The detailed handoff is preserved at `docs/handoffs/2026-07-28-p1-t03-refunds.md`.
+
 ## Verified Current Architecture
 
 The repository remains a pnpm monorepo containing:
@@ -135,10 +160,12 @@ The administration console currently:
 - Loads ten remote resources through one `Promise.all` refresh owned by `AdminApp`.
 - Refreshes every resource after successful mutations.
 - Defines local response models instead of passing endpoint-specific runtime schemas to `requestApi`.
-- Keeps Operations, Expedition Creator, Integrations, Commands, Players, Refunds, Config, and UI Library in the oversized entrypoint.
+- Keeps Operations, Expedition Creator, Integrations, Commands, Players, Config, and UI Library in the oversized entrypoint.
 - Loads Server diagnostics from `apps/admin/src/features/server/server-page.tsx`.
 - Loads Timers administration from `apps/admin/src/features/timers/timers-page.tsx`.
 - Passes shell-owned overview timer records, full refresh, and toast delivery into the Timers feature.
+- Loads Refunds administration from `apps/admin/src/features/refunds/refunds-page.tsx`.
+- Passes shell-owned loyalty transactions, full refresh, and toast delivery into the Refunds feature.
 - Depends on shared UI components and the complete shared UI stylesheet stack.
 - Preserves reduced-motion, low-effects, keyboard, responsive, and forced-colors behavior.
 
@@ -172,6 +199,7 @@ Protection now includes:
 - Expedition Creator source assertions
 - Focused Server extraction, telemetry, optional-panel, no-direct-API, and formatting assertions
 - Focused Timers composition, ownership, data shape, rendering, confirmation, request, cancellation, toast, refresh, visual-proof, and authorization assertions
+- Focused Refunds composition, ownership, transaction shape, rendering, reason, eligibility, confirmation, exact JSON request, cancellation, toast, refresh, visual-proof, browser-client, authorization, StreamElements ordering, persistence, and audit assertions
 - Browser integration tests
 - Authenticated administration and overlay visual-proof capture using production-built surfaces
 - Focused protection requiring every endpoint in the administration ten-resource refresh to have an explicit authenticated visual-proof fixture response
@@ -214,6 +242,25 @@ Commit `dad7ed15f7ff309df3860a679c947423eff71bba` passed:
 
 The local container could not resolve GitHub or the npm registry, so the executable baseline and final validation ran through the repository's authenticated GitHub Actions environment.
 
+### `P1-T03-REFUNDS` executable pre-change baseline
+
+Task-definition commit `0008a09ecb667866a01894b6b37e668ecdc93609` changed documentation only and retained application source from starting `main`.
+
+- CI run `30380261092`, Verify job `90346080291`: frozen install and complete `pnpm verify`, success
+
+### `P1-T03-REFUNDS` validated source head
+
+Commit `401e26f261de01d76f1447f278250a8f4652f341` passed:
+
+- CI run `30382941611`, Verify job `90355022440`: frozen install, complete `pnpm verify`, focused Refunds regression, administration build, and overlay build, success
+- Admin and Overlay Visual Proof run `30382941552`, screenshots job `90355021602`: production builds, built previews, authenticated capture, and artifact upload, success
+- Browser integration tests run `30382941553`, Playwright job `90355022020`: success
+- CI and security gates run `30382941614`: success
+- CodeQL run `30382941722`: success
+- UI Revamp Verify run `30382941799`: success
+
+Visual artifact `8697799828`, digest `sha256:9bb39a2df4011a43f93d302e379b7265a8721596dbdd1407211ad477b657d283`, includes the existing desktop Refunds capture.
+
 ## Known Risks and Limitations
 
 - Cleanup work can accidentally change behavior if refactoring and feature work are mixed.
@@ -247,17 +294,11 @@ The following remain planned work, not completed features:
 
 ## Current Readiness
 
-`P1-T03` is complete, validated, documented, and merged at `ecdc63024a7d3380988d43b91435f2b614d3efb1`.
+`P1-T03-REFUNDS` implementation is complete and source-validated at `401e26f261de01d76f1447f278250a8f4652f341`.
 
-This is a required new-chat boundary. No next implementation task is active.
+The remaining work in this chat is limited to final project-control documentation, final reviewed-branch validation, exact diff review, merge, and main closeout recording.
 
-The next chat must:
-
-1. Follow `START_HERE.md` from the latest `main` branch.
-2. Verify merge `ecdc63024a7d3380988d43b91435f2b614d3efb1` and the final documented main closeout in `docs/handoffs/LATEST.md`.
-3. Choose exactly one next objective within Phase 1.
-4. Replace `docs/CURRENT_TASK.md` before implementation.
-5. Do not begin Refunds, Players, refresh decomposition, or another administration task in this completed Timers chat.
+Do not begin Players, refresh decomposition, contract consolidation, administration API decomposition, or another Phase 1 task in this chat.
 
 ## Deferred Work
 
