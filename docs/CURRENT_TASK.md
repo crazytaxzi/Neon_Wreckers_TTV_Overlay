@@ -2,8 +2,9 @@
 
 **Task ID:** `P1-T03`  
 **Phase:** Phase 1 - Structural Cleanup and Stabilization  
-**Status:** Active  
+**Status:** Complete and validated; pending final merge closeout  
 **Started:** 2026-07-28  
+**Completed:** 2026-07-28  
 **Starting main commit:** `78646d84e8b47b73dd3cf4cf3cce61dfc02e6cbd`  
 **Phase authority:** `docs/phases/PHASE_01.md`  
 **Baseline authority:** `docs/phases/P1_T01_ADMIN_BASELINE.md`
@@ -12,242 +13,146 @@ Only one task may be active in this file at a time.
 
 ## Objective
 
-Extract only the existing Timers administration page, its Timers-specific presentation, browser confirmation, and force-resolve command from `apps/admin/src/main.tsx` into a focused module under `apps/admin/src/features/timers/` without changing behavior.
+Extract only the existing Timers administration page, Timers-specific presentation, browser confirmation, and force-resolve command from `apps/admin/src/main.tsx` into a focused module under `apps/admin/src/features/timers/` without changing behavior.
 
-## Reason
+## Completed Architecture
 
-`apps/admin/src/main.tsx` still owns most administration features. The documented extraction order identifies Timers as the next narrow slice after Server diagnostics because it has one data input, one confirmation, and one mutation while the shell can continue owning authentication, navigation, remote loading, and the shared full refresh.
+- Added `apps/admin/src/features/timers/timers-page.tsx`.
+- Moved only the Timers page, timer presentation, confirmation, and force-resolve command into that module.
+- Kept authentication, navigation, page composition, remote loading, and cross-feature orchestration in `AdminApp`.
+- Kept the ten-resource `Promise.all` refresh byte-for-byte intact.
+- Continued receiving the existing timer records through props from shell-owned `AdminOverview` state.
+- Continued receiving the full-refresh callback and toast function through props.
+- Continued using the production `requestApi` browser client directly.
+- Made no Server feature, API, database, browser-client, CSS, shared UI, gameplay, content, worker, deployment, or second-feature change.
 
-## Pre-Change Behavior and Ownership Record
+## Preserved Behavior
 
-### Current Timers implementation
+### Data and rendering
 
-- `TimersPage` is defined inline in `apps/admin/src/main.tsx`.
-- `AdminApp` composes it under the `timers` page identifier.
-- The page receives `overview`, `refresh`, and `pushToast` through props.
-- The page performs no authentication, navigation, or unrelated administration request.
+- Source data remains `overview?.timers ?? []` from the existing `/api/v1/admin/overview` response.
+- Timer records retain `id`, `name`, `playerName`, and `resolvesAt`.
+- The exact heading, description, icon, table columns, bold player label, mission label, locale date rendering, right-aligned warning control, `Resolve now` button, empty state, and informational notice remain unchanged.
 
-### Active expedition timer data
+### Confirmation and command
 
-- `AdminApp` loads `GET /api/v1/admin/overview` as part of its existing ten-resource `Promise.all` refresh.
-- The response type is `AdminOverview`, currently exported by `apps/admin/src/features/server/server-page.tsx`.
-- The Timers page renders `overview?.timers ?? []`.
-- Each timer record has the existing shape:
-  - `id: string`
-  - `name: string`
-  - `playerName: string`
-  - `resolvesAt: string`
-- Timers and Server therefore consume different portions of the same shell-owned Server overview response. This task may narrow the Timers prop to the existing timer records, but it must not change the Server feature, overview request, response shape, or shell ownership.
-
-### Force-resolve confirmation and command
-
-- Clicking `Resolve now` invokes the Timers-local command for that row identifier.
-- The exact confirmation text is `Resolve this expedition immediately?`.
-- Rejecting the confirmation returns immediately and sends no request, toast, or refresh.
-- Confirming sends the exact request:
+- Confirmation copy remains `Resolve this expedition immediately?`.
+- Cancelling returns without a request, toast, or refresh.
+- Confirming sends the exact bodyless request:
 
 ```text
 POST /api/v1/expeditions/:id/resolve-now
 ```
 
-- The browser request is made through the existing `requestApi` client.
-- The request options contain only `method: "POST"`.
-- No request body is supplied.
-- No endpoint-specific runtime schema, alternate client, adapter, compatibility wrapper, or duplicate request layer is used.
+- Request options remain exactly `{ method: "POST" }`.
+- Success toast remains `{ title: "Expedition timer resolved", tone: "success" }`.
+- Success invokes the existing full refresh exactly once.
+- Failure toast remains `{ title: "Timer command failed", message: errorMessage(error), tone: "danger" }`.
+- Failure emits no false success and performs no refresh.
 
-### Toast, refresh, and failure behavior
+### Shell and server boundaries
 
-On success:
-
-```text
-title: Expedition timer resolved
-tone: success
-```
-
-The command then awaits the existing `refresh` callback exactly once. That callback reloads all ten administration resources in one `Promise.all`.
-
-On failure:
-
-```text
-title: Timer command failed
-message: errorMessage(error)
-tone: danger
-```
-
-The failure path does not emit the success toast and does not invoke the full refresh.
-
-### Existing rendering contract
-
-The populated table retains these columns and values:
-
-1. `Player` - bold `playerName`
-2. `Mission` - `name`
-3. `Scheduled return` - `new Date(resolvesAt).toLocaleString()`
-4. `Control` - right-aligned warning button labeled `Resolve now`
-
-The empty state is exactly `No active expedition timers.`.
-
-The page heading remains:
-
-- Eyebrow: `SCHEDULE CONTROL`
-- Title: `Active Expedition Timers`
-- Description: `Force an overdue or stuck expedition into its server-calculated resolved state. Players must still claim their rewards.`
-- Icon: `events`
-
-The informational notice remains:
-
-- Title: `Other command timers`
-- Tone: `info`
-- Body: `Player crafting, salvage, scan, station-maintenance, and career timers are listed and reset from the Players workspace. Live-event timers are stopped and reset from Operations.`
-
-### Navigation and visual-proof coverage
-
-- The Timers navigation contract is `{ id: "timers", label: "Timers", icon: "events" }`.
-- It remains sixth, after Server and before Players.
+- Navigation remains `{ id: "timers", label: "Timers", icon: "events" }`, sixth after Server and before Players.
 - The default administration tab remains `operations`.
-- The authenticated visual-proof fixture provides populated timer records through `/api/v1/admin/overview`.
-- The Admin and Overlay Visual Proof capture includes the existing desktop `Timers` screenshot at `proof/admin/desktop/timers.png`.
-- The fixture-coverage regression derives the ten refresh endpoints from the real administration source and requires an explicit response for every endpoint.
+- The existing ten-resource refresh remains one shell-owned `Promise.all`.
+- The authenticated visual-proof fixture still explicitly covers all ten refresh endpoints and populated Timers data.
+- The exact API route remains owned by `apps/api/src/routes/expeditions.ts` and still invokes `requireAdmin(context.prisma, request)` before server-side resolution.
+- The API route remains body-independent.
 
-### Existing API route and authorization
+## Regression Protection
 
-- `apps/api/src/routes/expeditions.ts` owns `POST /api/v1/expeditions/:id/resolve-now`.
-- The route calls `requireAdmin(context.prisma, request)` before resolving the expedition.
-- The identifier comes from the route parameter.
-- The route does not consume an administration request body.
-- Resolution, persistence, status validation, reward calculation, and response data remain server-owned and are outside this task.
+Added `tools/test/admin-timers-feature.test.mjs` with six focused tests proving:
 
-## Authorized Files or Directories
+- `AdminApp` imports and composes the focused Timers feature.
+- The extracted feature does not own authentication, navigation, overview loading, or unrelated API requests.
+- Active records, labels, columns, locale date rendering, button text, empty state, notice copy, and visual classes remain present.
+- Confirmed force resolution sends the exact bodyless POST, emits the exact success toast, and refreshes exactly once.
+- Cancelled confirmation sends no request, toast, or refresh.
+- Failed force resolution emits only the exact danger toast and does not refresh.
+- Navigation order, default tab, ten-resource refresh, visual-proof endpoint coverage, Timers screenshot capture, and API authorization remain intact.
 
-Application source:
+## Commit Record
 
-- `apps/admin/src/main.tsx`
-- New focused files under `apps/admin/src/features/timers/`
-
-Regression protection:
-
-- One focused test under `tools/test/` or the smallest directly relevant browser-test location
-
-Project-control documentation:
-
-- `docs/CURRENT_TASK.md`
-- `docs/PROJECT_STATUS.md`
-- `docs/handoffs/LATEST.md`
-- One dated handoff record under `docs/handoffs/` when useful
-
-## Required Architecture
-
-- Move only the Timers page, Timers-specific presentation, confirmation, and force-resolve command into the focused Timers feature module.
-- Keep authentication, authorization presentation, navigation, page composition, remote state loading, and cross-feature orchestration in `AdminApp`.
-- Continue receiving the existing timer records through props from shell-owned overview state.
-- Continue receiving the existing full-refresh callback and toast function through props.
-- Keep the production command connected to `requestApi` from `@neon-wreckers/browser-client`.
-- Preserve the ten-resource `Promise.all` refresh exactly.
-- Preserve the full refresh after successful force resolution.
-- Do not make the Timers feature own the overview GET request.
-- Do not import another administration feature into the Timers feature.
-
-## Explicitly Forbidden Changes
-
-- Do not extract Refunds, Players, Commands, Integrations, Expedition Creator, Config, Operations, or another administration feature.
-- Do not change the Server feature.
-- Do not change or decompose the ten-resource refresh.
-- Do not move general shell state or API orchestration out of `AdminApp`.
-- Do not change production API routes, methods, payloads, response shapes, authorization, audit behavior, database behavior, or browser-client behavior.
-- Do not change gameplay, balance, rewards, content, expedition resolution rules, timing calculations, worker behavior, CSS, shared UI, graphics, visual design, navigation, accessibility behavior, or screenshot expectations.
-- Do not change deployment architecture, Docker, nginx, Vite configuration, or unrelated workflows.
-- Do not add endpoint-specific runtime schemas or perform contract consolidation.
-- Do not hide unrelated cleanup inside this task.
-- Do not begin Refunds, Players, refresh decomposition, or later administration work in this chat.
-
-## Expected Behavior Change
-
-None. This is an ownership extraction only.
-
-## Expected Behavior That Must Remain Unchanged
-
-- Exact navigation identifier, order, label, icon, and default tab
-- Exact table headings, row values, date rendering, button text, empty state, page copy, notice copy, and existing CSS classes
-- Exact confirmation copy and cancellation behavior
-- Exact request method, route interpolation, and bodyless payload behavior
-- Exact success and failure toast titles, messages, and tones
-- Exactly one full refresh after success and no refresh after failure or cancellation
-- Existing ten-resource administration refresh and all endpoint paths
-- Existing authenticated visual-proof fixture coverage and screenshot output
-- API authorization, server-side resolution, persistence, and response behavior
-- Authentication, accessibility, gameplay, content, deployment, and production behavior
+- Starting `main`: `78646d84e8b47b73dd3cf4cf3cce61dfc02e6cbd`
+- Task definition: `cca0abea2c75b9f30352bd1a62536a9e02126641`
+- Timers feature module: `fcbc53e3af06ea0de123ab6e66816c570a0d4f3c`
+- Timers extraction and shell composition: `6eeb12e81b8a306fa6ba35ef5004116bd2c84b2d`
+- Focused regression test: `ca1a3f9470d0fcfe35024fdae2bfa1de1e9a97f1`
+- Validated source head: `ca1a3f9470d0fcfe35024fdae2bfa1de1e9a97f1`
+- Final merge commit: pending merge closeout
+- Final documented `main` closeout commit: pending post-merge closeout
 
 ## Executable Pre-Change Baseline
 
-The task-definition commit must contain project-control documentation only. Before application source is edited, run against that unchanged source state:
+The task-definition commit changed project-control documentation only, leaving application source identical to starting `main`.
+
+Tested commit: `cca0abea2c75b9f30352bd1a62536a9e02126641`
+
+- CI run `30371064822`
+- Verify job `90314741971`
+- Result: success
+- Frozen dependency installation: success
+- Complete `pnpm verify`: success
+
+The complete gate included:
 
 ```text
-pnpm install --frozen-lockfile
 pnpm test:repository
 pnpm --filter @neon-wreckers/admin run build
 pnpm --filter @neon-wreckers/overlay run build
 ```
 
-`pnpm verify` is preferred when the validation environment supports it.
+## Final Source Validation
 
-The local execution container cannot resolve GitHub or the npm registry. The executable baseline will therefore run through the repository's authenticated GitHub Actions environment, and the run ID, job ID, tested commit, and exact result must be recorded before source editing continues.
+Tested commit: `ca1a3f9470d0fcfe35024fdae2bfa1de1e9a97f1`
 
-## Regression Protection Required
+### Complete repository verification
 
-The focused regression must prove at minimum:
+- CI run `30372552445`
+- Verify job `90319894219`
+- Result: success
+- Frozen dependency installation: success
+- Complete `pnpm verify`: success
+- Focused Timers regression: success as part of `pnpm test:repository`
+- Administration production build: success
+- Overlay production build: success
 
-- `AdminApp` imports and composes the Timers feature.
-- The feature does not own authentication, navigation, the overview GET request, or unrelated API requests.
-- Active timers render from the existing record shape.
-- The existing empty state remains present.
-- Confirming sends the exact bodyless `POST /api/v1/expeditions/:id/resolve-now` request.
-- Cancelling sends no request.
-- Success emits the exact success toast and invokes the full refresh exactly once.
-- Failure emits the exact danger toast and does not emit false success or refresh.
-- Existing labels, columns, date rendering, button text, confirmation copy, notice copy, and visual classes remain unchanged.
-- The ten-resource administration refresh remains intact.
-- The authenticated visual-proof fixture explicitly covers every refresh endpoint.
-- The API route still requires administrative authorization and remains body-independent.
+### Authenticated Admin and Overlay Visual Proof
 
-## Validation Commands
+- Workflow run `30372551080`
+- Screenshots job `90319889665`
+- Result: success
+- Frozen dependency installation: success
+- Production surface builds: success
+- Chromium installation: success
+- Built preview startup: success
+- Exact capture command `node tools/visual-proof/capture-admin-overlay.mjs`: success
+- Artifact upload: success
+- Artifact `8693597195`, digest `sha256:b9bdd3dec9c1443c6e0be9bd4c47ee6a6ceae232a33748719168c639465dfcec`
+- The artifact contains the existing 26 captures, including `proof/admin/desktop/timers.png`.
 
-At minimum:
+### Additional final-source gates
 
-```text
-pnpm install --frozen-lockfile
-node --test tools/test/admin-timers-feature.test.mjs
-pnpm test:repository
-pnpm --filter @neon-wreckers/admin run build
-pnpm --filter @neon-wreckers/overlay run build
-pnpm verify
-```
+- CodeQL run `30372552587`, job `90319894144`: success
+- UI Revamp Verify run `30372551099`, job `90319888544`: success
+- Browser integration tests run `30372551084`: success
+- CI and security gates run `30372551055`: success
 
-Also run the exact authenticated Admin and Overlay Visual Proof workflow or its exact local capture equivalent against the validated source head.
+## Final Diff Boundary
 
-When validation runs remotely, record the workflow run IDs, job IDs, tested commit, and exact result.
+The reviewed source diff contains only:
+
+- `apps/admin/src/main.tsx`
+- `apps/admin/src/features/timers/timers-page.tsx`
+- `tools/test/admin-timers-feature.test.mjs`
+- Required project-control and handoff documents
+
+No Refunds, Players, Commands, Integrations, Expedition Creator, Config, Operations, Server, refresh decomposition, API, CSS, shared UI, gameplay, content, worker, deployment, Docker, nginx, Vite, or workflow change is included.
 
 ## Rollback Method
 
-Revert the final Timers extraction merge commit. The rollback restores the inline Timers page and removes the focused Timers module and regression test without requiring an API, database, content, or deployment rollback.
-
-## Completion Evidence
-
-Pending:
-
-- Executable pre-change baseline commit, run ID, job ID, and result
-- Timers feature module and shell composition diff
-- Focused regression-test commit and result
-- Full `pnpm verify` result
-- Admin and Overlay Visual Proof run, job, artifact, and result
-- Final diff review showing only authorized files
-- Starting main commit
-- Task-definition commit
-- Timers extraction commit
-- Focused regression-test commit
-- Validated source head
-- Final merge commit
-- Final documented main closeout commit
+Revert the final Timers extraction merge commit. This restores the inline Timers page and removes the focused Timers module and regression test without an API, database, content, gameplay, or deployment rollback.
 
 ## Expected Stopping Point
 
-Stop after the Timers extraction is validated, documented, merged, and its final commit hashes are recorded. Do not begin Refunds, Players, refresh decomposition, or another Phase 1 task in this chat.
+Stop after the Timers extraction is merged and the final merge and documented `main` closeout hashes are recorded. Do not begin Refunds, Players, refresh decomposition, or another Phase 1 task in this chat.
