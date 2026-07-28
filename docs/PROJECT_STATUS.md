@@ -4,7 +4,7 @@
 **Last updated:** 2026-07-28  
 **Repository:** `crazytaxzi/Neon_Wreckers_TTV_Overlay`  
 **Current phase:** Phase 1 - Structural Cleanup and Stabilization  
-**Implementation state:** `P1-T03-REFUNDS` implementation complete and source-validated; final reviewed-branch validation and merge pending
+**Implementation state:** `P1-T03-REFUNDS` complete, validated, documented, and merged; no next task authorized
 
 This file records the verified state of the project. Update it at the end of every completed work unit. Do not use it as a wish list.
 
@@ -12,23 +12,20 @@ This file records the verified state of the project. Update it at the end of eve
 
 Reduce structural complexity, duplication, stale documentation, and oversized ownership boundaries without changing gameplay, balance, visual design, accessibility behavior, player data, security boundaries, or production behavior.
 
-The controlling objective and non-negotiable rules are defined in `docs/PRIME_DIRECTIVE.md`. The most recently completed work unit is recorded in `docs/CURRENT_TASK.md` until the next chat replaces it with one active task.
+The controlling objective and non-negotiable rules are defined in `docs/PRIME_DIRECTIVE.md`. The most recently completed work unit remains in `docs/CURRENT_TASK.md` until the next chat replaces it with one active task.
 
 ## Current Phase
 
 Phase 1 is **Structural Cleanup and Stabilization** and remains in progress.
 
-Its scope is defined in `docs/phases/PHASE_01.md`.
-
-The Phase 1 administration baseline and extraction order are recorded in `docs/phases/P1_T01_ADMIN_BASELINE.md`.
+Its scope is defined in `docs/phases/PHASE_01.md`. The Phase 1 administration baseline and extraction order are recorded in `docs/phases/P1_T01_ADMIN_BASELINE.md`.
 
 ## Completed Project-Control Work
 
 - Created `docs/PRIME_DIRECTIVE.md` as the authoritative project objective and rule set.
 - Created `docs/CHAT_HANDOFF_PROTOCOL.md` to define chat boundaries and repository-backed handoffs.
 - Created root `START_HERE.md` as the mandatory startup entry point.
-- Established this project-status ledger.
-- Established a current-task file, Phase 1 scope document, and latest-handoff record.
+- Established this project-status ledger, the current-task file, Phase 1 scope, and latest-handoff record.
 - Added a root README notice directing development work to `START_HERE.md`.
 
 ## Completed Phase 1 Work
@@ -37,9 +34,7 @@ The Phase 1 administration baseline and extraction order are recorded in `docs/p
 
 Completed on 2026-07-27.
 
-Evidence recorded in `docs/phases/P1_T01_ADMIN_BASELINE.md`:
-
-- Inspected `main` at starting commit `7375ad7a0af70d36c72d621237c8292b17b4359e`.
+- Inspected `main` at `7375ad7a0af70d36c72d621237c8292b17b4359e`.
 - Completed the mandatory startup sequence.
 - Inspected the complete administration workspace and direct dependencies.
 - Mapped the approximately 2,251-line `apps/admin/src/main.tsx` entrypoint.
@@ -56,30 +51,30 @@ Baseline record commit:
 Completed on 2026-07-28.
 
 - Corrected stale Phase 1 and task statuses before implementation.
-- Established an executable pre-change baseline through GitHub Actions CI against unchanged application source.
-- Extracted only the read-only Server diagnostics page, its response models, and its formatting helpers into `apps/admin/src/features/server/server-page.tsx`.
+- Established an executable pre-change baseline through GitHub Actions against unchanged application source.
+- Extracted only the read-only Server diagnostics page, its response models, and formatting helpers into `apps/admin/src/features/server/server-page.tsx`.
 - Preserved `AdminApp` ownership of state, both endpoint requests, the ten-resource refresh, navigation, and page composition.
 - Added focused source and behavior regression protection in `tools/test/admin-server-feature.test.mjs`.
-- Passed the focused test, the complete repository source-test set, `pnpm verify`, browser integration, UI verification, CodeQL, and CI security gates.
+- Passed the focused test, complete repository tests, `pnpm verify`, browser integration, UI verification, CodeQL, and CI security gates.
 - Made no API, database, styling, shared-package, gameplay, content, deployment, or second-feature change.
 
 Final merge commit:
 
 - `4cb1b8049ce6e546121e90beb81e2b16be9fb28e` - `refactor(admin): extract server diagnostics`
 
-The historical handoff is preserved at `docs/handoffs/2026-07-28-p1-t02-server-diagnostics.md`.
+The historical handoff is `docs/handoffs/2026-07-28-p1-t02-server-diagnostics.md`.
 
 ### `P1-T02-FIX1` - Authenticated Visual-Proof Fixture Repair
 
 Completed on 2026-07-28.
 
 - Reproduced the existing Admin and Overlay Visual Proof failure before editing.
-- Confirmed that frozen installation, production builds, browser installation, and preview startup succeeded while three administration requests fell through to the inactive preview proxy.
+- Confirmed frozen installation, production builds, browser installation, and preview startup succeeded while three administration requests fell through to the inactive preview proxy.
 - Added deterministic visual-proof-only responses for `/api/v1/admin/balance-telemetry`, `/api/v1/admin/live-ops`, and `/api/v1/admin/expedition-creator`.
-- Preserved the administration console's existing ten-resource `Promise.all` refresh and all production application behavior.
-- Added `tools/test/admin-visual-proof-fixture.test.mjs` to derive the ten refresh endpoints from the actual administration source and require an explicit fixture response for every endpoint.
-- Passed the focused regression, full `pnpm verify`, admin and overlay production builds, and the exact authenticated Admin and Overlay Visual Proof workflow.
-- Produced all 26 existing visual-proof captures without changing screenshot names, viewports, navigation, authentication, overlay modes, styling, accessibility, or runtime behavior.
+- Preserved the administration console's ten-resource `Promise.all` refresh and all production application behavior.
+- Added `tools/test/admin-visual-proof-fixture.test.mjs` to derive the refresh endpoints from administration source and require an explicit fixture response for each endpoint.
+- Passed the focused regression, full `pnpm verify`, administration and overlay production builds, and the exact authenticated Admin and Overlay Visual Proof workflow.
+- Produced all existing captures without changing screenshot names, viewports, navigation, authentication, overlay modes, styling, accessibility, or runtime behavior.
 - Made no workflow, administration application, Server, Timers, API, database, CSS, shared UI, browser-client, gameplay, content, or deployment change.
 
 Final merge commit:
@@ -91,15 +86,14 @@ Final merge commit:
 Completed, validated, documented, and merged on 2026-07-28.
 
 - Completed the mandatory startup sequence from `main` commit `78646d84e8b47b73dd3cf4cf3cce61dfc02e6cbd`.
-- Verified `P1-T02-FIX1`, merge `e206d43eb97bdf5d5d4cc366ef9faa9ed8fa7c79`, and the latest documented main closeout before implementation.
+- Verified `P1-T02-FIX1`, merge `e206d43eb97bdf5d5d4cc366ef9faa9ed8fa7c79`, and the latest documented `main` closeout.
 - Recorded the existing Timers rendering, data flow, confirmation, exact bodyless POST, toast, refresh, cancellation, visual-proof, API, authorization, and Server-overview relationship before editing.
 - Extracted only the Timers page, Timers-specific presentation, confirmation, and force-resolve command into `apps/admin/src/features/timers/timers-page.tsx`.
 - Preserved `AdminApp` ownership of authentication, navigation, page composition, overview loading, the complete ten-resource refresh, and cross-feature orchestration.
 - Continued passing `overview?.timers ?? []`, `refresh`, and `pushToast` through props.
 - Preserved the exact request method, route, bodyless payload, confirmation copy, success and failure toasts, locale date rendering, full refresh after success, and no side effects after cancellation or failure.
-- Added six focused regression tests in `tools/test/admin-timers-feature.test.mjs`.
+- Added focused regression protection in `tools/test/admin-timers-feature.test.mjs`.
 - Passed full `pnpm verify`, administration and overlay builds, browser integration, UI verification, CodeQL, security gates, and the exact authenticated Admin and Overlay Visual Proof workflow.
-- Produced the existing 26 captures, including the desktop Timers proof, without changing screenshots, CSS, graphics, navigation, accessibility, or runtime behavior.
 - Made no Refunds, Players, Commands, Integrations, Expedition Creator, Config, Operations, Server, refresh decomposition, API, database, browser-client, shared UI, gameplay, content, worker, deployment, Docker, nginx, Vite, or workflow change.
 
 Commit evidence:
@@ -108,14 +102,14 @@ Commit evidence:
 - Final reviewed branch head: `dad7ed15f7ff309df3860a679c947423eff71bba`
 - Final merge commit: `ecdc63024a7d3380988d43b91435f2b614d3efb1` - `refactor(admin): extract timers feature`
 
-The detailed handoff is preserved at `docs/handoffs/2026-07-28-p1-t03-timers.md`.
+The detailed handoff is `docs/handoffs/2026-07-28-p1-t03-timers.md`.
 
 ### `P1-T03-REFUNDS` - Refunds Administration Extraction
 
-Implementation completed and source-validated on 2026-07-28. Final reviewed-branch validation and merge remain pending.
+Completed, validated, documented, and merged on 2026-07-28.
 
 - Completed the mandatory startup sequence from `main` commit `de35951935551a6b1244734ff39003bcf08e2a1c`.
-- Verified completed Timers extraction merge `ecdc63024a7d3380988d43b91435f2b614d3efb1` and the latest documented main closeout.
+- Verified completed Timers merge `ecdc63024a7d3380988d43b91435f2b614d3efb1` and the latest documented `main` closeout.
 - Recorded the existing Refunds presentation, shell transaction loading, reason state, eligibility, confirmation, exact request serialization, toasts, refresh, visual proof, production authorization, validation, StreamElements ordering, persistence, audit, and failure semantics before editing.
 - Extracted only the Refunds page, Refunds-specific presentation, refund-reason state, eligibility helper, confirmation flow, and refund command into `apps/admin/src/features/refunds/refunds-page.tsx`.
 - Preserved `AdminApp` ownership of authentication, navigation, page composition, transaction loading, the complete ten-resource refresh, and cross-feature orchestration.
@@ -132,8 +126,10 @@ Commit evidence:
 - Refunds feature module: `6f3b49456bc10a01b9ac8e8790c1373f4e1be8d2`
 - Refunds extraction and shell composition: `7be6ba27295cc89fa23f34dad8beb468eb5184c0`
 - Focused regression and validated source head: `401e26f261de01d76f1447f278250a8f4652f341`
+- Final reviewed branch head: `9cee80425b9848efd219f5f2cfeeb6364f684f0e`
+- Final merge commit: `d4443d94f6bbfa1594a44956dadca1a52aa8beb2` - `refactor(admin): extract refunds feature`
 
-The detailed handoff is preserved at `docs/handoffs/2026-07-28-p1-t03-refunds.md`.
+The detailed handoff is `docs/handoffs/2026-07-28-p1-t03-refunds.md`.
 
 ## Verified Current Architecture
 
@@ -170,8 +166,6 @@ The administration console currently:
 - Preserves reduced-motion, low-effects, keyboard, responsive, and forced-colors behavior.
 
 ## Verified Structural Problems
-
-The current cleanup plan remains based on these verified problems:
 
 - Most administration frontend responsibilities remain concentrated in `apps/admin/src/main.tsx`.
 - The administration API combines unrelated responsibilities in a large route module.
@@ -210,37 +204,11 @@ Each future extraction must add focused regression protection before or alongsid
 
 ## Validation Position
 
-### `P1-T03` executable pre-change baseline
+### `P1-T03` Timers
 
-Task-definition commit `cca0abea2c75b9f30352bd1a62536a9e02126641` changed documentation only and retained application source from starting `main`.
-
-- CI run `30371064822`, job `90314741971`: frozen install and complete `pnpm verify`, success
-
-### `P1-T03` validated source head
-
-Commit `ca1a3f9470d0fcfe35024fdae2bfa1de1e9a97f1` passed:
-
-- CI run `30372552445`, job `90319894219`: frozen install and complete `pnpm verify`, success
-- Admin and Overlay Visual Proof run `30372551080`, job `90319889665`: production builds, built previews, exact authenticated capture, and artifact upload, success
-- CodeQL run `30372552587`, job `90319894144`: success
-- UI Revamp Verify run `30372551099`, job `90319888544`: success
-- Browser integration tests run `30372551084`: success
-- CI and security gates run `30372551055`: success
-
-Visual artifact `8693597195`, digest `sha256:b9bdd3dec9c1443c6e0be9bd4c47ee6a6ceae232a33748719168c639465dfcec`, contains the existing 26 captures.
-
-### `P1-T03` final reviewed branch head
-
-Commit `dad7ed15f7ff309df3860a679c947423eff71bba` passed:
-
-- CI run `30373289045`: success
-- Admin and Overlay Visual Proof run `30373289202`: success
-- CodeQL run `30373289713`: success
-- UI Revamp Verify run `30373289886`: success
-- Browser integration tests run `30373289646`: success
-- CI and security gates run `30373290124`: success
-
-The local container could not resolve GitHub or the npm registry, so the executable baseline and final validation ran through the repository's authenticated GitHub Actions environment.
+- Executable pre-change baseline: CI run `30371064822`, job `90314741971`, success
+- Validated source head `ca1a3f9470d0fcfe35024fdae2bfa1de1e9a97f1`: CI, visual proof, CodeQL, UI verification, browser integration, and security gates succeeded
+- Final reviewed branch head `dad7ed15f7ff309df3860a679c947423eff71bba`: CI, visual proof, CodeQL, UI verification, browser integration, and security gates succeeded
 
 ### `P1-T03-REFUNDS` executable pre-change baseline
 
@@ -252,14 +220,32 @@ Task-definition commit `0008a09ecb667866a01894b6b37e668ecdc93609` changed docume
 
 Commit `401e26f261de01d76f1447f278250a8f4652f341` passed:
 
-- CI run `30382941611`, Verify job `90355022440`: frozen install, complete `pnpm verify`, focused Refunds regression, administration build, and overlay build, success
-- Admin and Overlay Visual Proof run `30382941552`, screenshots job `90355021602`: production builds, built previews, authenticated capture, and artifact upload, success
+- CI run `30382941611`, Verify job `90355022440`: success
+- Admin and Overlay Visual Proof run `30382941552`, screenshots job `90355021602`: success
 - Browser integration tests run `30382941553`, Playwright job `90355022020`: success
 - CI and security gates run `30382941614`: success
 - CodeQL run `30382941722`: success
 - UI Revamp Verify run `30382941799`: success
 
 Visual artifact `8697799828`, digest `sha256:9bb39a2df4011a43f93d302e379b7265a8721596dbdd1407211ad477b657d283`, includes the existing desktop Refunds capture.
+
+### `P1-T03-REFUNDS` final reviewed branch head
+
+Commit `9cee80425b9848efd219f5f2cfeeb6364f684f0e` passed:
+
+- CI run `30383641923`, Verify job `90357369617`: frozen install and complete `pnpm verify`, success
+- Admin and Overlay Visual Proof run `30383641616`, screenshots job `90357369045`: production builds, browser installation, built previews, authenticated capture, and artifact upload, success
+- Browser integration tests run `30383642017`, Playwright job `90357369983`: success
+- CodeQL run `30383641829`, JavaScript/TypeScript job `90357369367`: success
+- UI Revamp Verify run `30383641724`, verify job `90357369170`: success
+- CI and security gates run `30383642758`: success
+  - Repository verification and production-image job `90357373135`
+  - Dependency review job `90357373183`
+  - Secret scan job `90357373212`
+
+Visual artifact `8698083588`, digest `sha256:58037a390768861378d63b080062ff48ffda97bf6ffb5633c7545f4da0c8123c`, includes `proof/admin/desktop/transactions.png`.
+
+The local container could not resolve GitHub or the npm registry, so the executable baseline and final validation ran through the repository's authenticated GitHub Actions environment.
 
 ## Known Risks and Limitations
 
@@ -275,8 +261,6 @@ Visual artifact `8697799828`, digest `sha256:9bb39a2df4011a43f93d302e379b7265a87
 - Repository documentation contains stale counts and duplicated historical material that must be handled carefully rather than deleted blindly.
 
 ## Not Yet Implemented
-
-The following remain planned work, not completed features:
 
 - Further administration frontend feature extractions
 - Administration shell and refresh decomposition
@@ -294,11 +278,17 @@ The following remain planned work, not completed features:
 
 ## Current Readiness
 
-`P1-T03-REFUNDS` implementation is complete and source-validated at `401e26f261de01d76f1447f278250a8f4652f341`.
+`P1-T03-REFUNDS` is complete, validated, documented, and merged at `d4443d94f6bbfa1594a44956dadca1a52aa8beb2`.
 
-The remaining work in this chat is limited to final project-control documentation, final reviewed-branch validation, exact diff review, merge, and main closeout recording.
+This is a required new-chat boundary. No next implementation task is active.
 
-Do not begin Players, refresh decomposition, contract consolidation, administration API decomposition, or another Phase 1 task in this chat.
+The next chat must:
+
+1. Follow `START_HERE.md` from the latest `main` branch.
+2. Verify merge `d4443d94f6bbfa1594a44956dadca1a52aa8beb2` and the final documented `main` closeout in `docs/handoffs/LATEST.md`.
+3. Choose exactly one next objective within Phase 1.
+4. Replace `docs/CURRENT_TASK.md` before implementation.
+5. Do not begin Players, refresh decomposition, contract consolidation, or another administration task in this completed Refunds chat.
 
 ## Deferred Work
 
