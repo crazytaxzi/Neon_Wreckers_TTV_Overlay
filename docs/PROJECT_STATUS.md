@@ -1,10 +1,10 @@
 # Neon Wreckers Project Status
 
 **Status:** Active project ledger  
-**Last updated:** 2026-07-27  
+**Last updated:** 2026-07-28  
 **Repository:** `crazytaxzi/Neon_Wreckers_TTV_Overlay`  
 **Current phase:** Phase 1 - Structural Cleanup and Stabilization  
-**Implementation state:** `P1-T01` complete; `P1-T02` ready to start
+**Implementation state:** `P1-T01` complete; `P1-T02` in progress
 
 This file records the verified state of the project. Update it at the end of every completed work unit. Do not use it as a wish list.
 
@@ -86,7 +86,7 @@ The administration console currently:
 - Depends on shared UI components and the complete shared UI stylesheet stack.
 - Preserves reduced-motion, low-effects, keyboard, responsive, and forced-colors behavior through shared and administration-specific presentation layers.
 
-The first implementation task must preserve the shell, refresh, API ownership, navigation, styling, and all current behavior while extracting only the Server diagnostics feature.
+The active implementation task must preserve the shell, refresh, API ownership, navigation, styling, and all current behavior while extracting only the Server diagnostics feature.
 
 ## Verified Structural Problems
 
@@ -122,19 +122,17 @@ Missing protection includes authenticated interaction tests for feature mutation
 
 Each extraction must add focused regression protection before or alongside moving behavior.
 
-## Baseline Validation Limitation
+## Baseline Validation Position
 
-No fresh pnpm test or build command was completed during `P1-T01`.
+No fresh pnpm command was completed locally during `P1-T01`, because that execution environment could inspect the repository only through the GitHub connector and could not resolve `github.com`.
 
-The execution environment could inspect and update the repository through the GitHub connector, but a local clone failed because `github.com` could not be resolved. GitHub also reported no workflow runs or combined commit statuses for the inspected starting commit.
-
-This is a verified source-inspection baseline, not a fresh passing executable baseline. `P1-T02` must begin in a clone-capable environment and run the minimum commands defined in `docs/CURRENT_TASK.md`.
+`P1-T02` is using the repository's pull-request CI workflow as its executable validation host. Before any application source changes, the project-control-only task branch must complete `pnpm install --frozen-lockfile` and `pnpm verify` against the unchanged application tree. The final extracted state must pass the same workflow. Local commands remain unavailable because the current container cannot resolve `github.com` or `registry.npmjs.org`; this limitation is recorded rather than mislabeled as a pass.
 
 ## Not Yet Implemented
 
 The following remain planned work, not completed features:
 
-- Any administration frontend source extraction
+- Any completed administration frontend source extraction
 - Administration API decomposition
 - Shared contract consolidation
 - Live database-backed content revisions
@@ -163,16 +161,16 @@ Do not describe any item in this section as complete until repository evidence a
 
 ## Current Readiness
 
-`P1-T01` is complete and creates a clean new-chat boundary.
+`P1-T01` is complete.
 
-`P1-T02` is ready to start. Its single objective is to extract the read-only Server diagnostics feature with focused regression protection and no behavior change.
+`P1-T02` is active. Its single objective is to extract the read-only Server diagnostics feature with focused regression protection and no behavior change.
 
-Before code changes begin, the next work session must:
+The active work session must:
 
 1. Follow `START_HERE.md`.
 2. Verify the latest `main` branch and commit.
 3. Read `docs/phases/P1_T01_ADMIN_BASELINE.md`.
-4. Run or honestly document the pre-change executable baseline.
+4. Establish and record the executable pre-change baseline through pull-request CI before changing application source.
 5. Complete only the task defined in `docs/CURRENT_TASK.md`.
 6. Stop after the Server extraction is validated and committed.
 
