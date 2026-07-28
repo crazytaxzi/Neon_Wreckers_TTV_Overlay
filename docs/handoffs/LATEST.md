@@ -2,7 +2,7 @@
 
 **Handoff date:** 2026-07-28  
 **Repository:** `crazytaxzi/Neon_Wreckers_TTV_Overlay`  
-**Branch:** `agent/p1-t03-timers-extraction`  
+**Branch:** `main`  
 **Pull request:** `#37`  
 **Starting main commit:** `78646d84e8b47b73dd3cf4cf3cce61dfc02e6cbd`  
 **Task-definition commit:** `cca0abea2c75b9f30352bd1a62536a9e02126641`  
@@ -10,14 +10,15 @@
 **Timers extraction commit:** `6eeb12e81b8a306fa6ba35ef5004116bd2c84b2d`  
 **Focused regression-test commit:** `ca1a3f9470d0fcfe35024fdae2bfa1de1e9a97f1`  
 **Validated source head:** `ca1a3f9470d0fcfe35024fdae2bfa1de1e9a97f1`  
-**Final merge commit:** Pending merge closeout  
-**Final documented main closeout commit:** Pending post-merge closeout  
+**Final reviewed branch head:** `dad7ed15f7ff309df3860a679c947423eff71bba`  
+**Final merge commit:** `ecdc63024a7d3380988d43b91435f2b614d3efb1`  
+**Final documented main closeout commit:** This commit  
 **Current phase:** Phase 1 - Structural Cleanup and Stabilization  
 **Completed task:** `P1-T03` - Timers administration extraction  
 **Next task:** Not authorized  
-**Handoff status:** Complete and validated; pending final merge and post-merge hash recording
+**Handoff status:** Complete, validated, documented, merged, and closed
 
-This is the current handoff. The detailed permanent record is `docs/handoffs/2026-07-28-p1-t03-timers.md`.
+This is the current handoff and the final `main` closeout record for `P1-T03`. The permanent detailed record is `docs/handoffs/2026-07-28-p1-t03-timers.md`.
 
 ## Read First
 
@@ -129,11 +130,22 @@ Tested commit: `ca1a3f9470d0fcfe35024fdae2bfa1de1e9a97f1`
 
 Visual artifact `8693597195`, digest `sha256:b9bdd3dec9c1443c6e0be9bd4c47ee6a6ceae232a33748719168c639465dfcec`, contains the existing 26 captures, including `proof/admin/desktop/timers.png`.
 
+### Final reviewed branch head
+
+Tested commit: `dad7ed15f7ff309df3860a679c947423eff71bba`
+
+- CI run `30373289045`: success
+- Admin and Overlay Visual Proof run `30373289202`: success
+- CodeQL run `30373289713`: success
+- UI Revamp Verify run `30373289886`: success
+- Browser integration tests run `30373289646`: success
+- CI and security gates run `30373290124`: success
+
 The local container could not resolve GitHub or the npm registry, so the executable baseline and final validation ran through the repository's authenticated GitHub Actions environment.
 
 ## Final Diff Boundary
 
-The reviewed implementation scope is limited to:
+Pull request `#37` contained exactly:
 
 - `apps/admin/src/main.tsx`
 - `apps/admin/src/features/timers/timers-page.tsx`
@@ -143,14 +155,28 @@ The reviewed implementation scope is limited to:
 - `docs/handoffs/LATEST.md`
 - `docs/handoffs/2026-07-28-p1-t03-timers.md`
 
-No Refunds, Players, Commands, Integrations, Expedition Creator, Config, Operations, Server, refresh decomposition, contract consolidation, API, database, browser-client, shared UI, CSS, gameplay, content, worker, deployment, Docker, nginx, Vite, or workflow file belongs in this task.
+No Refunds, Players, Commands, Integrations, Expedition Creator, Config, Operations, Server, refresh decomposition, contract consolidation, API, database, browser-client, shared UI, CSS, gameplay, content, worker, deployment, Docker, nginx, Vite, or workflow file was changed.
+
+## Merge and Closeout
+
+Pull request `#37` was squash-merged into `main` as:
+
+- `ecdc63024a7d3380988d43b91435f2b614d3efb1` - `refactor(admin): extract timers feature`
+
+Supporting post-merge records were committed before this final handoff closeout:
+
+- `e21dbb09e85e9ccb3426d57ba2b64be00fc4fdd3` - current-task merge record
+- `1abd6fbfa56c470cbabd93ca32eb280cda335f21` - project-status closeout
+- `60b664ad4de72dd51e0b88fe4c156c61bfb65443` - dated handoff closeout
+
+This `docs/handoffs/LATEST.md` update is the final documented `main` closeout commit. Its exact commit hash is the repository head and is reported in the completed work response.
 
 ## Rollback Method
 
-Revert the final `P1-T03` merge commit. The rollback restores the inline Timers page and removes the focused module and regression test without an API, database, gameplay, content, or deployment rollback.
+Revert merge commit `ecdc63024a7d3380988d43b91435f2b614d3efb1`. The rollback restores the inline Timers page and removes the focused module and regression test without an API, database, gameplay, content, or deployment rollback.
 
 ## Stop Boundary
 
-After final merge and post-merge hash recording, this chat stops. Do not begin Refunds, Players, refresh decomposition, or another Phase 1 task.
+`P1-T03` is complete, validated, documented, merged, and closed. Stop here.
 
-The next task is not authorized and must be defined in a new chat after completing the startup sequence from the latest `main` branch.
+Do not begin Refunds, Players, refresh decomposition, or another Phase 1 task in this chat. The next task is not authorized and must be defined in a new chat after completing the mandatory startup sequence from the latest `main` branch.
