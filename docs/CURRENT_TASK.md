@@ -1,170 +1,253 @@
 # Neon Wreckers Current Task
 
-**Task ID:** `P1-T02-FIX1`  
+**Task ID:** `P1-T03`  
 **Phase:** Phase 1 - Structural Cleanup and Stabilization  
-**Status:** Complete  
-**Completed:** 2026-07-28  
+**Status:** Active  
+**Started:** 2026-07-28  
+**Starting main commit:** `78646d84e8b47b73dd3cf4cf3cce61dfc02e6cbd`  
 **Phase authority:** `docs/phases/PHASE_01.md`  
 **Baseline authority:** `docs/phases/P1_T01_ADMIN_BASELINE.md`
 
-Only one task may be active in this file at a time. This completed record remains until the next development chat defines one new objective.
+Only one task may be active in this file at a time.
 
 ## Objective
 
-Repair the authenticated Admin and Overlay Visual Proof fixture so every request made by the administration console's existing ten-resource refresh receives an explicit, deterministic, schema-compatible fixture response during visual capture, without changing production behavior or beginning another administration feature extraction.
+Extract only the existing Timers administration page, its Timers-specific presentation, browser confirmation, and force-resolve command from `apps/admin/src/main.tsx` into a focused module under `apps/admin/src/features/timers/` without changing behavior.
 
-## Completion Result
+## Reason
 
-- Added visual-proof-only responses for `/api/v1/admin/balance-telemetry`, `/api/v1/admin/live-ops`, and `/api/v1/admin/expedition-creator`.
-- Preserved the existing ten-resource `Promise.all` refresh and all `AdminApp` request ownership.
-- Added `tools/test/admin-visual-proof-fixture.test.mjs` to derive the ten refresh endpoints from the real administration source and require an explicit fixture response for every one.
-- Kept the fallback `route.continue()` behavior for requests outside the authenticated fixture while proving the administration refresh cannot reach it.
-- Ran the authenticated capture against the real production-built admin and overlay surfaces.
-- Preserved all screenshot names, viewport coverage, navigation behavior, authentication fixture behavior, overlay modes, transparency behavior, styling, accessibility behavior, and production runtime behavior.
-- Extracted no administration feature and made no Timers change.
+`apps/admin/src/main.tsx` still owns most administration features. The documented extraction order identifies Timers as the next narrow slice after Server diagnostics because it has one data input, one confirmation, and one mutation while the shell can continue owning authentication, navigation, remote loading, and the shared full refresh.
 
-## Root Cause Confirmed Before Editing
+## Pre-Change Behavior and Ownership Record
 
-`tools/visual-proof/capture-admin-overlay.mjs` intercepted `/api/v1/**`, fulfilled paths present in `adminData`, and continued every other request. The existing administration shell requested ten resources, but `adminData` contained only seven of them.
+### Current Timers implementation
 
-The missing requests fell through to the inactive Vite preview proxy at `127.0.0.1:8787`:
+- `TimersPage` is defined inline in `apps/admin/src/main.tsx`.
+- `AdminApp` composes it under the `timers` page identifier.
+- The page receives `overview`, `refresh`, and `pushToast` through props.
+- The page performs no authentication, navigation, or unrelated administration request.
 
-- `/api/v1/admin/balance-telemetry`
-- `/api/v1/admin/live-ops`
-- `/api/v1/admin/expedition-creator`
+### Active expedition timer data
 
-The workflow, production builds, preview servers, navigation, and capture commands were otherwise functioning.
+- `AdminApp` loads `GET /api/v1/admin/overview` as part of its existing ten-resource `Promise.all` refresh.
+- The response type is `AdminOverview`, currently exported by `apps/admin/src/features/server/server-page.tsx`.
+- The Timers page renders `overview?.timers ?? []`.
+- Each timer record has the existing shape:
+  - `id: string`
+  - `name: string`
+  - `playerName: string`
+  - `resolvesAt: string`
+- Timers and Server therefore consume different portions of the same shell-owned Server overview response. This task may narrow the Timers prop to the existing timer records, but it must not change the Server feature, overview request, response shape, or shell ownership.
 
-## Behavior Changed
+### Force-resolve confirmation and command
 
-Inside `tools/visual-proof/capture-admin-overlay.mjs` only, the three previously missing administration GET requests now receive deterministic fixture envelopes compatible with the administration response models and production route shapes.
+- Clicking `Resolve now` invokes the Timers-local command for that row identifier.
+- The exact confirmation text is `Resolve this expedition immediately?`.
+- Rejecting the confirmation returns immediately and sends no request, toast, or refresh.
+- Confirming sends the exact request:
 
-## Behavior Preserved
+```text
+POST /api/v1/expeditions/:id/resolve-now
+```
 
-- `apps/admin/src/main.tsx` and its ten-resource `Promise.all` refresh
-- `AdminApp` ownership of remote state and requests
-- Server feature source and behavior
-- Production API routes, methods, envelopes, response shapes, authorization, database behavior, and browser-client behavior
-- Administration and overlay production builds
-- Authentication fixture and role gate
-- Navigation identifiers, order, labels, icons, and default tab
-- Existing desktop, tablet, mobile, overlay, viewer-event, and transparent capture coverage
-- Existing output paths and screenshot names
-- Shared UI, CSS, responsive behavior, reduced motion, low effects, keyboard behavior, and forced-colors behavior
-- Gameplay, balance, content, player data, deployment, and runtime behavior
+- The browser request is made through the existing `requestApi` client.
+- The request options contain only `method: "POST"`.
+- No request body is supplied.
+- No endpoint-specific runtime schema, alternate client, adapter, compatibility wrapper, or duplicate request layer is used.
 
-## Files Changed
+### Toast, refresh, and failure behavior
 
-Fixture and regression scope:
+On success:
 
-- `tools/visual-proof/capture-admin-overlay.mjs`
-- `tools/test/admin-visual-proof-fixture.test.mjs`
+```text
+title: Expedition timer resolved
+tone: success
+```
 
-Project-control scope:
+The command then awaits the existing `refresh` callback exactly once. That callback reloads all ten administration resources in one `Promise.all`.
+
+On failure:
+
+```text
+title: Timer command failed
+message: errorMessage(error)
+tone: danger
+```
+
+The failure path does not emit the success toast and does not invoke the full refresh.
+
+### Existing rendering contract
+
+The populated table retains these columns and values:
+
+1. `Player` - bold `playerName`
+2. `Mission` - `name`
+3. `Scheduled return` - `new Date(resolvesAt).toLocaleString()`
+4. `Control` - right-aligned warning button labeled `Resolve now`
+
+The empty state is exactly `No active expedition timers.`.
+
+The page heading remains:
+
+- Eyebrow: `SCHEDULE CONTROL`
+- Title: `Active Expedition Timers`
+- Description: `Force an overdue or stuck expedition into its server-calculated resolved state. Players must still claim their rewards.`
+- Icon: `events`
+
+The informational notice remains:
+
+- Title: `Other command timers`
+- Tone: `info`
+- Body: `Player crafting, salvage, scan, station-maintenance, and career timers are listed and reset from the Players workspace. Live-event timers are stopped and reset from Operations.`
+
+### Navigation and visual-proof coverage
+
+- The Timers navigation contract is `{ id: "timers", label: "Timers", icon: "events" }`.
+- It remains sixth, after Server and before Players.
+- The default administration tab remains `operations`.
+- The authenticated visual-proof fixture provides populated timer records through `/api/v1/admin/overview`.
+- The Admin and Overlay Visual Proof capture includes the existing desktop `Timers` screenshot at `proof/admin/desktop/timers.png`.
+- The fixture-coverage regression derives the ten refresh endpoints from the real administration source and requires an explicit response for every endpoint.
+
+### Existing API route and authorization
+
+- `apps/api/src/routes/expeditions.ts` owns `POST /api/v1/expeditions/:id/resolve-now`.
+- The route calls `requireAdmin(context.prisma, request)` before resolving the expedition.
+- The identifier comes from the route parameter.
+- The route does not consume an administration request body.
+- Resolution, persistence, status validation, reward calculation, and response data remain server-owned and are outside this task.
+
+## Authorized Files or Directories
+
+Application source:
+
+- `apps/admin/src/main.tsx`
+- New focused files under `apps/admin/src/features/timers/`
+
+Regression protection:
+
+- One focused test under `tools/test/` or the smallest directly relevant browser-test location
+
+Project-control documentation:
 
 - `docs/CURRENT_TASK.md`
 - `docs/PROJECT_STATUS.md`
 - `docs/handoffs/LATEST.md`
-- `docs/handoffs/2026-07-28-p1-t02-server-diagnostics.md`
+- One dated handoff record under `docs/handoffs/` when useful
 
-No workflow change was required.
+## Required Architecture
+
+- Move only the Timers page, Timers-specific presentation, confirmation, and force-resolve command into the focused Timers feature module.
+- Keep authentication, authorization presentation, navigation, page composition, remote state loading, and cross-feature orchestration in `AdminApp`.
+- Continue receiving the existing timer records through props from shell-owned overview state.
+- Continue receiving the existing full-refresh callback and toast function through props.
+- Keep the production command connected to `requestApi` from `@neon-wreckers/browser-client`.
+- Preserve the ten-resource `Promise.all` refresh exactly.
+- Preserve the full refresh after successful force resolution.
+- Do not make the Timers feature own the overview GET request.
+- Do not import another administration feature into the Timers feature.
+
+## Explicitly Forbidden Changes
+
+- Do not extract Refunds, Players, Commands, Integrations, Expedition Creator, Config, Operations, or another administration feature.
+- Do not change the Server feature.
+- Do not change or decompose the ten-resource refresh.
+- Do not move general shell state or API orchestration out of `AdminApp`.
+- Do not change production API routes, methods, payloads, response shapes, authorization, audit behavior, database behavior, or browser-client behavior.
+- Do not change gameplay, balance, rewards, content, expedition resolution rules, timing calculations, worker behavior, CSS, shared UI, graphics, visual design, navigation, accessibility behavior, or screenshot expectations.
+- Do not change deployment architecture, Docker, nginx, Vite configuration, or unrelated workflows.
+- Do not add endpoint-specific runtime schemas or perform contract consolidation.
+- Do not hide unrelated cleanup inside this task.
+- Do not begin Refunds, Players, refresh decomposition, or later administration work in this chat.
+
+## Expected Behavior Change
+
+None. This is an ownership extraction only.
+
+## Expected Behavior That Must Remain Unchanged
+
+- Exact navigation identifier, order, label, icon, and default tab
+- Exact table headings, row values, date rendering, button text, empty state, page copy, notice copy, and existing CSS classes
+- Exact confirmation copy and cancellation behavior
+- Exact request method, route interpolation, and bodyless payload behavior
+- Exact success and failure toast titles, messages, and tones
+- Exactly one full refresh after success and no refresh after failure or cancellation
+- Existing ten-resource administration refresh and all endpoint paths
+- Existing authenticated visual-proof fixture coverage and screenshot output
+- API authorization, server-side resolution, persistence, and response behavior
+- Authentication, accessibility, gameplay, content, deployment, and production behavior
 
 ## Executable Pre-Change Baseline
 
-Before editing the fixture, Admin and Overlay Visual Proof run `30353056639` was rerun unchanged.
-
-Rerun job `90267084937` established:
-
-- `pnpm install --frozen-lockfile`: passed
-- Production contracts, UI, admin, and overlay builds: passed
-- Existing UI graphics regression: passed
-- Playwright Chromium installation: passed
-- Built admin and overlay preview startup: passed
-- Authenticated capture: failed
-
-The preview diagnostics recorded all three missing paths falling through to Vite's inactive proxy.
-
-## Validation Evidence
-
-### Focused regression
-
-Executed against the reconstructed source checkout:
-
-```text
-node --test tools/test/admin-visual-proof-fixture.test.mjs
-```
-
-Result: 2 passed, 0 failed.
-
-The test proves:
-
-- The administration refresh contains exactly ten unique requests.
-- Every request has an explicit authenticated fixture entry.
-- The three repaired paths remain present.
-- Visual-proof interception is installed before the production-built admin surface loads.
-- The fixture uses the standard `{ data: ... }` envelope.
-- Non-fixture requests may still continue, while refresh requests cannot fall through.
-
-### Frozen install, repository tests, builds, and complete verification
-
-GitHub Actions CI run `30357665819`, job `90269540183`, completed successfully against validated source head `a26e5f0a10dbf848a1dc1a46b459e0bf2d5c0e89`.
-
-It ran:
+The task-definition commit must contain project-control documentation only. Before application source is edited, run against that unchanged source state:
 
 ```text
 pnpm install --frozen-lockfile
-pnpm verify
-```
-
-`pnpm verify` includes `pnpm test:repository`, the focused regression test, all repository verification suites, and the complete production build pipeline including:
-
-```text
+pnpm test:repository
 pnpm --filter @neon-wreckers/admin run build
 pnpm --filter @neon-wreckers/overlay run build
 ```
 
-Result: passed.
+`pnpm verify` is preferred when the validation environment supports it.
 
-### Exact authenticated visual-proof workflow
+The local execution container cannot resolve GitHub or the npm registry. The executable baseline will therefore run through the repository's authenticated GitHub Actions environment, and the run ID, job ID, tested commit, and exact result must be recorded before source editing continues.
 
-Admin and Overlay Visual Proof run `30357668480`, job `90269548106`, completed successfully against the same validated source head.
+## Regression Protection Required
 
-Successful steps included:
+The focused regression must prove at minimum:
 
-- Frozen dependency installation
-- Production contracts and shared UI builds
-- `pnpm --filter @neon-wreckers/admin run build`
-- `pnpm --filter @neon-wreckers/overlay run build`
-- Existing UI graphics regression
-- Workspace-owned Chromium installation
-- Built admin and overlay preview startup
-- `node tools/visual-proof/capture-admin-overlay.mjs`
-- Visual-proof artifact upload
+- `AdminApp` imports and composes the Timers feature.
+- The feature does not own authentication, navigation, the overview GET request, or unrelated API requests.
+- Active timers render from the existing record shape.
+- The existing empty state remains present.
+- Confirming sends the exact bodyless `POST /api/v1/expeditions/:id/resolve-now` request.
+- Cancelling sends no request.
+- Success emits the exact success toast and invokes the full refresh exactly once.
+- Failure emits the exact danger toast and does not emit false success or refresh.
+- Existing labels, columns, date rendering, button text, confirmation copy, notice copy, and visual classes remain unchanged.
+- The ten-resource administration refresh remains intact.
+- The authenticated visual-proof fixture explicitly covers every refresh endpoint.
+- The API route still requires administrative authorization and remains body-independent.
 
-Artifact `8687505083` contains all 26 existing captures across desktop, tablet, mobile, 720p, 1080p, 1440p, 4K, viewer-event, and transparent overlay modes. No diagnostic artifact was produced.
+## Validation Commands
 
-## Final Diff Review
+At minimum:
 
-The final task diff is limited to:
+```text
+pnpm install --frozen-lockfile
+node --test tools/test/admin-timers-feature.test.mjs
+pnpm test:repository
+pnpm --filter @neon-wreckers/admin run build
+pnpm --filter @neon-wreckers/overlay run build
+pnpm verify
+```
 
-- Three deterministic fixture responses
-- One focused regression test
-- Required project-control and handoff records
+Also run the exact authenticated Admin and Overlay Visual Proof workflow or its exact local capture equivalent against the validated source head.
 
-There is no administration application source, Server feature, Timers feature, API, database, CSS, shared UI, browser-client, overlay runtime, workflow, gameplay, content, or deployment change.
+When validation runs remotely, record the workflow run IDs, job IDs, tested commit, and exact result.
 
 ## Rollback Method
 
-Revert the final squash merge commit recorded in `docs/handoffs/LATEST.md`. The rollback removes only the fixture entries, focused test, and task documentation.
+Revert the final Timers extraction merge commit. The rollback restores the inline Timers page and removes the focused Timers module and regression test without requiring an API, database, content, or deployment rollback.
 
-## Deferred Work
+## Completion Evidence
 
-- The Timers extraction remains a separate future Phase 1 task.
-- Further administration frontend decomposition must continue one narrow feature at a time.
-- Refresh decomposition, contract consolidation, API decomposition, styling cleanup, and later-phase Studio or live-content work remain outside this task.
+Pending:
+
+- Executable pre-change baseline commit, run ID, job ID, and result
+- Timers feature module and shell composition diff
+- Focused regression-test commit and result
+- Full `pnpm verify` result
+- Admin and Overlay Visual Proof run, job, artifact, and result
+- Final diff review showing only authorized files
+- Starting main commit
+- Task-definition commit
+- Timers extraction commit
+- Focused regression-test commit
+- Validated source head
+- Final merge commit
+- Final documented main closeout commit
 
 ## Expected Stopping Point
 
-Reached.
-
-Stop here. Do not begin the Timers extraction or another administration feature in this chat.
+Stop after the Timers extraction is validated, documented, merged, and its final commit hashes are recorded. Do not begin Refunds, Players, refresh decomposition, or another Phase 1 task in this chat.
