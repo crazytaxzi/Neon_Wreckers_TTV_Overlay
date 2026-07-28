@@ -6,7 +6,7 @@
 **Implementation pull request:** `#40`  
 **Documentation closeout pull request:** `#41`  
 **Starting main commit:** `2f7ff674bec41b3f9068aaa98824a9dd5be771a7`  
-**Task-definition commit:** `4a2d5fd4b4f5251c8d07e58e7b27dd4edfe082`  
+**Task-definition commit:** `4a2d5fd4b4f4b5251c8d07e58e7b27dd4edfe082`  
 **Pre-change baseline record commit:** `b0bd153a204a62a69af0963497f02954f7bf72e6`  
 **Players feature-module commit:** `ffda785a329924bd5fdbb62cf259a116778e79c8`  
 **Players extraction and shell-composition commit:** `7d42af7194aebefa529492348df334d22fc797f8`  
@@ -14,16 +14,17 @@
 **Validated source head:** `1bb543286e00ff2e2078d78d73dd29b19090810f`  
 **Final reviewed branch head:** `5c239907feaab199a799896914822893e7f02243`  
 **Players extraction merge commit:** `d15c50a080e0fd84f9ccd91466e2c6ded22b5961`  
-**Documentation closeout merge commit:** Pending PR `#41`  
-**Final documented main closeout commit:** Pending final record  
+**Documentation closeout merge commit:** `8e0a07b5ea73ce43b9bcc3c26d60f941b655b88d`  
+**Permanent Players handoff record commit:** `9b708d0ed96b8b3074ebef2dfa3932fa04c58f60`  
+**Final documented main closeout commit:** This commit  
 **Current phase:** Phase 1 - Structural Cleanup and Stabilization  
 **Completed task:** `P1-T04-PLAYERS` - Players administration extraction  
 **Next task:** Not authorized  
-**Handoff status:** Implementation complete and validated; documentation closeout in progress
+**Handoff status:** Complete, validated, merged, documented, and stopped
 
 The permanent detailed record is `docs/handoffs/2026-07-28-p1-t04-players.md`.
 
-Phase 2 planning documents were added to `main` after the Players implementation merge. They remain prepared and dormant under their own activation gates. They do not change the active Phase 1 stop boundary or authorize Phase 2 implementation.
+Phase 2 planning documents were added concurrently after the Players implementation merge. They remain prepared and dormant under their own activation gates. They do not authorize Phase 2 implementation, alter the completed Players boundary, or activate a next task.
 
 ## Read First
 
@@ -45,20 +46,10 @@ Do not rely on prior chat history as the source of truth.
 
 Extract only the existing Players administration page, `AdminPlayer` browser presentation model, Players-specific local state, client-side filtering, selected-player cleanup, modal presentation, adjustment command, and cooldown-reset commands from `apps/admin/src/main.tsx` into `apps/admin/src/features/players/players-page.tsx` without changing behavior.
 
-## Startup and Repository Verification
-
-- Completed the mandatory startup sequence from `START_HERE.md` before planning or editing.
-- Verified completed Refunds task `P1-T03-REFUNDS`.
-- Verified Refunds extraction merge `d4443d94f6bbfa1594a44956dadca1a52aa8beb2`.
-- Verified Refunds documentation closeout merge `bcb08eba83d278a19339bf28575fc9fd12039190`.
-- Verified starting documented `main` `2f7ff674bec41b3f9068aaa98824a9dd5be771a7`.
-- Reconstructed Players, shell-owned player data, the ten-resource refresh, visual fixtures, browser client, production routes, authorization, validation, clamping, persistence, cooldown deletion, audit, and failure behavior from current source and recent commits.
-- Recorded the exact pre-change contract before editing application source.
-
 ## Work Completed
 
 - Added `apps/admin/src/features/players/players-page.tsx`.
-- Moved only the Players page, browser presentation model, local state, client filtering, selection cleanup, modal presentation, adjustment command, and cooldown-reset commands.
+- Moved only the Players presentation model, local state, client-side filtering, selection cleanup, modal presentation, adjustment command, and cooldown-reset commands.
 - Kept authentication, authorization presentation, navigation, page composition, shell-owned player loading, all ten resource requests, the single `Promise.all`, and cross-feature orchestration in `AdminApp`.
 - Continued passing shell-owned player records, `refresh`, and `pushToast` through props.
 - Continued using the real `requestApi` browser client without an adapter, compatibility wrapper, duplicate request layer, service abstraction, or endpoint-specific runtime schema.
@@ -72,7 +63,7 @@ Extract only the existing Players administration page, `AdminPlayer` browser pre
 - Exact `AdminPlayer` browser shape and active cooldown records
 - Shell-owned `players` state and `setPlayers(playersData)`
 - `/api/v1/admin/players` as request six in the exact ten-resource refresh
-- Complete player response loading rather than search-specific requests
+- Complete player-response loading rather than search-specific requests
 - Search default `""`
 - Selected-player default `null`
 - Numeric zero adjustment defaults
@@ -126,7 +117,7 @@ Extract only the existing Players administration page, `AdminPlayer` browser pre
 
 ### Executable pre-change baseline
 
-Tested task-definition commit: `4a2d5fd4b4f5251c8d07e58e7b27dd4edfe082`.
+Tested task-definition commit: `4a2d5fd4b4f4b5251c8d07e58e7b27dd4edfe082`.
 
 - CI run `30388992236`, Verify job `90375401810`: frozen installation and complete repository verification, success
 - CI and security gates run `30388992031`: success
@@ -136,7 +127,7 @@ Application source remained identical to starting `main`.
 
 ### Validated source head
 
-Source head: `1bb543286e00ff2e2078d78d73dd29b19090810f`.
+Tested source head: `1bb543286e00ff2e2078d78d73dd29b19090810f`.
 
 - CI run `30389920172`, Verify job `90378605835`: success
 - UI Revamp Verify run `30389921069`, verify job `90378608397`: success
@@ -165,6 +156,17 @@ Tested source head: `5c239907feaab199a799896914822893e7f02243`.
 - Digest `sha256:b76ec91ba6ab78e7c6d682e0670c681dc96af1234e19b482cabc0ed014547e25`
 - Existing desktop, tablet, and mobile Players captures present
 
+### Documentation closeout head
+
+Tested documentation head: `c8371182741dc98bb09daebd86db602465c281d5`.
+
+- CI run `30391043679`, Verify job `90382406924`: success
+- CodeQL run `30391042568`, JavaScript/TypeScript job `90382403296`: success
+- CI and security gates run `30391045194`: success
+  - Secret scan job `90382478281`
+  - Dependency review job `90382478298`
+  - Repository verification and production-image job `90382478316`
+
 The local execution container could not resolve GitHub or the npm registry, so executable validation ran through the repository's authenticated GitHub Actions environment.
 
 ## Final Diff Review
@@ -177,27 +179,28 @@ Implementation pull request `#40` contained exactly:
 - `docs/CURRENT_TASK.md`
 - `docs/handoffs/2026-07-28-p1-t04-players.md`
 
-Documentation closeout pull request `#41` is limited to:
+Documentation closeout pull request `#41` contained exactly:
 
 - `docs/CURRENT_TASK.md`
 - `docs/PROJECT_STATUS.md`
 - `docs/handoffs/LATEST.md`
 - `docs/handoffs/2026-07-28-p1-t04-players.md`
 
-No temporary helper workflow or helper file was merged.
+The final two direct `main` commits changed only the permanent Players handoff and this latest-handoff pointer. No temporary helper workflow or helper file was merged.
 
 ## Merge and Closeout
 
 - Players implementation PR `#40` squash merge: `d15c50a080e0fd84f9ccd91466e2c6ded22b5961`
-- Documentation closeout PR `#41`: pending merge
-- Final latest-handoff record: pending after documentation merge
+- Documentation closeout PR `#41` squash merge: `8e0a07b5ea73ce43b9bcc3c26d60f941b655b88d`
+- Permanent Players handoff record: `9b708d0ed96b8b3074ebef2dfa3932fa04c58f60`
+- Final documented `main` closeout: this commit
 
 ## Rollback Method
 
-Revert Players extraction merge commit `d15c50a080e0fd84f9ccd91466e2c6ded22b5961`. This restores the inline Players page and removes the focused module and regression test without an API, database, gameplay, content, worker, or deployment rollback. Revert the documentation closeout merge only when the closeout records must also be rolled back.
+Revert Players extraction merge commit `d15c50a080e0fd84f9ccd91466e2c6ded22b5961`. This restores the inline Players page and removes the focused module and regression test without an API, database, gameplay, content, worker, or deployment rollback. Revert documentation closeout merge `8e0a07b5ea73ce43b9bcc3c26d60f941b655b88d` only when the closeout records must also be rolled back.
 
 ## Stop Boundary
 
-`P1-T04-PLAYERS` is complete, validated, and implementation merged. Complete only the docs-only closeout and final hash record, then stop.
+`P1-T04-PLAYERS` is complete, validated, merged, documented, and stopped. No next implementation task is active.
 
-Do not begin Commands, Integrations, refresh decomposition, contract consolidation, administration API decomposition, Phase 2 implementation, or another Phase 1 task in this chat. A future chat must start from the latest `main`, follow `START_HERE.md`, choose exactly one objective, and replace `docs/CURRENT_TASK.md` before implementation.
+Do not begin Commands, Integrations, refresh decomposition, contract consolidation, administration API decomposition, Phase 2 implementation, or another Phase 1 task in this chat. A future chat must start from the latest `main`, follow `START_HERE.md`, choose exactly one authorized objective, and replace `docs/CURRENT_TASK.md` before implementation.
