@@ -1,145 +1,170 @@
 # Neon Wreckers Current Task
 
-**Task ID:** `P1-T02`  
+**Task ID:** `P1-T02-FIX1`  
 **Phase:** Phase 1 - Structural Cleanup and Stabilization  
 **Status:** Complete  
+**Completed:** 2026-07-28  
 **Phase authority:** `docs/phases/PHASE_01.md`  
 **Baseline authority:** `docs/phases/P1_T01_ADMIN_BASELINE.md`
 
-Only one task may be active in this file at a time. This completed record remains in place until the next chat defines a new task.
+Only one task may be active in this file at a time. This completed record remains until the next development chat defines one new objective.
 
 ## Objective
 
-Extract the read-only Server diagnostics feature from `apps/admin/src/main.tsx` into a focused feature module, add regression protection for its rendered telemetry and formatting, and preserve all runtime behavior, styling, navigation, data loading, and API ownership.
+Repair the authenticated Admin and Overlay Visual Proof fixture so every request made by the administration console's existing ten-resource refresh receives an explicit, deterministic, schema-compatible fixture response during visual capture, without changing production behavior or beginning another administration feature extraction.
 
 ## Completion Result
 
-Completed on 2026-07-28.
+- Added visual-proof-only responses for `/api/v1/admin/balance-telemetry`, `/api/v1/admin/live-ops`, and `/api/v1/admin/expedition-creator`.
+- Preserved the existing ten-resource `Promise.all` refresh and all `AdminApp` request ownership.
+- Added `tools/test/admin-visual-proof-fixture.test.mjs` to derive the ten refresh endpoints from the real administration source and require an explicit fixture response for every one.
+- Kept the fallback `route.continue()` behavior for requests outside the authenticated fixture while proving the administration refresh cannot reach it.
+- Ran the authenticated capture against the real production-built admin and overlay surfaces.
+- Preserved all screenshot names, viewport coverage, navigation behavior, authentication fixture behavior, overlay modes, transparency behavior, styling, accessibility behavior, and production runtime behavior.
+- Extracted no administration feature and made no Timers change.
 
-- `ServerPage`, `AdminOverview`, `BalanceTelemetry`, `MetricWindow`, `formatBytes`, and `formatDuration` now live in `apps/admin/src/features/server/server-page.tsx`.
-- `apps/admin/src/main.tsx` imports the extracted page and response types.
-- `AdminApp` still owns both Server endpoint requests, the ten-resource refresh, state, navigation, and page composition.
-- The extracted feature imports no browser API client and performs no request or mutation.
-- Focused regression protection lives in `tools/test/admin-server-feature.test.mjs`.
-- No API, database, CSS, shared UI, shared contract, gameplay, content, deployment, or other administration feature changed.
+## Root Cause Confirmed Before Editing
 
-## Behavior Change
+`tools/visual-proof/capture-admin-overlay.mjs` intercepted `/api/v1/**`, fulfilled paths present in `adminData`, and continued every other request. The existing administration shell requested ten resources, but `adminData` contained only seven of them.
 
-None.
-
-The Server diagnostics tab renders and behaves as it did before extraction.
-
-## Behavior Preserved
-
-- Default administration tab and all navigation identifiers, order, labels, and icons
-- Session verification and browser-side role gate
-- `AdminApp` ownership of `/api/v1/admin/overview` and `/api/v1/admin/balance-telemetry`
-- The ten-resource `Promise.all` refresh
-- Loading state when overview data is unavailable
-- Request, latency, error, socket, player, queue, database, and process telemetry
-- Optional balance-telemetry panel
-- Google Cloud free-tier guardrail values and cost formatting
-- Missing-disk rendering
-- All user-visible text and number formatting
-- Existing CSS class names and shared UI component usage
-- Responsive, reduced-motion, low-effects, keyboard, and forced-colors behavior
-- API authorization and response behavior
-
-## Files Changed
-
-Application and regression scope:
-
-- `apps/admin/src/main.tsx`
-- `apps/admin/src/features/server/server-page.tsx`
-- `tools/test/admin-server-feature.test.mjs`
-
-Project-control scope:
-
-- `docs/CURRENT_TASK.md`
-- `docs/PROJECT_STATUS.md`
-- `docs/phases/PHASE_01.md`
-- `docs/handoffs/LATEST.md`
-
-A temporary branch-only checkout-transfer workflow was created because the local container could not resolve GitHub or the npm registry. It was deleted before final validation and is absent from the final diff.
-
-## Validation Evidence
-
-### Executable pre-change baseline
-
-The task branch initially contained project-control corrections only, with the application source unchanged from `main` at `a1086818c0e2d51f23a0e890fa84236a59137ac8`.
-
-GitHub Actions CI run `30352627626`, job `90253431826`, completed successfully and ran:
-
-- Frozen dependency installation with pnpm 10.32.0 and Node.js 22.16.0
-- `pnpm verify`
-
-This establishes the executable pre-change baseline that `P1-T01` could not obtain.
-
-### Focused and repository regression checks
-
-Executed against the exact exported task checkout:
-
-```text
-node --test tools/test/admin-server-feature.test.mjs
-```
-
-Result: 3 passed, 0 failed.
-
-```text
-node --test tools/test/*.test.mjs
-```
-
-Result: 88 passed, 0 failed after local Git metadata was initialized for the repository test that calls `git ls-files`.
-
-### Final extracted source validation
-
-Source extraction commit:
-
-- `60afb9759ba0dc9480e20871a76b637b8a7eefda` - `refactor(admin): extract server diagnostics`
-
-Validated source head before project-control closeout:
-
-- `b9d1a7b8fec5ee6b974eb2d972ae626cc4dbd889`
-
-Successful workflows:
-
-- CI run `30353056396`, job `90254858193`: frozen install and `pnpm verify`
-- Browser integration tests run `30353056560`
-- UI Revamp Verify run `30353058064`
-- CodeQL run `30353056383`
-- CI and security gates run `30353056546`
-
-### Visual-proof limitation
-
-Admin and Overlay Visual Proof run `30353056639` built the production surfaces successfully, then failed during screenshot capture. The diagnostic logs show requests for these existing shell-owned resources fell through to the inactive Vite proxy:
+The missing requests fell through to the inactive Vite preview proxy at `127.0.0.1:8787`:
 
 - `/api/v1/admin/balance-telemetry`
 - `/api/v1/admin/live-ops`
 - `/api/v1/admin/expedition-creator`
 
-`tools/visual-proof/capture-admin-overlay.mjs` does not provide fixture entries for those endpoints, while the unchanged `AdminApp` refresh already requested all three before this extraction. This is a pre-existing visual-proof fixture defect, not an extracted Server-page regression. Repairing that fixture is outside `P1-T02` and is deferred.
+The workflow, production builds, preview servers, navigation, and capture commands were otherwise functioning.
+
+## Behavior Changed
+
+Inside `tools/visual-proof/capture-admin-overlay.mjs` only, the three previously missing administration GET requests now receive deterministic fixture envelopes compatible with the administration response models and production route shapes.
+
+## Behavior Preserved
+
+- `apps/admin/src/main.tsx` and its ten-resource `Promise.all` refresh
+- `AdminApp` ownership of remote state and requests
+- Server feature source and behavior
+- Production API routes, methods, envelopes, response shapes, authorization, database behavior, and browser-client behavior
+- Administration and overlay production builds
+- Authentication fixture and role gate
+- Navigation identifiers, order, labels, icons, and default tab
+- Existing desktop, tablet, mobile, overlay, viewer-event, and transparent capture coverage
+- Existing output paths and screenshot names
+- Shared UI, CSS, responsive behavior, reduced motion, low effects, keyboard behavior, and forced-colors behavior
+- Gameplay, balance, content, player data, deployment, and runtime behavior
+
+## Files Changed
+
+Fixture and regression scope:
+
+- `tools/visual-proof/capture-admin-overlay.mjs`
+- `tools/test/admin-visual-proof-fixture.test.mjs`
+
+Project-control scope:
+
+- `docs/CURRENT_TASK.md`
+- `docs/PROJECT_STATUS.md`
+- `docs/handoffs/LATEST.md`
+- `docs/handoffs/2026-07-28-p1-t02-server-diagnostics.md`
+
+No workflow change was required.
+
+## Executable Pre-Change Baseline
+
+Before editing the fixture, Admin and Overlay Visual Proof run `30353056639` was rerun unchanged.
+
+Rerun job `90267084937` established:
+
+- `pnpm install --frozen-lockfile`: passed
+- Production contracts, UI, admin, and overlay builds: passed
+- Existing UI graphics regression: passed
+- Playwright Chromium installation: passed
+- Built admin and overlay preview startup: passed
+- Authenticated capture: failed
+
+The preview diagnostics recorded all three missing paths falling through to Vite's inactive proxy.
+
+## Validation Evidence
+
+### Focused regression
+
+Executed against the reconstructed source checkout:
+
+```text
+node --test tools/test/admin-visual-proof-fixture.test.mjs
+```
+
+Result: 2 passed, 0 failed.
+
+The test proves:
+
+- The administration refresh contains exactly ten unique requests.
+- Every request has an explicit authenticated fixture entry.
+- The three repaired paths remain present.
+- Visual-proof interception is installed before the production-built admin surface loads.
+- The fixture uses the standard `{ data: ... }` envelope.
+- Non-fixture requests may still continue, while refresh requests cannot fall through.
+
+### Frozen install, repository tests, builds, and complete verification
+
+GitHub Actions CI run `30357665819`, job `90269540183`, completed successfully against validated source head `a26e5f0a10dbf848a1dc1a46b459e0bf2d5c0e89`.
+
+It ran:
+
+```text
+pnpm install --frozen-lockfile
+pnpm verify
+```
+
+`pnpm verify` includes `pnpm test:repository`, the focused regression test, all repository verification suites, and the complete production build pipeline including:
+
+```text
+pnpm --filter @neon-wreckers/admin run build
+pnpm --filter @neon-wreckers/overlay run build
+```
+
+Result: passed.
+
+### Exact authenticated visual-proof workflow
+
+Admin and Overlay Visual Proof run `30357668480`, job `90269548106`, completed successfully against the same validated source head.
+
+Successful steps included:
+
+- Frozen dependency installation
+- Production contracts and shared UI builds
+- `pnpm --filter @neon-wreckers/admin run build`
+- `pnpm --filter @neon-wreckers/overlay run build`
+- Existing UI graphics regression
+- Workspace-owned Chromium installation
+- Built admin and overlay preview startup
+- `node tools/visual-proof/capture-admin-overlay.mjs`
+- Visual-proof artifact upload
+
+Artifact `8687505083` contains all 26 existing captures across desktop, tablet, mobile, 720p, 1080p, 1440p, 4K, viewer-event, and transparent overlay modes. No diagnostic artifact was produced.
 
 ## Final Diff Review
 
-The reviewed diff against starting `main` contains only:
+The final task diff is limited to:
 
-- The focused Server feature module
-- Removal of the corresponding inline definitions from `main.tsx`
-- The focused regression test
-- Required project-control status and handoff updates
+- Three deterministic fixture responses
+- One focused regression test
+- Required project-control and handoff records
 
-No temporary workflow, unrelated source change, API change, styling change, or second feature extraction remains.
+There is no administration application source, Server feature, Timers feature, API, database, CSS, shared UI, browser-client, overlay runtime, workflow, gameplay, content, or deployment change.
 
 ## Rollback Method
 
-Revert the final `P1-T02` merge commit recorded in `docs/handoffs/LATEST.md`. That restores the inline Server page and helpers without affecting another feature.
+Revert the final squash merge commit recorded in `docs/handoffs/LATEST.md`. The rollback removes only the fixture entries, focused test, and task documentation.
 
-## Deferred Discovery
+## Deferred Work
 
-Repair the authenticated visual-proof fixture so it mocks every resource in the current ten-resource administration refresh. Do not combine that repair with another feature extraction unless the next task explicitly authorizes it.
+- The Timers extraction remains a separate future Phase 1 task.
+- Further administration frontend decomposition must continue one narrow feature at a time.
+- Refresh decomposition, contract consolidation, API decomposition, styling cleanup, and later-phase Studio or live-content work remain outside this task.
 
 ## Expected Stopping Point
 
 Reached.
 
-Stop here. The Timers extraction, visual-proof fixture repair, or any other administration work must begin in a new chat after `docs/CURRENT_TASK.md` is replaced with one newly authorized objective.
+Stop here. Do not begin the Timers extraction or another administration feature in this chat.

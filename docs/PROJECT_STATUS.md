@@ -4,7 +4,7 @@
 **Last updated:** 2026-07-28  
 **Repository:** `crazytaxzi/Neon_Wreckers_TTV_Overlay`  
 **Current phase:** Phase 1 - Structural Cleanup and Stabilization  
-**Implementation state:** `P1-T02` complete; next task not yet authorized
+**Implementation state:** `P1-T02-FIX1` complete; next task not yet authorized
 
 This file records the verified state of the project. Update it at the end of every completed work unit. Do not use it as a wish list.
 
@@ -63,11 +63,30 @@ Completed on 2026-07-28.
 - Passed the focused test, the complete repository source-test set, `pnpm verify`, browser integration, UI verification, CodeQL, and CI security gates.
 - Made no API, database, styling, shared-package, gameplay, content, deployment, or second-feature change.
 
-Source extraction commit:
+Final merge commit:
 
-- `60afb9759ba0dc9480e20871a76b637b8a7eefda` - `refactor(admin): extract server diagnostics`
+- `4cb1b8049ce6e546121e90beb81e2b16be9fb28e` - `refactor(admin): extract server diagnostics`
 
-The final merge commit is recorded in `docs/handoffs/LATEST.md`.
+The historical handoff is preserved at `docs/handoffs/2026-07-28-p1-t02-server-diagnostics.md`.
+
+### `P1-T02-FIX1` - Authenticated Visual-Proof Fixture Repair
+
+Completed on 2026-07-28.
+
+- Reproduced the existing Admin and Overlay Visual Proof failure before editing.
+- Confirmed that frozen installation, production builds, browser installation, and preview startup succeeded while three administration requests fell through to the inactive preview proxy.
+- Added deterministic visual-proof-only responses for `/api/v1/admin/balance-telemetry`, `/api/v1/admin/live-ops`, and `/api/v1/admin/expedition-creator`.
+- Preserved the administration console's existing ten-resource `Promise.all` refresh and all production application behavior.
+- Added `tools/test/admin-visual-proof-fixture.test.mjs` to derive the ten refresh endpoints from the actual administration source and require an explicit fixture response for every endpoint.
+- Passed the focused regression, full `pnpm verify`, admin and overlay production builds, and the exact authenticated Admin and Overlay Visual Proof workflow.
+- Produced all 26 existing visual-proof captures without changing screenshot names, viewports, navigation, authentication, overlay modes, styling, accessibility, or runtime behavior.
+- Made no workflow, administration application, Server, Timers, API, database, CSS, shared UI, browser-client, gameplay, content, or deployment change.
+
+Validated source head before project-control closeout:
+
+- `a26e5f0a10dbf848a1dc1a46b459e0bf2d5c0e89`
+
+The final merge commit is recorded in `docs/handoffs/LATEST.md` after merge.
 
 ## Verified Current Architecture
 
@@ -129,29 +148,37 @@ Protection now includes:
 - Expedition Creator source assertions
 - Focused Server extraction, telemetry, optional-panel, no-direct-API, and formatting assertions
 - Browser integration tests
-- Authenticated administration visual-proof tooling, with a known stale fixture limitation described below
+- Authenticated administration and overlay visual-proof capture using the production-built surfaces
+- Focused protection requiring every endpoint in the administration ten-resource refresh to have an explicit authenticated visual-proof fixture response
 
-Missing protection still includes authenticated interaction tests for feature mutations, full-refresh behavior, redirect behavior, confirmation cancellation, request payloads, success and error toasts, and several feature-local state transitions.
+Missing protection still includes authenticated interaction tests for feature mutations, full-refresh failure behavior, redirect behavior, confirmation cancellation, request payloads, success and error toasts, and several feature-local state transitions.
 
 Each future extraction must add focused regression protection before or alongside moving behavior.
 
 ## Validation Position
 
-The executable pre-change baseline and final extracted state both passed the repository CI `pnpm verify` gate using Node.js 22.16.0 and pnpm 10.32.0.
+The executable pre-change fixture baseline was established by rerunning Admin and Overlay Visual Proof run `30353056639`, job `90267084937`, before editing. Frozen install, production builds, browser installation, and preview startup passed; authenticated capture failed because three refresh requests reached the inactive Vite proxy.
 
-The local container could not resolve GitHub or the npm registry, so local pnpm installation and production builds were unavailable. The exact checkout was transferred through a temporary branch-only workflow, tested locally with Node's test runner, then the temporary workflow was deleted before final validation and is absent from the final diff.
+The repaired validated source head `a26e5f0a10dbf848a1dc1a46b459e0bf2d5c0e89` passed:
+
+- CI run `30357665819`, job `90269540183`: `pnpm install --frozen-lockfile` and complete `pnpm verify`
+- Admin and Overlay Visual Proof run `30357668480`, job `90269548106`: production admin and overlay builds, built previews, exact authenticated capture, and proof artifact upload
+
+Visual artifact `8687505083` contains all 26 expected captures.
+
+The local container could not resolve GitHub or the npm registry, so the complete pnpm gate ran through the repository's authenticated GitHub Actions environment. The focused Node regression was also executed against the reconstructed source checkout and passed 2 tests with 0 failures.
 
 ## Known Risks and Limitations
 
 - Cleanup work can accidentally change behavior if refactoring and feature work are mixed.
 - The administration full-refresh callback couples every page to every remote resource.
 - Source-string tests and visual captures do not fully protect authenticated mutations or local editor state.
+- The fixture-coverage regression intentionally couples the visual proof to the current refresh endpoint list so a future refresh change fails loudly until the fixture is reconciled.
 - Moving response models and components together can accidentally become premature contract consolidation.
 - Seed behavior may overwrite future live-edited content fields unless redesigned later.
 - Static content imports prevent ordinary content activation from becoming live without restart.
 - Running expeditions and delayed worker jobs must retain stable definitions during future content changes.
 - Asset changes can break the game, admin preview, or overlay if logical keys are not validated across every client.
-- The authenticated visual-proof fixture does not mock `/api/v1/admin/balance-telemetry`, `/api/v1/admin/live-ops`, or `/api/v1/admin/expedition-creator`; screenshot capture therefore falls through to an inactive proxy. The production builds and all required validation gates pass. Fixture repair is deferred.
 - Repository documentation contains stale counts and duplicated historical material that must be handled carefully rather than deleted blindly.
 
 ## Not Yet Implemented
@@ -174,21 +201,21 @@ The following remain planned work, not completed features:
 
 ## Current Readiness
 
-`P1-T02` is complete, validated, documented, and committed.
+`P1-T02-FIX1` is complete, validated, documented, and ready for final merge.
 
-This is a required new-chat boundary. No next implementation task is active.
+This is a required new-chat boundary after merge. No next implementation task is active.
 
 The next chat must:
 
 1. Follow `START_HERE.md` from the latest `main` branch.
-2. Verify the final `P1-T02` commit recorded in `docs/handoffs/LATEST.md`.
+2. Verify the final fixture-repair commit recorded in `docs/handoffs/LATEST.md`.
 3. Choose exactly one next objective within Phase 1.
 4. Replace `docs/CURRENT_TASK.md` before implementation.
-5. Do not silently combine visual-proof fixture repair with another feature extraction.
+5. Do not begin Timers or another administration feature in the fixture-repair chat.
 
 ## Deferred Work
 
-- Authenticated visual-proof fixture reconciliation
+- Continue administration frontend decomposition one narrow feature at a time
 - Desktop Studio user interface design
 - New game mechanics
 - New ships, crew, events, rewards, or balance changes
