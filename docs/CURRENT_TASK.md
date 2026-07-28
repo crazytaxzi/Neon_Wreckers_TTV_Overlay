@@ -69,6 +69,7 @@ Implementation changes are limited to:
 - `docs/phases/PHASE_01.md` for the stale phase-status correction only
 - `docs/handoffs/LATEST.md`
 - A dated handoff record when useful
+- `.github/workflows/p1-t02-source-export.yml` as a temporary, branch-only checkout-export aid required by the connector-only environment; it must be deleted before final validation and must not appear in the merged diff
 
 A newly required file outside this scope must be documented in this file before modification.
 
@@ -128,7 +129,7 @@ pnpm verify
 
 The visual-proof workflow or equivalent local capture should be run when available, but it does not replace the production build and focused regression test.
 
-The current local execution container cannot resolve `github.com` or `registry.npmjs.org`, so it cannot obtain the repository or dependencies directly. The existing pull-request CI workflow is the executable validation host for this task. A project-control-only branch state must pass `pnpm install --frozen-lockfile` and `pnpm verify` before application source changes, proving the current application baseline. The final extracted state must pass the same workflow. This limitation does not convert an unrun local command into a pass.
+The current local execution container cannot resolve `github.com` or `registry.npmjs.org`, so it cannot obtain the repository or dependencies directly. The existing pull-request CI workflow is the executable validation host for this task. A project-control-only branch state must pass `pnpm install --frozen-lockfile` and `pnpm verify` before application source changes, proving the current application baseline. The final extracted state must pass the same workflow. A temporary branch-only workflow may export the exact checkout as an artifact for editing in this environment; it must be removed before final validation and merge. This limitation does not convert an unrun local command into a pass.
 
 ## Rollback Method
 
@@ -144,6 +145,7 @@ This task is complete only when:
 - Focused regression protection is present and passing.
 - The administration build passes.
 - The final diff contains no unrelated changes.
+- The temporary checkout-export workflow is absent from the final diff.
 - Project-control files and the latest handoff are updated.
 - The resulting commit hash is recorded.
 - The new-chat check has been performed.
