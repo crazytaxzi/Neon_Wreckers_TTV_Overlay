@@ -14,13 +14,13 @@
 **Validated source head:** `85d6b84bf30078f0447ee826ed7e816052f0bb18`  
 **Final reviewed branch head:** `85d6b84bf30078f0447ee826ed7e816052f0bb18`  
 **Commands extraction merge commit:** `2b6be46d68d54ff6f08014bc03d9b712579d37c9`  
-**Documentation closeout merge commit:** Pending  
-**Permanent Commands handoff record commit:** Pending  
-**Final documented main closeout commit:** Pending  
+**Documentation closeout merge commit:** `d85e3e36838b3a58526bd989acb19daa385a1c86`  
+**Permanent Commands handoff record commit:** `6c86e08de7ad0fabace5da3a6b7f29f7e9ab4804`  
+**Final documented main closeout commit:** This commit  
 **Current phase:** Phase 1 - Structural Cleanup and Stabilization  
 **Completed task:** `P1-T05-COMMANDS` - Commands administration extraction  
 **Next task:** Not authorized  
-**Handoff status:** Complete, validated, merged, documentation closeout in progress
+**Handoff status:** Complete, validated, merged, documented, and stopped
 
 The permanent detailed record is `docs/handoffs/2026-07-28-p1-t05-commands.md`.
 
@@ -169,6 +169,17 @@ Tested source head `85d6b84bf30078f0447ee826ed7e816052f0bb18`.
 - Digest `sha256:018c2febc08c4d9d44ebc32f752a63c45f0c371542a687656c74da4683230bcd`
 - Existing desktop, tablet, and mobile Commands captures present and directly inspected
 
+### Documentation closeout head
+
+Tested documentation head `9443ed3e45fe47af21e7b7c070c39ba44383053a`.
+
+- CI run `30414662637`, Verify job `90458428813`: success
+- CodeQL run `30414662683`, JavaScript/TypeScript job `90458428752`: success
+- CI and security gates run `30414662647`: success
+  - Dependency review job `90458428609`
+  - Secret scan job `90458428661`
+  - Repository verification, Compose validation, and production-image job `90458428686`
+
 The local execution container had no repository checkout and was treated as lacking GitHub and npm DNS access, so executable validation ran through the repository's authenticated GitHub Actions environment.
 
 ## Final Diff Review
@@ -181,28 +192,28 @@ Implementation pull request `#42` contained exactly:
 - `docs/CURRENT_TASK.md`
 - `docs/handoffs/2026-07-28-p1-t05-commands.md`
 
-The application-source patch and complete final diff were reviewed in full. No unrelated change was present.
-
-Documentation closeout pull request `#43` is limited to:
+Documentation closeout pull request `#43` contained exactly:
 
 - `docs/CURRENT_TASK.md`
 - `docs/PROJECT_STATUS.md`
 - `docs/handoffs/LATEST.md`
 - `docs/handoffs/2026-07-28-p1-t05-commands.md`
 
+The final two direct `main` commits changed only the permanent Commands handoff and this latest-handoff pointer. No temporary helper workflow or helper file was merged.
+
 ## Merge and Closeout
 
 - Commands implementation PR `#42` squash merge: `2b6be46d68d54ff6f08014bc03d9b712579d37c9`
-- Documentation closeout PR `#43`: pending
-- Permanent Commands handoff record: pending
-- Final documented `main` closeout: pending
+- Documentation closeout PR `#43` squash merge: `d85e3e36838b3a58526bd989acb19daa385a1c86`
+- Permanent Commands handoff record: `6c86e08de7ad0fabace5da3a6b7f29f7e9ab4804`
+- Final documented `main` closeout: this commit
 
 ## Rollback Method
 
-Revert Commands extraction merge commit `2b6be46d68d54ff6f08014bc03d9b712579d37c9`. This restores the inline Commands page and removes the focused module and regression test without an API, database, Twitch, StreamElements, gameplay, content, worker, CSS, visual-proof, or deployment rollback. Revert the documentation closeout merge only when the closeout records must also be rolled back.
+Revert Commands extraction merge commit `2b6be46d68d54ff6f08014bc03d9b712579d37c9`. This restores the inline Commands page and removes the focused module and regression test without an API, database, Twitch, StreamElements, gameplay, content, worker, CSS, visual-proof, or deployment rollback. Revert documentation closeout merge `d85e3e36838b3a58526bd989acb19daa385a1c86` only when the closeout records must also be rolled back.
 
 ## Stop Boundary
 
-`P1-T05-COMMANDS` is complete, validated, merged, and stopped. No next implementation task is active.
+`P1-T05-COMMANDS` is complete, validated, merged, documented, and stopped. No next implementation task is active.
 
 Do not begin Integrations, refresh decomposition, contract consolidation, administration API decomposition, Phase 2 implementation, or another Phase 1 task in this chat. A future chat must start from the latest `main`, follow `START_HERE.md`, choose exactly one authorized objective, and replace `docs/CURRENT_TASK.md` before implementation.
