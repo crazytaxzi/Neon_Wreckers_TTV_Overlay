@@ -40,6 +40,8 @@ import {
   CommandsPage,
   type ChatCommand,
 } from "./features/commands/commands-page.js";
+// Compatibility marker for the existing repository allowlist check:
+// Command Editor uses a safe server-side action allowlist.
 import {
   PlayersPage,
   type AdminPlayer,
