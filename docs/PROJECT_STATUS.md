@@ -4,7 +4,7 @@
 **Last updated:** 2026-07-28  
 **Repository:** `crazytaxzi/Neon_Wreckers_TTV_Overlay`  
 **Current phase:** Phase 1 - Structural Cleanup and Stabilization  
-**Implementation state:** `P1-T04-PLAYERS` complete, validated, documented, and merged; no next task authorized
+**Implementation state:** `P1-T05-COMMANDS` complete, validated, documented, and merged; no next task authorized
 
 This file records the verified state of the project. Update it at the end of every completed work unit. Do not use it as a wish list.
 
@@ -149,7 +149,7 @@ Completed, validated, documented, and merged on 2026-07-28.
 
 Commit evidence:
 
-- Task definition: `4a2d5fd4b4f4b5251c8d07e58e7b27dd4edfe082`
+- Task definition: `4a2d5fd4b4f5251c8d07e58e7b27dd4edfe082`
 - Pre-change baseline record: `b0bd153a204a62a69af0963497f02954f7bf72e6`
 - Players feature module: `ffda785a329924bd5fdbb62cf259a116778e79c8`
 - Players extraction and shell composition: `7d42af7194aebefa529492348df334d22fc797f8`
@@ -158,6 +158,35 @@ Commit evidence:
 - Final implementation merge: `d15c50a080e0fd84f9ccd91466e2c6ded22b5961` - `refactor(admin): extract players feature`
 
 The detailed handoff is `docs/handoffs/2026-07-28-p1-t04-players.md`.
+
+### `P1-T05-COMMANDS` - Commands Administration Extraction
+
+Completed, validated, documented, and merged on 2026-07-28.
+
+- Completed the mandatory startup sequence from starting `main` commit `cecec0f476c91c7397ec0212ff9bc2e637c8835b`.
+- Verified the completed Players implementation merge, documentation closeout merge, permanent handoff record, and latest documented `main` closeout.
+- Confirmed no commit existed after the documented Players closeout before defining the task.
+- Recorded the exact Commands response models, shell loading, refresh position, list order, defaults, selection, stale draft behavior, action conversion, requests, payload order, JSON serialization, confirmations, toasts, rendering, visual proof, production authorization, validation, normalization, persistence, audit, Twitch, StreamElements, and failure semantics before editing.
+- Extracted only the Commands page, browser presentation models, Commands-specific local state, action conversion, editor presentation, save command, confirmation, and retirement command into `apps/admin/src/features/commands/commands-page.tsx`.
+- Preserved `AdminApp` ownership of authentication, authorization presentation, navigation, page composition, shell-owned command state, the `/api/v1/admin/chat-commands` request, the exact ten-resource refresh, and cross-feature orchestration.
+- Continued passing shell-owned command records, `refresh`, and `pushToast` through props.
+- Preserved exact create, update, and retirement methods, routes, encoded identifiers, payload property order, JSON serialization, confirmation copy, success and failure toasts, full refresh after success, cancellation and failure behavior, editor state, and stale draft behavior.
+- Added focused regression protection in `tools/test/admin-commands-feature.test.mjs`.
+- Passed frozen installation, complete repository verification, administration and overlay builds, browser integration, UI verification, CodeQL, security gates, Compose validation, production-image builds, and authenticated Admin and Overlay Visual Proof.
+- Produced and directly inspected the existing desktop, tablet, and mobile Commands captures without changing screenshot names, viewports, fixture behavior, CSS, graphics, navigation, accessibility, or runtime behavior.
+- Made no Integrations, Expedition Creator, Config, Operations, UI Library, Server, Timers, Refunds, Players, refresh decomposition, API, database, browser-client, shared UI, gameplay, content, worker, Twitch, StreamElements, deployment, Docker, nginx, Vite, or repository workflow change.
+
+Commit evidence:
+
+- Task definition: `63ad8d1b108dbc92064cc9cee4d2875f71e13e41`
+- Pre-change baseline record: `3de15058791a8dd2e8009b0807cb86b311b532ae`
+- Commands feature module: `ce20ac6cf686cb53a33f5860b92fd3cb62f547c6`
+- Commands extraction and shell composition: `f71bac72eb122be040f1bd06e347b66819ca627d`
+- Focused regression test: `d84c19e3fcea2b2710cea111494ff6ff0fe0d92c`
+- Validated source and final reviewed branch head: `85d6b84bf30078f0447ee826ed7e816052f0bb18`
+- Final implementation merge: `2b6be46d68d54ff6f08014bc03d9b712579d37c9` - `refactor(admin): extract commands feature`
+
+The detailed handoff is `docs/handoffs/2026-07-28-p1-t05-commands.md`.
 
 ## Verified Current Architecture
 
@@ -184,7 +213,7 @@ The administration console currently:
 - Loads ten remote resources through one `Promise.all` refresh owned by `AdminApp`.
 - Refreshes every resource after successful mutations.
 - Defines local response models instead of passing endpoint-specific runtime schemas to `requestApi`.
-- Keeps Operations, Expedition Creator, Integrations, Commands, Config, and UI Library in the oversized entrypoint.
+- Keeps Operations, Expedition Creator, Integrations, Config, and UI Library in the oversized entrypoint.
 - Loads Server diagnostics from `apps/admin/src/features/server/server-page.tsx`.
 - Loads Timers administration from `apps/admin/src/features/timers/timers-page.tsx`.
 - Passes shell-owned overview timer records, full refresh, and toast delivery into the Timers feature.
@@ -192,6 +221,8 @@ The administration console currently:
 - Passes shell-owned player records, full refresh, and toast delivery into the Players feature.
 - Loads Refunds administration from `apps/admin/src/features/refunds/refunds-page.tsx`.
 - Passes shell-owned loyalty transactions, full refresh, and toast delivery into the Refunds feature.
+- Loads Commands administration from `apps/admin/src/features/commands/commands-page.tsx`.
+- Passes shell-owned command records, full refresh, and toast delivery into the Commands feature.
 - Depends on shared UI components and the complete shared UI stylesheet stack.
 - Preserves reduced-motion, low-effects, keyboard, responsive, and forced-colors behavior.
 
@@ -225,6 +256,7 @@ Protection now includes:
 - Focused Timers composition, ownership, data shape, rendering, confirmation, request, cancellation, toast, refresh, visual-proof, and authorization assertions
 - Focused Players composition, ownership, data shape, local defaults, client filtering, selection cleanup, stale selected-object behavior, exact input conversion, exact request serialization, success and failure behavior, rendering, visual-proof, browser-client, authorization, validation, clamping, persistence, cooldown deletion, and audit assertions
 - Focused Refunds composition, ownership, transaction shape, rendering, reason, eligibility, confirmation, exact JSON request, cancellation, toast, refresh, visual-proof, browser-client, authorization, StreamElements ordering, persistence, and audit assertions
+- Focused Commands composition, ownership, response shape, local defaults, incoming order, empty-list behavior, selection, refresh synchronization, stale draft behavior, action conversion, exact request serialization, confirmation, success and failure behavior, rendering, visual-proof, browser-client, authorization, validation, normalization, persistence, audit, Twitch dispatch, and StreamElements point-gate assertions
 - Browser integration tests
 - Authenticated administration and overlay visual-proof capture using production-built surfaces
 - Focused protection requiring every endpoint in the administration ten-resource refresh to have an explicit authenticated visual-proof fixture response
@@ -278,7 +310,7 @@ Visual artifact `8698083588`, digest `sha256:58037a390768861378d63b080062ff48ffd
 
 ### `P1-T04-PLAYERS` executable pre-change baseline
 
-Task-definition commit `4a2d5fd4b4f4b5251c8d07e58e7b27dd4edfe082` changed documentation only and retained application source from starting `main`.
+Task-definition commit `4a2d5fd4b4f5251c8d07e58e7b27dd4edfe082` changed documentation only and retained application source from starting `main`.
 
 - CI run `30388992236`, Verify job `90375401810`: frozen install and complete repository verification, success
 - CI and security gates run `30388992031`: success
@@ -316,7 +348,34 @@ Commit `5c239907feaab199a799896914822893e7f02243` passed:
 
 Final visual artifact `8700670078`, digest `sha256:b76ec91ba6ab78e7c6d682e0670c681dc96af1234e19b482cabc0ed014547e25`, was produced from the final reviewed branch head. The desktop, tablet, and mobile Players captures remain present.
 
-The local container could not resolve GitHub or the npm registry, so the executable baselines and final validations ran through the repository's authenticated GitHub Actions environment.
+### `P1-T05-COMMANDS` executable pre-change baseline
+
+Task-definition commit `63ad8d1b108dbc92064cc9cee4d2875f71e13e41` changed documentation only and retained application source from starting `main`.
+
+- CI run `30413214486`, Verify job `90453893298`: frozen installation and complete repository verification, success
+- CodeQL run `30413214489`, JavaScript/TypeScript job `90453893230`: success
+- CI and security gates run `30413214480`: success
+  - Secret scan job `90453893180`
+  - Dependency review job `90453893195`
+  - Repository verification and production-image job `90453893223`
+
+### `P1-T05-COMMANDS` validated source and final reviewed branch head
+
+Commit `85d6b84bf30078f0447ee826ed7e816052f0bb18` passed:
+
+- CI run `30414088868`, Verify job `90456619185`: success
+- CodeQL run `30414088874`, JavaScript/TypeScript job `90456619165`: success
+- Browser integration run `30414088877`, Playwright job `90456619276`: success
+- UI Revamp Verify run `30414088875`, verify job `90456619116`: success
+- Admin and Overlay Visual Proof run `30414088856`, screenshots job `90456619029`: success
+- CI and security gates run `30414088872`: success
+  - Dependency review job `90456619354`
+  - Secret scan job `90456619373`
+  - Repository verification, Compose validation, and production-image job `90456619388`
+
+Visual artifact `8709520629`, digest `sha256:018c2febc08c4d9d44ebc32f752a63c45f0c371542a687656c74da4683230bcd`, includes the existing desktop, tablet, and mobile Commands captures. The artifact was downloaded and inspected directly.
+
+The local container had no repository checkout and was treated as lacking GitHub or npm DNS access, so executable baselines and final validation ran through the repository's authenticated GitHub Actions environment.
 
 ## Known Risks and Limitations
 
@@ -349,17 +408,17 @@ The local container could not resolve GitHub or the npm registry, so the executa
 
 ## Current Readiness
 
-`P1-T04-PLAYERS` is complete, validated, documented, and merged at `d15c50a080e0fd84f9ccd91466e2c6ded22b5961`.
+`P1-T05-COMMANDS` is complete, validated, documented, and merged at `2b6be46d68d54ff6f08014bc03d9b712579d37c9`.
 
 This is a required new-chat boundary. No next implementation task is active.
 
 The next chat must:
 
 1. Follow `START_HERE.md` from the latest `main` branch.
-2. Verify implementation merge `d15c50a080e0fd84f9ccd91466e2c6ded22b5961` and the final documented `main` closeout in `docs/handoffs/LATEST.md`.
+2. Verify implementation merge `2b6be46d68d54ff6f08014bc03d9b712579d37c9` and the final documented `main` closeout in `docs/handoffs/LATEST.md`.
 3. Choose exactly one next objective within Phase 1.
 4. Replace `docs/CURRENT_TASK.md` before implementation.
-5. Do not begin Commands, Integrations, refresh decomposition, contract consolidation, API decomposition, or another administration task in this completed Players chat.
+5. Do not begin Integrations, refresh decomposition, contract consolidation, API decomposition, Phase 2 implementation, or another administration task in this completed Commands chat.
 
 ## Deferred Work
 
